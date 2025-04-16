@@ -1,0 +1,14 @@
+<sanitizer>
+    <name>LowFat</name>
+    <setup_baseline>
+        <compile_cmd>../../sanitizers/lowfat/clang -g $SOURCE_FILE -o $GENERATED_BINARY</compile_cmd>
+    </setup_baseline>
+    <run_baseline>$GENERATED_BINARY</run_baseline>
+    <setup>
+        <compile_cmd>../../sanitizers/lowfat/clang -fsanitize=lowfat -mllvm -lowfat-check-whole-access $SOURCE_FILE -o $GENERATED_BINARY</compile_cmd>
+    </setup>
+    <run>$GENERATED_BINARY</run>
+    <bug_detected_exit_values>
+        <value>6</value>
+    </bug_detected_exit_values>
+</sanitizer>

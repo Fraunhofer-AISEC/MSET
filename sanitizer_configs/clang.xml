@@ -1,0 +1,19 @@
+<sanitizer>
+  <name>clang</name>
+  <setup>
+    <compile_cmd>clang -Wall $SOURCE_FILE -o $GENERATED_BINARY</compile_cmd>
+  </setup>
+  <setup_baseline>
+    <compile_cmd>clang -Wall $SOURCE_FILE -o $GENERATED_BINARY</compile_cmd>
+  </setup_baseline>
+  <run>$GENERATED_BINARY</run>
+  <run_baseline>$GENERATED_BINARY</run_baseline>
+  <bug_detected_exit_values>
+    <value>1</value>
+    <value>6</value>
+  </bug_detected_exit_values>
+  <bug_not_detected_exit_value>42</bug_not_detected_exit_value>
+  <precondition_not_met_exit_value>43</precondition_not_met_exit_value>
+  <timeout_exit_value>41</timeout_exit_value>
+  <timeout_seconds>60</timeout_seconds>
+</sanitizer>

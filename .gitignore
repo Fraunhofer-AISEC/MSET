@@ -1,0 +1,24 @@
+# Build directory
+/build/
+test_case_binaries/
+
+# Compiled Object files
+*.o
+*.obj
+
+# Executables
+*.out
+
+# CMake
+CMakeLists.txt.user
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+Testing
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps
+CMakeUserPresets.json

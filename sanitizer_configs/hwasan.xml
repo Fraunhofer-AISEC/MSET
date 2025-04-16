@@ -1,0 +1,18 @@
+<sanitizer>
+    <name>HWASAN</name>
+    <setup_baseline>
+        <compile_cmd>clang $SOURCE_FILE -o $GENERATED_BINARY</compile_cmd>
+    </setup_baseline>
+    <run_baseline>$GENERATED_BINARY</run_baseline>
+    <address_mask>0x00FFFFFFFFFFFFFF</address_mask>
+    <setup>
+        <compile_cmd>clang -fuse-ld=lld -fsanitize=hwaddress -fno-omit-frame-pointer $SOURCE_FILE -o $GENERATED_BINARY</compile_cmd>
+    </setup>
+    <run>$GENERATED_BINARY</run>
+    <bug_detected_exit_values>
+        <value>1</value>
+        <value>4</value>
+        <value>6</value>
+        <value>99</value>
+    </bug_detected_exit_values>
+</sanitizer>

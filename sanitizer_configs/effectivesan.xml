@@ -1,0 +1,18 @@
+<sanitizer>
+    <name>EffectiveSan</name>
+    <setup_baseline>
+        <compile_cmd>../../sanitizers/effectivesan-0.1.1-alpha/bin/clang -g -Werror $SOURCE_FILE -o $GENERATED_BINARY</compile_cmd>
+    </setup_baseline>
+    <run_baseline>$GENERATED_BINARY</run_baseline>
+    <setup>
+        <compile_cmd>../../sanitizers/effectivesan-0.1.1-alpha/bin/clang -fsanitize=effective -O2 $SOURCE_FILE -o $GENERATED_BINARY</compile_cmd>
+    </setup>
+    <run_env_args>
+        <env_var name="EFFECTIVE_MAXERRS">1</env_var>
+    </run_env_args>
+    <run>$GENERATED_BINARY</run>
+    <bug_detected_exit_values>
+        <value>1</value>
+        <value>6</value>
+    </bug_detected_exit_values>
+</sanitizer>

@@ -1,0 +1,18 @@
+<sanitizer>
+    <name>ASan-clang</name>
+    <setup>
+        <compile_cmd>../../sanitizers/asan--/bin/clang -fsanitize=address $SOURCE_FILE -o $GENERATED_BINARY</compile_cmd>
+    </setup>
+    <setup_baseline>
+        <compile_cmd>../../sanitizers/asan--/bin/clang -Werror $SOURCE_FILE -o $GENERATED_BINARY</compile_cmd>
+    </setup_baseline>
+    <run>$GENERATED_BINARY</run>
+    <run_env_args>
+        <env_var name="ASAN_OPTIONS">detect_leaks=0:detect_stack_use_after_return=1</env_var>
+    </run_env_args>
+    <run_baseline>$GENERATED_BINARY</run_baseline>
+    <bug_detected_exit_values>
+        <value>1</value>
+        <value>6</value>
+    </bug_detected_exit_values>
+</sanitizer>

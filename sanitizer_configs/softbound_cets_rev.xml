@@ -1,0 +1,14 @@
+<sanitizer>
+    <name>SoftBound+CETS_Rev</name>
+    <setup_baseline>
+        <compile_cmd>../../sanitizers/softboundcets_revisited/build/bin/clang $SOURCE_FILE -o $GENERATED_BINARY</compile_cmd>
+    </setup_baseline>
+    <run_baseline>$GENERATED_BINARY</run_baseline>
+    <setup>
+        <compile_cmd>../../sanitizers/softboundcets_revisited/build/bin/clang -O0 -fuse-ld=../../sanitizers/softboundcets_revisited/build/bin/ld.lld -flto -Wl,-mllvm=-load=../../sanitizers/softboundcets_revisited/build/lib/LLVMSoftBoundCETSLTO.so,-mllvm=-softboundcets-inline-rtlib-functions,--whole-archive,-L../../sanitizers/softboundcets_revisited/build/lib/clang/12.0.1/lib/linux,-Bstatic,-lclang_rt.softboundcets_inlining-x86_64,-Bdynamic,--no-whole-archive -Wl,-mllvm=-softboundcets-disable-gep-constant-offset-accumulation-instcombine,-mllvm=--softboundcets-check-intra-object-bounds $SOURCE_FILE -o $GENERATED_BINARY</compile_cmd>
+    </setup>
+    <run>$GENERATED_BINARY</run>
+    <bug_detected_exit_values>
+        <value>6</value>
+    </bug_detected_exit_values>
+</sanitizer>
