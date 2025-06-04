@@ -19,6 +19,7 @@
 #include <map>
 #include <set>
 #include <sstream>
+#include <stddef.h>
 #include <sys/stat.h> // stat
 
 #include "config.h"
@@ -34,7 +35,7 @@ static bool ends_with(const std::string& str, const std::string& suffix)
   return str.substr(str.length() - suffix.length()) == suffix;
 }
 
-static std::set<std::string> parse_dir(const std::string& dir_path)
+static std::set<std::string> parse_dir(const std::string& dir_path, bool sources)
 {
   std::set<std::string> file_names;
   DIR* dir = opendir(dir_path.c_str());
@@ -56,9 +57,43 @@ static std::set<std::string> parse_dir(const std::string& dir_path)
     struct stat path_stat{};
     stat(full_path.c_str(), &path_stat);
 
-    if ( S_ISREG(path_stat.st_mode) && ends_with(full_path, ".c") )
+    if ( S_ISREG(path_stat.st_mode) )
     {
-      file_names.insert(entry->d_name);
+      if ( sources )
+      {
+        if ( ends_with(full_path, ".c") )
+        {
+          auto res = file_names.insert(entry->d_name);
+          if (!res.second)
+          {
+            std::cerr << "WARNING: duplicated file: " << full_path << '\n';
+          }
+        }
+      }
+      else
+      {
+        // binaries
+        if ( access(full_path.c_str(), X_OK) == 0 )
+        {
+          auto res = file_names.insert(entry->d_name);
+          if (!res.second)
+          {
+            std::cerr << "WARNING: duplicated file: " << full_path << '\n';
+          }
+        }
+      }
+    }
+    else if ( S_ISDIR(path_stat.st_mode) )
+    {
+      std::set<std::string> files_in_subdir = parse_dir(full_path, sources);
+      for (auto it: files_in_subdir)
+      {
+        auto res = file_names.insert(it);
+        if (!res.second)
+        {
+          std::cerr << "WARNING: duplicated file in subdir " << full_path << ": " << it << '\n';
+        }
+      }
     }
   }
 
@@ -531,7 +566,16 @@ static void process_results(bool print_table_summary, bool with_baseline)
   }
 }
 
-extern void evaluate(const std::string &test_cases_dir_path, const std::string &sanitizer_config, bool print_table_summary, bool run_all_variants, bool verbose, bool compute_baseline, bool keep_binaries)
+extern void evaluate(
+  const std::string &test_cases_dir_path,
+  const std::string &sanitizer_config,
+  bool print_table_summary,
+  bool run_all_variants,
+  bool verbose,
+  bool compute_baseline,
+  bool keep_binaries,
+  bool use_prebuilt_binaries
+)
 {
   if (verbose)
   {
@@ -540,7 +584,7 @@ extern void evaluate(const std::string &test_cases_dir_path, const std::string &
   size_t variant_eval_counter = 0;
   Sanitizer sanitizer{sanitizer_config};
 
-  const std::set<std::string> generated_files = parse_dir(test_cases_dir_path);
+  const std::set<std::string> generated_files = parse_dir(test_cases_dir_path, !use_prebuilt_binaries);
 
   if (generated_files.empty())
   {
@@ -574,7 +618,7 @@ extern void evaluate(const std::string &test_cases_dir_path, const std::string &
         std::string file_path = dir_path + test_case_info->get_file_name();
         std::string binary_path = dir_path + "/" + TEST_CASE_BINARIES_DIR_NAME + "/" + test_case_info->get_file_name_without_suffix() + "_baseline";
 
-        if ( !sanitizer.compile_baseline(file_path, binary_path) )
+        if ( !use_prebuilt_binaries && !sanitizer.compile_baseline(file_path, binary_path) )
         {
           std::cerr << "Failed to compile baseline " << file_path << '\n';
           std::cerr << "Aborting.\n";
@@ -606,7 +650,7 @@ extern void evaluate(const std::string &test_cases_dir_path, const std::string &
       std::string file_path = dir_path + test_case_info->get_file_name();
       std::string binary_path = dir_path + "/" + TEST_CASE_BINARIES_DIR_NAME + "/" + test_case_info->get_file_name_without_suffix();
 
-      if ( !sanitizer.compile(file_path, binary_path) )
+      if ( !use_prebuilt_binaries && !sanitizer.compile(file_path, binary_path) )
       {
         std::cerr << "Failed to compile " << file_path << '\n';
         std::cerr << "Aborting.\n";

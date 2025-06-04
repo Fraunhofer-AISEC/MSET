@@ -15,5 +15,6 @@ extern void evaluate(
   bool run_all_variants,
   bool verbose,
   bool compute_baseline,
-  bool keep_binaries
+  bool keep_binaries,
+  bool use_prebuilt_binaries
 );

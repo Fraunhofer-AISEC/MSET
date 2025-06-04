@@ -26,20 +26,22 @@ static bool verbose = false;
 static bool evaluate_baseline = false;
 static bool run_all_variants = false;
 static bool keep_binaries = false;
+static bool use_prebuilt_binaries = false;
 static std::string sanitizer_config_path;
 
 const std::vector<std::tuple< std::string, ArgParser::Argument>> accepted_arguments
 {
   // arg name,            has_value,  value_name,              default_value,              description,   [hidden]
-  std::make_tuple( "--evaluate",         ArgParser::Argument{true,      "<SANITIZER_CONFIG>",    "",                         "\t\t\tEvaluate the sanitizer configured in <SANITIZER_CONFIG> using the test case files in <TEST_CASE_DIR>."} ),
-  std::make_tuple( "--evaluate-baseline",ArgParser::Argument{false ,    "",                      "",                         "\t\t\t\tEvaluate the baseline alongside the sanitizer. This option is applicable only when --evaluate is specified."} ),
-  std::make_tuple( "--generate",         ArgParser::Argument{false,     "",                      "",                         "\t\t\t\t\tRegenerate test cases. The generated files will be placed in <TEST_CASE_DIR>. If the directory is not empty and --clean-test-cases is not specified, the test case generation is aborted."} ),
-  std::make_tuple( "--test-case-dir",    ArgParser::Argument{true,      "<TEST_CASE_DIR>",       DEFAULT_GENERATED_DIR_NAME, "\t\tSpecify <TEST_CASE_DIR> as the location for the generated test case files. Default: \"../" + DEFAULT_GENERATED_DIR_NAME + "/\"."} ),
-  std::make_tuple( "--clean-test-cases", ArgParser::Argument{false,     "",                      "",                         "\t\t\t\tRemove all contents from <TEST_CASE_DIR> before generating test cases. This option is applicable only when --generate is specified."} ),
-  std::make_tuple( "--verbose",          ArgParser::Argument{false ,    "",                      "",                         "\t\t\t\t\tPrint detailed evaluation results."} ),
-  std::make_tuple( "--run-all-variants", ArgParser::Argument{false ,    "",                      "",                         "\t\t\t\tRun all variants of a test case, even if one has already been successful. This option is applicable only when --evaluate is specified."} ),
-  std::make_tuple( "--keep-binaries",    ArgParser::Argument{false ,    "",                      "",                         "\t\t\t\tKeep the test case binaries. This option is applicable only when --evaluate is specified."} ),
-  std::make_tuple( "--help",             ArgParser::Argument{false,     "",                      "",                         "\t\t\t\t\tShow this help message and exit."} ),
+  std::make_tuple( "--evaluate",               ArgParser::Argument{true,      "<SANITIZER_CONFIG>",    "",                         "\t\t\tEvaluate the sanitizer configured in <SANITIZER_CONFIG> using the test case files in <TEST_CASE_DIR>."} ),
+  std::make_tuple( "--evaluate-baseline",      ArgParser::Argument{false ,    "",                      "",                         "\t\t\t\tEvaluate the baseline alongside the sanitizer. This option is applicable only when --evaluate is specified."} ),
+  std::make_tuple( "--generate",               ArgParser::Argument{false,     "",                      "",                         "\t\t\t\t\tRegenerate test cases. The generated files will be placed in <TEST_CASE_DIR>. If the directory is not empty and --clean-test-cases is not specified, the test case generation is aborted."} ),
+  std::make_tuple( "--test-case-dir",          ArgParser::Argument{true,      "<TEST_CASE_DIR>",       DEFAULT_GENERATED_DIR_NAME, "\t\tSpecify <TEST_CASE_DIR> as the location for the generated test case files. Default: \"../" + DEFAULT_GENERATED_DIR_NAME + "/\"."} ),
+  std::make_tuple( "--clean-test-cases",       ArgParser::Argument{false,     "",                      "",                         "\t\t\t\tRemove all contents from <TEST_CASE_DIR> before generating test cases. This option is applicable only when --generate is specified."} ),
+  std::make_tuple( "--verbose",                ArgParser::Argument{false ,    "",                      "",                         "\t\t\t\t\tPrint detailed evaluation results."} ),
+  std::make_tuple( "--run-all-variants",       ArgParser::Argument{false ,    "",                      "",                         "\t\t\t\tRun all variants of a test case, even if one has already been successful. This option is applicable only when --evaluate is specified."} ),
+  std::make_tuple( "--keep-binaries",          ArgParser::Argument{false ,    "",                      "",                         "\t\t\t\tKeep the test case binaries. This option is applicable only when --evaluate is specified."} ),
+  std::make_tuple( "--use-prebuilt-binaries",  ArgParser::Argument{false ,    "",                      "",                         "\t\t\t\tUse prebuilt binaries. This skips the compilation step."} ),
+  std::make_tuple( "--help",                   ArgParser::Argument{false,     "",                      "",                         "\t\t\t\t\tShow this help message and exit."} ),
   // hidden options:
   std::make_tuple( "--print-table-summary", ArgParser::Argument{false , "",                      "",                         "", true } )
 };
@@ -105,6 +107,7 @@ static bool parse_arguments(int argc, char **argv)
   print_table_summary = parser->check_and_consume("--print-table-summary");
   run_all_variants = parser->check_and_consume("--run-all-variants");
   keep_binaries = parser->check_and_consume("--keep-binaries");
+  use_prebuilt_binaries = parser->check_and_consume("--use-prebuilt-binaries");
   evaluate_baseline = parser->check_and_consume("--evaluate-baseline");
   verbose = parser->check_and_consume("--verbose");
   if ( do_evaluate )
@@ -131,6 +134,10 @@ static bool parse_arguments(int argc, char **argv)
     if (keep_binaries)
     {
       std::cerr << "WARNING: --keep-binaries used when not evaluating (--evaluate).\n";
+    }
+    if (use_prebuilt_binaries)
+    {
+      std::cerr << "WARNING: --use-prebuilt-binaries used when not evaluating (--evaluate).\n";
     }
     if (evaluate_baseline)
     {
@@ -210,7 +217,7 @@ int main(int argc, char **argv)
     }
 
     std::cout << "Using test cases from: '" << generated_path << "'" << std::endl;
-    evaluate(generated_path, sanitizer_config_path, print_table_summary, run_all_variants, verbose, evaluate_baseline, keep_binaries);
+    evaluate(generated_path, sanitizer_config_path, print_table_summary, run_all_variants, verbose, evaluate_baseline, keep_binaries, use_prebuilt_binaries);
   }
 
   return 0;

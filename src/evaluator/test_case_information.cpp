@@ -159,15 +159,24 @@ std::shared_ptr<TestCaseInformation> TestCaseInformation::construct_from_file_na
       exit(EXIT_FAILURE);
     }
     int variant_number = std::stoi(remaining_string, &index);
+
+    std::string file_name_without_suffix;
     remaining_string = remaining_string.substr(index);
-    if ( remaining_string != ".c" )
+    if ( remaining_string.size() )
     {
-      std::cerr << "Unsupported file name. Must end with \".c\". Got " << remaining_string << std::endl;
-      exit(EXIT_FAILURE);
+      if (remaining_string != ".c")
+      {
+        std::cerr << "Unsupported file name. Must end with \".c\". Got " << remaining_string << std::endl;
+        exit(EXIT_FAILURE);
+      }
+      assert(file_name.length() >= 2);
+      file_name_without_suffix = file_name.substr(0, file_name.length() - 2); // remove .c
+    }
+    else
+    {
+      file_name_without_suffix = file_name;
     }
 
-    assert(file_name.length() >= 2);
-    std::string file_name_without_suffix = file_name.substr(0, file_name.length() - 2); // remove .c
 
     return std::make_shared<TemporalTestCaseInformation>(
       region,
@@ -350,14 +359,26 @@ std::shared_ptr<TestCaseInformation> TestCaseInformation::construct_from_file_na
   int variant_number = std::stoi(remaining_string, &index);
 
   remaining_string = remaining_string.substr(index);
-  if ( remaining_string != ".c" )
+  std::string file_name_without_suffix;
+  if ( remaining_string.size() )
+  {
+    if (remaining_string != ".c")
+    {
+      std::cerr << "Unsupported file name. Must end with \".c\". Got " << remaining_string << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    assert(file_name.length() >= 2);
+    file_name_without_suffix = file_name.substr(0, file_name.length() - 2); // remove .c
+  }
+  else
+  {
+    file_name_without_suffix = file_name;
+  }
+  if ( remaining_string.size() && remaining_string != ".c" )
   {
     std::cerr << "Unsupported file name. Must end with \".c\". Got " << remaining_string << std::endl;
     exit(EXIT_FAILURE);
   }
-
-  assert(file_name.length() >= 2);
-  std::string file_name_without_suffix = file_name.substr(0, file_name.length() - 2); // remove .c
 
   return std::make_shared<SpatialTestCaseInformation>(
     origin,
