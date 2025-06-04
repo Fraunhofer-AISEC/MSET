@@ -40,7 +40,7 @@ const std::vector<std::tuple< std::string, ArgParser::Argument>> accepted_argume
   std::make_tuple( "--verbose",                ArgParser::Argument{false ,    "",                      "",                         "\t\t\t\t\tPrint detailed evaluation results."} ),
   std::make_tuple( "--run-all-variants",       ArgParser::Argument{false ,    "",                      "",                         "\t\t\t\tRun all variants of a test case, even if one has already been successful. This option is applicable only when --evaluate is specified."} ),
   std::make_tuple( "--keep-binaries",          ArgParser::Argument{false ,    "",                      "",                         "\t\t\t\tKeep the test case binaries. This option is applicable only when --evaluate is specified."} ),
-  std::make_tuple( "--use-prebuilt-binaries",  ArgParser::Argument{false ,    "",                      "",                         "\t\t\t\tUse prebuilt binaries. This skips the compilation step."} ),
+  std::make_tuple( "--use-prebuilt-binaries",  ArgParser::Argument{false ,    "",                      "",                         "\t\t\t\tUse prebuilt binaries. This skips the compilation step. This option is applicable only when --evaluate is specified."} ),
   std::make_tuple( "--help",                   ArgParser::Argument{false,     "",                      "",                         "\t\t\t\t\tShow this help message and exit."} ),
   // hidden options:
   std::make_tuple( "--print-table-summary", ArgParser::Argument{false , "",                      "",                         "", true } )

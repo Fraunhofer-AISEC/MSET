@@ -71,6 +71,11 @@ retain the binaries, use the `--keep-binaries` option. This will cause MSET to
 save each test case binary in a directory named `test_case_binaries`, located
 within the `test_cases` directory.
 
+To skip the compilation step when evaluating, use the `--use-prebuilt-binaries`
+option. This will cause MSET to look for binaries, instead of source files, and
+use them for the evaluation. This assumes that a previous evaluation was done
+using `--keep-binaries`.
+
 In addition to the standard usage of MSET, you can use the `--generate` option
 to (re)generate test cases. This can be useful for developing new test cases or
 modifying existing ones to test your sanitizer more specifically. By default,
