@@ -14,11 +14,13 @@
 #include <cstdio>    // remove
 #include <cstring>   // strerror
 #include <dirent.h>  // opendir, readdir, closedir
+#include <functional>
 #include <iomanip>
 #include <iostream>
 #include <map>
 #include <set>
 #include <sstream>
+#include <stddef.h>
 #include <sys/stat.h> // stat
 
 #include "config.h"
@@ -28,15 +30,35 @@
 
 log_level_t Logger::allowed_log_level = log_level_t::NORMAL;
 
+struct FileInfo
+{
+  std::string name;
+  std::string path;
+  bool operator<(const FileInfo& other) const
+  {
+    return name < other.name;
+  }
+};
+
 static bool ends_with(const std::string& str, const std::string& suffix)
 {
   if (str.size() < suffix.size()) return false;
   return str.substr(str.length() - suffix.length()) == suffix;
 }
 
-static std::set<std::string> parse_dir(const std::string& dir_path)
+static bool is_valid_source_file(struct stat file_stat, const std::string &file_name)
 {
-  std::set<std::string> file_names;
+  return S_ISREG(file_stat.st_mode) && ends_with(file_name, ".c");
+}
+
+static bool is_valid_binary_file(struct stat file_stat, const std::string &file_name)
+{
+  return S_ISREG(file_stat.st_mode) && access(file_name.c_str(), X_OK) == 0;
+}
+
+static std::set<FileInfo> parse_dir(const std::string& dir_path, std::function<bool(struct stat, const std::string&)> matcher)
+{
+  std::set<FileInfo> file_names;
   DIR* dir = opendir(dir_path.c_str());
   if (dir == nullptr)
   {
@@ -47,24 +69,50 @@ static std::set<std::string> parse_dir(const std::string& dir_path)
   struct dirent* entry;
   while ((entry = readdir(dir)) != nullptr)
   {
-    if (entry->d_name[0] == '.')
+    std::string full_path = dir_path + "/" + entry->d_name;
+    struct stat file_stat{};
+    stat(full_path.c_str(), &file_stat);
+
+    if ( S_ISDIR(file_stat.st_mode) )
     {
-      continue; // skip "." and ".."
+      if (entry->d_name[0] == '.')
+      {
+        continue; // skip "." and ".."
+      }
+      std::set<FileInfo> files_in_subdir = parse_dir(full_path, matcher);
+      for (auto it: files_in_subdir)
+      {
+        auto res = file_names.insert(it);
+        if (!res.second)
+        {
+          std::cerr << "WARNING: duplicated file in subdir " << full_path << ": " << it.name << '\n';
+        }
+      }
     }
 
-    std::string full_path = dir_path + "/" + entry->d_name;
-    struct stat path_stat{};
-    stat(full_path.c_str(), &path_stat);
-
-    if ( S_ISREG(path_stat.st_mode) && ends_with(full_path, ".c") )
+    if ( matcher(file_stat, full_path) )
     {
-      file_names.insert(entry->d_name);
+      auto res = file_names.insert({entry->d_name, full_path});
+      if (!res.second)
+      {
+        std::cerr << "WARNING: duplicated file: " << entry->d_name << '\n';
+      }
     }
   }
 
   closedir(dir);
 
   return file_names;
+}
+
+static std::set<FileInfo> get_sources_from_dir(const std::string& dir_path)
+{
+  return parse_dir(dir_path, is_valid_source_file);
+}
+
+static std::set<FileInfo> get_binaries_from_dir(const std::string& dir_path)
+{
+  return parse_dir(dir_path, is_valid_binary_file);
 }
 
 static std::vector<exec_result_t> raw_overall_results;
@@ -531,7 +579,15 @@ static void process_results(bool print_table_summary, bool with_baseline)
   }
 }
 
-extern void evaluate(const std::string &test_cases_dir_path, const std::string &sanitizer_config, bool print_table_summary, bool run_all_variants, bool verbose, bool compute_baseline, bool keep_binaries)
+extern void compile_and_evaluate(
+  const std::string &test_cases_dir_path,
+  const std::string &sanitizer_config,
+  bool print_table_summary,
+  bool run_all_variants,
+  bool verbose,
+  bool compute_baseline,
+  bool keep_binaries
+)
 {
   if (verbose)
   {
@@ -540,7 +596,7 @@ extern void evaluate(const std::string &test_cases_dir_path, const std::string &
   size_t variant_eval_counter = 0;
   Sanitizer sanitizer{sanitizer_config};
 
-  const std::set<std::string> generated_files = parse_dir(test_cases_dir_path);
+  const std::set<FileInfo> generated_files = get_sources_from_dir(test_cases_dir_path);
 
   if (generated_files.empty())
   {
@@ -549,9 +605,9 @@ extern void evaluate(const std::string &test_cases_dir_path, const std::string &
   }
 
   std::map< std::string, std::vector<std::shared_ptr<TestCaseInformation>> > grouped_test_cases;
-  for (const auto& file_name : generated_files)
+  for (const auto& file_path : generated_files)
   {
-    std::shared_ptr<TestCaseInformation> test_case_information = TestCaseInformation::construct_from_file_name(file_name);
+    std::shared_ptr<TestCaseInformation> test_case_information = TestCaseInformation::construct_from_file_name(file_path.name, file_path.path, /*is_binary=*/false);
     grouped_test_cases[test_case_information->get_test_case_key()].push_back(test_case_information);
   }
   for (auto& grouped_test_case : grouped_test_cases)
@@ -571,12 +627,11 @@ extern void evaluate(const std::string &test_cases_dir_path, const std::string &
         {
           dir_path += "/";
         }
-        std::string file_path = dir_path + test_case_info->get_file_name();
         std::string binary_path = dir_path + "/" + TEST_CASE_BINARIES_DIR_NAME + "/" + test_case_info->get_file_name_without_suffix() + "_baseline";
 
-        if ( !sanitizer.compile_baseline(file_path, binary_path) )
+        if ( !sanitizer.compile_baseline(test_case_info->get_file_path(), binary_path) )
         {
-          std::cerr << "Failed to compile baseline " << file_path << '\n';
+          std::cerr << "Failed to compile baseline " << test_case_info->get_file_path() << '\n';
           std::cerr << "Aborting.\n";
           exit(EXIT_FAILURE);
         }
@@ -603,12 +658,11 @@ extern void evaluate(const std::string &test_cases_dir_path, const std::string &
       {
         dir_path += "/";
       }
-      std::string file_path = dir_path + test_case_info->get_file_name();
       std::string binary_path = dir_path + "/" + TEST_CASE_BINARIES_DIR_NAME + "/" + test_case_info->get_file_name_without_suffix();
 
-      if ( !sanitizer.compile(file_path, binary_path) )
+      if ( !sanitizer.compile(test_case_info->get_file_path(), binary_path) )
       {
-        std::cerr << "Failed to compile " << file_path << '\n';
+        std::cerr << "Failed to compile " << test_case_info->get_file_path() << '\n';
         std::cerr << "Aborting.\n";
         exit(EXIT_FAILURE);
       }
@@ -641,4 +695,160 @@ extern void evaluate(const std::string &test_cases_dir_path, const std::string &
   Logger(log_level_t::NORMAL) << "Evaluated " << grouped_test_cases.size() << " test cases, " << variant_eval_counter << " variants.\n";
   collapse_results(compute_baseline);
   process_results(print_table_summary, compute_baseline);
+}
+
+extern void evaluate_prebuilt_binaries(
+  const std::string &test_cases_dir_path,
+  const std::string &sanitizer_config,
+  bool print_table_summary,
+  bool run_all_variants,
+  bool verbose,
+  bool compute_baseline
+)
+{
+  if (verbose)
+  {
+    Logger::allowed_log_level = log_level_t::VERBOSE;
+  }
+  size_t variant_eval_counter = 0;
+  Sanitizer sanitizer{sanitizer_config};
+
+  const std::set<FileInfo> binary_files = get_binaries_from_dir(test_cases_dir_path);
+
+  if (binary_files.empty())
+  {
+    std::cerr << "ERROR: No test files found. Aborting.\n";
+    exit(EXIT_FAILURE);
+  }
+
+  std::map< std::string, std::vector<std::shared_ptr<TestCaseInformation>> > grouped_test_cases;
+  for (const auto& binary_path : binary_files)
+  {
+    std::shared_ptr<TestCaseInformation> test_case_information = TestCaseInformation::construct_from_file_name(binary_path.name, binary_path.path, /*is_binary=*/true);
+    grouped_test_cases[test_case_information->get_test_case_key()].push_back(test_case_information);
+  }
+  for (auto& grouped_test_case : grouped_test_cases)
+  {
+    std::vector<std::shared_ptr<TestCaseInformation>> &test_case_infos = grouped_test_case.second;
+    std::sort(test_case_infos.begin(), test_case_infos.end(), compare_test_case_variants);
+
+    if (compute_baseline)
+    {
+      Logger(log_level_t::VERBOSE) << "Evaluating baseline: " << grouped_test_case.first << "\n";
+      for (const auto& test_case_info : test_case_infos)
+      {
+        if ( test_case_info->get_is_validation() // only normal phase for the baseline
+          || !ends_with(test_case_info->get_file_name(), "_baseline")  // binary name must end with _baseline
+          )
+        {
+          continue;
+        }
+
+        std::string binary_path = test_case_info->get_file_path();
+
+        exec_result_t result = sanitizer.execute_baseline(binary_path);
+
+        bool can_stop = collect_result(test_case_info, result, test_case_info->get_file_name(), /*is_baseline=*/true);
+        if (can_stop && !run_all_variants)
+        {
+          break;
+        }
+      }
+    }
+
+    Logger(log_level_t::NORMAL) << "Evaluating: " << grouped_test_case.first << "\n";
+    for (const auto& test_case_info : test_case_infos)
+    {
+      std::string binary_path = test_case_info->get_file_path();
+      exec_result_t result = sanitizer.execute(binary_path);
+
+      bool can_stop;
+      if ( test_case_info->get_is_validation() )
+      {
+        // validation phase
+        can_stop = collect_validation_result(test_case_info, result, test_case_info->get_file_name());
+      }
+      else
+      {
+        // normal phase
+        can_stop = collect_result(test_case_info, result, test_case_info->get_file_name(), /*is_baseline=*/false);
+        variant_eval_counter++;
+      }
+      if (can_stop && !run_all_variants)
+      {
+        break;
+      }
+    }
+  }
+
+  Logger(log_level_t::NORMAL) << "Evaluated " << grouped_test_cases.size() << " test cases, " << variant_eval_counter << " variants.\n";
+  collapse_results(compute_baseline);
+  process_results(print_table_summary, compute_baseline);
+}
+
+extern void compile_all(
+  const std::string &generated_path,
+  const std::string &sanitizer_config,
+  bool verbose
+)
+{
+  if ( verbose )
+  {
+    Logger::allowed_log_level = log_level_t::VERBOSE;
+  }
+
+  size_t total_counter = 0;
+  size_t validation_counter = 0;
+  size_t normal_counter = 0;
+  Sanitizer sanitizer{sanitizer_config};
+
+  const std::set<FileInfo> generated_files = get_sources_from_dir(generated_path);
+
+  if ( generated_files.empty() )
+  {
+    std::cerr << "ERROR: No test files found. Aborting.\n";
+    exit(EXIT_FAILURE);
+  }
+
+  std::string dir_path = generated_path + "/" + TEST_CASE_BINARIES_DIR_NAME;
+
+  for ( auto &generated_file : generated_files )
+  {
+    std::shared_ptr<TestCaseInformation> test_case_information = TestCaseInformation::construct_from_file_name(
+      generated_file.name, generated_file.path, /*is_binary=*/false);
+
+    std::string binary_path = dir_path + "/" + test_case_information->get_file_name_without_suffix();
+
+    Logger(log_level_t::VERBOSE) << "Compiling: " << generated_file.name << " -> " << binary_path << "\n";
+    if ( !sanitizer.compile( test_case_information->get_file_path(), binary_path ) )
+    {
+      std::cerr << "Failed to compile baseline " << test_case_information->get_file_path() << '\n';
+      std::cerr << "Aborting.\n";
+      exit(EXIT_FAILURE);
+    }
+    total_counter++;
+
+    if ( !test_case_information->get_is_validation() )  // don't validate baselines
+    {
+      total_counter++;
+      normal_counter++;
+      Logger(log_level_t::VERBOSE) << "Compiling baseline for: " << generated_file.name << "\n";
+
+      binary_path += "_baseline";
+
+      if ( !sanitizer.compile_baseline( test_case_information->get_file_path(), binary_path ) )
+      {
+        std::cerr << "Failed to compile baseline " << test_case_information->get_file_path() << '\n';
+        std::cerr << "Aborting.\n";
+        exit(EXIT_FAILURE);
+      }
+    }
+    else
+    {
+      validation_counter++;
+    }
+  }
+
+  Logger(log_level_t::NORMAL) << "Compiled " << total_counter << " files: " << normal_counter << " normal test cases, "
+    << normal_counter << " baselines test cases and " << validation_counter << " validation test cases.\n";
 }

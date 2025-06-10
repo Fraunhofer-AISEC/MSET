@@ -105,16 +105,21 @@ public:
   std::string get_test_case_key() const { return key; }
   std::string get_file_name() const { return file_name; }
   std::string get_file_name_without_suffix() const { return file_name_without_suffix; }
+  std::string get_file_path() const { return file_path; }
   bool get_is_validation() const { return is_validation; }
   int get_variant_number() const { return variant_number; }
 
-  static std::shared_ptr<TestCaseInformation> construct_from_file_name(const std::string &file_name);
+  static std::shared_ptr<TestCaseInformation> construct_from_file_name(const std::string &file_name, const std::string &file_path, bool is_binary);
 
 protected:
-  TestCaseInformation(bool is_validation, int variant_number, const std::string &file_name, const std::string &file_name_without_suffix);
+  TestCaseInformation(bool is_validation, int variant_number, const std::string &file_name, const std::string &file_name_without_suffix, const std::string &file_path);
 
   std::string file_name;
   std::string file_name_without_suffix;
+  std::string file_path;
+
+
+protected:
   bool is_validation;
   int variant_number;
   std::string as_string;
@@ -143,6 +148,7 @@ public:
     const std::string& access_action_name,
     const std::string& file_name,
     const std::string& file_name_without_suffix,
+    const std::string& file_path,
     bool is_validation,
     int variant_number
   );
@@ -167,6 +173,7 @@ public:
     const std::string& access_action_name,
     const std::string& file_name,
     const std::string& file_name_without_suffix,
+    const std::string& file_path,
     bool is_validation,
     int variant_number
   );

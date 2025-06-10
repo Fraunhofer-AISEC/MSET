@@ -64,6 +64,7 @@ void remove_all_files_from_directory(const std::string& dir_path)
 {
   if ( nftw(dir_path.c_str(), unlink_content_cb, 64, FTW_DEPTH) != 0 )
   {
+    std::perror(("Error removing directory: " + dir_path).c_str());
     exit(EXIT_FAILURE);
   }
 }

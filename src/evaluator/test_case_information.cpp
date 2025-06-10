@@ -13,6 +13,11 @@
 #include <ostream>
 #include <utility>
 
+static void unsupported_file_name( const std::string &file_name, const std::string &reason )
+{
+  std::cerr << "Unsupported file name \'" << file_name << "\'. " << reason << std::endl;
+}
+
 static ssize_t find_prefix( std::string &in, const std::vector<std::string> &prefixes )
 {
   size_t i = 0;
@@ -28,7 +33,7 @@ static ssize_t find_prefix( std::string &in, const std::vector<std::string> &pre
   return -1;
 }
 
-std::shared_ptr<TestCaseInformation> TestCaseInformation::construct_from_file_name(const std::string &file_name)
+std::shared_ptr<TestCaseInformation> TestCaseInformation::construct_from_file_name(const std::string &file_name, const std::string &file_path, bool is_binary)
 {
   std::string remaining_string = file_name;
   bool is_validation = false;
@@ -42,88 +47,88 @@ std::shared_ptr<TestCaseInformation> TestCaseInformation::construct_from_file_na
 
     if ( remaining_string.empty() )
     {
-      std::cerr << "Unsupported file name. Expected temporal memory state." << std::endl;
+      unsupported_file_name( file_name, "Expected temporal memory state.");
       exit(EXIT_FAILURE);
     }
     if ( remaining_string[0] != '_' )
     {
-      std::cerr << "Unsupported file name. Expected '_' before " << remaining_string << std::endl;
+      unsupported_file_name( file_name, "Expected '_' before " + remaining_string);
       exit(EXIT_FAILURE);
     }
     remaining_string = remaining_string.substr(1); // consume the _
     found_at = find_prefix(remaining_string, temporal_memory_states);
     if (found_at == -1)
     {
-      std::cerr << "Unsupported file name. Expected temporal memory state before " << remaining_string << std::endl;
+      unsupported_file_name( file_name, "Expected temporal memory state before " + remaining_string);
       exit(EXIT_FAILURE);
     }
     std::string temporal_memory_state = temporal_memory_states_info[found_at];
 
     if ( remaining_string.empty() )
     {
-      std::cerr << "Unsupported file name. Expected region." << std::endl;
+      unsupported_file_name( file_name, "Expected region.");
       exit(EXIT_FAILURE);
     }
     if ( remaining_string[0] != '_' )
     {
-      std::cerr << "Unsupported file name. Expected '_' before " << remaining_string << std::endl;
+      unsupported_file_name( file_name, "Expected '_' before " + remaining_string);
       exit(EXIT_FAILURE);
     }
     remaining_string = remaining_string.substr(1); // consume the _
     found_at = find_prefix(remaining_string, regions);
     if (found_at == -1)
     {
-      std::cerr << "Unsupported file name. Expected region before " << remaining_string << std::endl;
+      unsupported_file_name( file_name, "Expected region before " + remaining_string );
       exit(EXIT_FAILURE);
     }
     std::string region = regions_info[found_at];
 
     if ( remaining_string.empty() )
     {
-      std::cerr << "Unsupported file name. Expected access location." << std::endl;
+      unsupported_file_name( file_name, "Expected access location." );
       exit(EXIT_FAILURE);
     }
     if ( remaining_string[0] != '_' )
     {
-      std::cerr << "Unsupported file name. Expected '_' before " << remaining_string << std::endl;
+      unsupported_file_name( file_name, "Expected '_' before " + remaining_string );
       exit(EXIT_FAILURE);
     }
     remaining_string = remaining_string.substr(1); // consume the _
     found_at = find_prefix(remaining_string, access_locations);
     if (found_at == -1)
     {
-      std::cerr << "Unsupported file name. Expected access location before " << remaining_string << std::endl;
+      unsupported_file_name( file_name, "Expected access location before " + remaining_string );
       exit(EXIT_FAILURE);
     }
     std::string access_location = access_locations_info[found_at];
 
     if ( remaining_string.empty() )
     {
-      std::cerr << "Unsupported file name. Expected access action." << std::endl;
+      unsupported_file_name( file_name, "Expected access action." );
       exit(EXIT_FAILURE);
     }
     if ( remaining_string[0] != '_' )
     {
-      std::cerr << "Unsupported file name. Expected '_' before " << remaining_string << std::endl;
+      unsupported_file_name( file_name, "Expected '_' before " + remaining_string );
       exit(EXIT_FAILURE);
     }
     remaining_string = remaining_string.substr(1); // consume the _
     found_at = find_prefix(remaining_string, access_actions);
     if (found_at == -1)
     {
-      std::cerr << "Unsupported file name. Expected an access action before " << remaining_string << std::endl;
+      unsupported_file_name( file_name, "Expected an access action before " + remaining_string );
       exit(EXIT_FAILURE);
     }
     std::string access_action = access_actions_info[found_at];
 
     if ( remaining_string.empty() )
     {
-      std::cerr << "Unsupported file name. Expected the variant number." << std::endl;
+      unsupported_file_name( file_name, "Expected the variant number." );
       exit(EXIT_FAILURE);
     }
     if ( remaining_string[0] != '_' )
     {
-      std::cerr << "Unsupported file name. Expected '_' before " << remaining_string << std::endl;
+      unsupported_file_name( file_name, "Expected '_' before " + remaining_string );
       exit(EXIT_FAILURE);
     }
     remaining_string = remaining_string.substr(1); // consume the _
@@ -135,19 +140,19 @@ std::shared_ptr<TestCaseInformation> TestCaseInformation::construct_from_file_na
         remaining_string = remaining_string.substr(strlen("validation"));
         if ( remaining_string.empty() )
         {
-          std::cerr << "Unsupported file name. Expected the variant number." << std::endl;
+          unsupported_file_name( file_name, "Expected the variant number." );
           exit(EXIT_FAILURE);
         }
         if ( remaining_string[0] != '_' )
         {
-          std::cerr << "Unsupported file name. Expected '_' before " << remaining_string << std::endl;
+          unsupported_file_name( file_name, "Expected '_' before " + remaining_string );
           exit(EXIT_FAILURE);
         }
         remaining_string = remaining_string.substr(1); // consume the _
       }
       else
       {
-        std::cerr << "Unsupported file name. Expected a variant number or \"validation\" before " << remaining_string << std::endl;
+        unsupported_file_name( file_name, "Expected a variant number or \"validation\" before " + remaining_string );
         exit(EXIT_FAILURE);
       }
     }
@@ -155,19 +160,33 @@ std::shared_ptr<TestCaseInformation> TestCaseInformation::construct_from_file_na
     size_t index;
     if ( !std::isdigit(remaining_string[0]) )
     {
-      std::cerr << "Unsupported file name. Expected a variant number before " << remaining_string << std::endl;
+      unsupported_file_name( file_name, "Expected a variant number before " + remaining_string );
       exit(EXIT_FAILURE);
     }
     int variant_number = std::stoi(remaining_string, &index);
+
+    std::string file_name_without_suffix;
     remaining_string = remaining_string.substr(index);
-    if ( remaining_string != ".c" )
+    if ( !is_binary && !remaining_string.empty() )
     {
-      std::cerr << "Unsupported file name. Must end with \".c\". Got " << remaining_string << std::endl;
-      exit(EXIT_FAILURE);
+      if (remaining_string != ".c")
+      {
+        unsupported_file_name( file_name, "Must end with \".c\". Got " + remaining_string );
+        exit(EXIT_FAILURE);
+      }
+      assert(file_name.length() >= 2);
+      file_name_without_suffix = file_name.substr(0, file_name.length() - 2); // remove .c
+    }
+    else
+    {
+      if ( !remaining_string.empty() && remaining_string != "_baseline" )
+      {
+        unsupported_file_name( file_name, "\"" + remaining_string + "\" not expected." );
+        exit(EXIT_FAILURE);
+      }
+      file_name_without_suffix = file_name;
     }
 
-    assert(file_name.length() >= 2);
-    std::string file_name_without_suffix = file_name.substr(0, file_name.length() - 2); // remove .c
 
     return std::make_shared<TemporalTestCaseInformation>(
       region,
@@ -177,6 +196,7 @@ std::shared_ptr<TestCaseInformation> TestCaseInformation::construct_from_file_na
       access_action,
       file_name,
       file_name_without_suffix,
+      file_path,
       is_validation,
       variant_number
     );
@@ -190,19 +210,19 @@ std::shared_ptr<TestCaseInformation> TestCaseInformation::construct_from_file_na
 
   if ( remaining_string.empty() )
   {
-    std::cerr << "Unsupported file name. Expected spatial origin." << std::endl;
+    unsupported_file_name( file_name, "Expected spatial origin." );
     exit(EXIT_FAILURE);
   }
   if ( remaining_string[0] != '_' )
   {
-    std::cerr << "Unsupported file name. Expected '_' before " << remaining_string << std::endl;
+    unsupported_file_name( file_name, "Expected '_' before " + remaining_string );
     exit(EXIT_FAILURE);
   }
   remaining_string = remaining_string.substr(1); // consume the _
   found_at = find_prefix(remaining_string, regions);
   if (found_at == -1)
   {
-    std::cerr << "Unsupported file name. Expected spatial origin memory state before " << remaining_string << std::endl;
+    unsupported_file_name( file_name, "Expected spatial origin memory state before " + remaining_string );
     exit(EXIT_FAILURE);
   }
   std::string origin = regions_info[found_at];
@@ -210,19 +230,19 @@ std::shared_ptr<TestCaseInformation> TestCaseInformation::construct_from_file_na
 
   if ( remaining_string.empty() )
   {
-    std::cerr << "Unsupported file name. Expected spatial target." << std::endl;
+    unsupported_file_name( file_name, "Expected spatial target." );
     exit(EXIT_FAILURE);
   }
   if ( remaining_string[0] != '_' )
   {
-    std::cerr << "Unsupported file name. Expected '_' before " << remaining_string << std::endl;
+    unsupported_file_name( file_name, "Expected '_' before " + remaining_string );
     exit(EXIT_FAILURE);
   }
   remaining_string = remaining_string.substr(1); // consume the _
   found_at = find_prefix(remaining_string, regions);
   if (found_at == -1)
   {
-    std::cerr << "Unsupported file name. Expected spatial target memory " << remaining_string << std::endl;
+    unsupported_file_name( file_name, "Expected spatial target memory " + remaining_string );
     exit(EXIT_FAILURE);
   }
   std::string target = regions_info[found_at];
@@ -230,19 +250,19 @@ std::shared_ptr<TestCaseInformation> TestCaseInformation::construct_from_file_na
 
   if ( remaining_string.empty() )
   {
-    std::cerr << "Unsupported file name. Expected origin-target relation." << std::endl;
+    unsupported_file_name( file_name, "Expected origin-target relation." );
     exit(EXIT_FAILURE);
   }
   if ( remaining_string[0] != '_' )
   {
-    std::cerr << "Unsupported file name. Expected '_' before " << remaining_string << std::endl;
+    unsupported_file_name( file_name, "Expected '_' before " + remaining_string );
     exit(EXIT_FAILURE);
   }
   remaining_string = remaining_string.substr(1); // consume the _
   found_at = find_prefix(remaining_string, origin_target_relations);
   if (found_at == -1)
   {
-    std::cerr << "Unsupported file name. Expected origin-target relation before " << remaining_string << std::endl;
+    unsupported_file_name( file_name, "Expected origin-target relation before " + remaining_string );
     exit(EXIT_FAILURE);
   }
   std::string origin_target_relation = origin_target_relations_info[found_at];
@@ -250,69 +270,69 @@ std::shared_ptr<TestCaseInformation> TestCaseInformation::construct_from_file_na
 
   if ( remaining_string.empty() )
   {
-    std::cerr << "Unsupported file name. Expected flow name." << std::endl;
+    unsupported_file_name( file_name, "Expected flow name." );
     exit(EXIT_FAILURE);
   }
   if ( remaining_string[0] != '_' )
   {
-    std::cerr << "Unsupported file name. Expected '_' before " << remaining_string << std::endl;
+    unsupported_file_name( file_name, "Expected '_' before " + remaining_string );
     exit(EXIT_FAILURE);
   }
   remaining_string = remaining_string.substr(1); // consume the _
   found_at = find_prefix(remaining_string, flows);
   if (found_at == -1)
   {
-    std::cerr << "Unsupported file name. Expected flow name before " << remaining_string << std::endl;
+    unsupported_file_name( file_name, "Expected flow name before " + remaining_string );
     exit(EXIT_FAILURE);
   }
   std::string flow = flows_info[found_at];
 
   if ( remaining_string.empty() )
   {
-    std::cerr << "Unsupported file name. Expected access location." << std::endl;
+    unsupported_file_name( file_name, "Expected access location." );
     exit(EXIT_FAILURE);
   }
   if ( remaining_string[0] != '_' )
   {
-    std::cerr << "Unsupported file name. Expected '_' before " << remaining_string << std::endl;
+    unsupported_file_name( file_name, "Expected '_' before " + remaining_string );
     exit(EXIT_FAILURE);
   }
   remaining_string = remaining_string.substr(1); // consume the _
   found_at = find_prefix(remaining_string, access_locations);
   if (found_at == -1)
   {
-    std::cerr << "Unsupported file name. Expected access location before " << remaining_string << std::endl;
+    unsupported_file_name( file_name, "Expected access location before " + remaining_string );
     exit(EXIT_FAILURE);
   }
   std::string access_location = access_locations_info[found_at];
 
   if ( remaining_string.empty() )
   {
-    std::cerr << "Unsupported file name. Expected access action." << std::endl;
+    unsupported_file_name( file_name, "Expected access action." );
     exit(EXIT_FAILURE);
   }
   if ( remaining_string[0] != '_' )
   {
-    std::cerr << "Unsupported file name. Expected '_' before " << remaining_string << std::endl;
+    unsupported_file_name( file_name, "Expected '_' before " + remaining_string );
     exit(EXIT_FAILURE);
   }
   remaining_string = remaining_string.substr(1); // consume the _
   found_at = find_prefix(remaining_string, access_actions);
   if (found_at == -1)
   {
-    std::cerr << "Unsupported file name. Expected an access action before " << remaining_string << std::endl;
+    unsupported_file_name( file_name, "Expected an access action before " + remaining_string );
     exit(EXIT_FAILURE);
   }
   std::string access_action = access_actions_info[found_at];
 
   if ( remaining_string.empty() )
   {
-    std::cerr << "Unsupported file name. Expected the variant number." << std::endl;
+    unsupported_file_name( file_name, "Expected the variant number." );
     exit(EXIT_FAILURE);
   }
   if ( remaining_string[0] != '_' )
   {
-    std::cerr << "Unsupported file name. Expected '_' before " << remaining_string << std::endl;
+    unsupported_file_name( file_name, "Expected '_' before " + remaining_string );
     exit(EXIT_FAILURE);
   }
   remaining_string = remaining_string.substr(1); // consume the _
@@ -324,40 +344,52 @@ std::shared_ptr<TestCaseInformation> TestCaseInformation::construct_from_file_na
       remaining_string = remaining_string.substr(strlen("validation"));
       if ( remaining_string.empty() )
       {
-        std::cerr << "Unsupported file name. Expected the variant number." << std::endl;
+        unsupported_file_name( file_name, "Expected the variant number." );
         exit(EXIT_FAILURE);
       }
       if ( remaining_string[0] != '_' )
       {
-        std::cerr << "Unsupported file name. Expected '_' before " << remaining_string << std::endl;
+        unsupported_file_name( file_name, "Expected '_' before " + remaining_string );
         exit(EXIT_FAILURE);
       }
       remaining_string = remaining_string.substr(1); // consume the _
     }
     else
     {
-      std::cerr << "Unsupported file name. Expected a variant number or \"validation\" before " << remaining_string << std::endl;
+      unsupported_file_name( file_name, "Expected a variant number or \"validation\" before " + remaining_string );
       exit(EXIT_FAILURE);
     }
   }
 
   if ( !std::isdigit(remaining_string[0]) )
   {
-    std::cerr << "Unsupported file name. Expected a variant number before " << remaining_string << std::endl;
+    unsupported_file_name( file_name, "Expected a variant number before " + remaining_string );
     exit(EXIT_FAILURE);
   }
   size_t index;
   int variant_number = std::stoi(remaining_string, &index);
 
   remaining_string = remaining_string.substr(index);
-  if ( remaining_string != ".c" )
+  std::string file_name_without_suffix;
+  if ( !is_binary && !remaining_string.empty() )
   {
-    std::cerr << "Unsupported file name. Must end with \".c\". Got " << remaining_string << std::endl;
-    exit(EXIT_FAILURE);
+    if (remaining_string != ".c")
+    {
+      unsupported_file_name( file_name, "Must end with \".c\". Got " + remaining_string );
+      exit(EXIT_FAILURE);
+    }
+    assert(file_name.length() >= 2);
+    file_name_without_suffix = file_name.substr(0, file_name.length() - 2); // remove .c
   }
-
-  assert(file_name.length() >= 2);
-  std::string file_name_without_suffix = file_name.substr(0, file_name.length() - 2); // remove .c
+  else
+  {
+    if ( !remaining_string.empty() && remaining_string != "_baseline" )
+    {
+      unsupported_file_name( file_name, "\"" + remaining_string + "\" not expected." );
+      exit(EXIT_FAILURE);
+    }
+    file_name_without_suffix = file_name;
+  }
 
   return std::make_shared<SpatialTestCaseInformation>(
     origin,
@@ -369,15 +401,18 @@ std::shared_ptr<TestCaseInformation> TestCaseInformation::construct_from_file_na
     access_action,
     file_name,
     file_name_without_suffix,
+    file_path,
     is_validation,
     variant_number
   );
 }
 
 
-TestCaseInformation::TestCaseInformation(bool is_validation, int variant_number, const std::string &file_name, const std::string &file_name_without_suffix):
+TestCaseInformation::TestCaseInformation(bool is_validation, int variant_number, const std::string &file_name,
+    const std::string &file_name_without_suffix, const std::string &file_path):
   file_name(file_name),
   file_name_without_suffix(file_name_without_suffix),
+  file_path(file_path),
   is_validation(is_validation),
   variant_number(variant_number)
 {
@@ -393,10 +428,11 @@ TemporalTestCaseInformation::TemporalTestCaseInformation(
   const std::string& access_action_name,
   const std::string& file_name,
   const std::string& file_name_without_suffix,
+  const std::string& file_path,
   const bool is_validation,
   const int variant_number
 ):
-  TestCaseInformation(is_validation, variant_number, file_name, file_name_without_suffix),
+  TestCaseInformation(is_validation, variant_number, file_name, file_name_without_suffix, file_path),
   region_name(region_name),
   temporal_bug_name(temporal_bug_name),
   temporal_memory_state_name(temporal_memory_state_name),
@@ -420,10 +456,11 @@ SpatialTestCaseInformation::SpatialTestCaseInformation(
   const std::string& access_action_name,
   const std::string &file_name,
   const std::string &file_name_without_suffix,
+  const std::string& file_path,
   const bool is_validation,
   const int variant_number
   ):
-  TestCaseInformation(is_validation, variant_number, file_name, file_name_without_suffix),
+  TestCaseInformation(is_validation, variant_number, file_name, file_name_without_suffix, file_path),
   origin_name(origin_name),
   target_name(target_name),
   origin_target_relation_name(origin_target_relation_name),
