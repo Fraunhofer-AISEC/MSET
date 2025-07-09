@@ -15,7 +15,7 @@ Each memory bug occurs in a memory region (stack, heap, or global memory) or
 between two regions. The memory bugs attempt to read or write memory, either
 directly in the code or by using a `stdlib` function.
 
-For more information, please refer to the SP '25 conference paper:
+For more information, please refer to the SP '25 conference paper (author's version [PDF](https://publica-rest.fraunhofer.de/server/api/core/bitstreams/2db39f21-69f6-45c1-b117-0aa5cb096eac/content)):
 
 > E. Vintila, P. Zieris and J. Horsch, "Evaluating the Effectiveness of Memory
 > Safety Sanitizers," in 2025 IEEE Symposium on Security and Privacy (SP), San
