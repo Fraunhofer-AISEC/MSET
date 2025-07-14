@@ -15,7 +15,7 @@ Each memory bug occurs in a memory region (stack, heap, or global memory) or
 between two regions. The memory bugs attempt to read or write memory, either
 directly in the code or by using a `stdlib` function.
 
-For more information, please refer to the SP '25 conference paper:
+For more information, please refer to the SP '25 conference paper (author's version [PDF](https://publica-rest.fraunhofer.de/server/api/core/bitstreams/2db39f21-69f6-45c1-b117-0aa5cb096eac/content)):
 
 > E. Vintila, P. Zieris and J. Horsch, "Evaluating the Effectiveness of Memory
 > Safety Sanitizers," in 2025 IEEE Symposium on Security and Privacy (SP), San
@@ -219,6 +219,22 @@ Please note that MSET has the following implementation-specific limitations:
 
 For more details and additional limitations that are not
 implementation-specific, please refer to the paper.
+
+## Version 1.1 (Under Development)
+
+v1.1 introduces several improvements and new features:
+
+- Added an option to compile without evaluating or generating.
+
+- Added an option to evaluate using prebuilt binaries.
+
+- Fixed issues related to the inconsistent usage of `memcpy`/`memset`.
+
+- Introduced additional test case variants.
+
+- General code improvements and refactoring.
+
+To reproduce the results from the paper, please use version [v1.0](https://github.com/Fraunhofer-AISEC/MSET/releases/tag/v1.0).
 
 ## License
 
