@@ -57,7 +57,7 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> TypeConfusion::generate(
 
     // simple variant with BigType
     std::shared_ptr<OriginTargetCodeCanvas> variant_with_big_type = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas);
-    std::vector<std::string> reach_target_code = access_location->generate_with_runtime_index(
+    std::vector<std::string> reach_target_code = access_location->generate_using_runtime_index(
       access_action,
       "((struct BigType *)" + variant_with_big_type->get_origin_name() + ")->buffer",
       "i",

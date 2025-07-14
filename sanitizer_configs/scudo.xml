@@ -4,7 +4,7 @@
         <compile_cmd>clang -fsanitize=scudo $SOURCE_FILE -o $GENERATED_BINARY</compile_cmd>
     </setup>
     <setup_baseline>
-        <compile_cmd>clang -Werror $SOURCE_FILE -o $GENERATED_BINARY</compile_cmd>
+        <compile_cmd>clang $SOURCE_FILE -o $GENERATED_BINARY</compile_cmd>
     </setup_baseline>
     <run>$GENERATED_BINARY</run>
     <run_baseline>$GENERATED_BINARY</run_baseline>

@@ -10,9 +10,7 @@
 #include <cassert>
 
 #include "misc.h"
-#include "generator/primitives/access_types/direct_location.h"
 #include "generator/primitives/access_types/read_action.h"
-#include "generator/primitives/bug_types/spatial/flow/overflow.h"
 #include "generator/primitives/bug_types/spatial/flow/underflow.h"
 #include "generator/primitives/bug_types/spatial/origin_target_relation/intra_object.h"
 
@@ -74,29 +72,13 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> LinearOOBA::generate(
         if ( !flow->accepts_static_distance(distance_as_static_number) ) continue;
       }
       auto origin_target_canvas_copy = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas);
-      AccessLocation::SplitAccessLines reach_target_code;
+      AccessLocation::SplitAccess reach_target_code;
       if (!distance_statically_known)
       {
-        if (is_a<IntraObject>(origin_target_relation)
-            && is_a<Overflow>(flow)
-            && is_a<ReadAction>(access_action)
-            && is_a<DirectLocation>(access_location) )
-        {
-          std::vector<std::string> lines = access_location->generate_with_runtime_index(
-            access_action, origin_target_canvas_copy->get_origin_name(), "index", distance_variant,
-            generate_preconditions_check_distance, generate_preconditions_check_in_range
-          );
-          reach_target_code.result = "(" + origin_target_canvas_copy->get_origin_name() + " + index)";
-          reach_target_code.access_lines = {"size_t index = 0;"};
-          reach_target_code.access_lines.insert( reach_target_code.access_lines.end(), lines.begin(), lines.end() );
-        }
-        else
-        {
-          reach_target_code = access_location->generate_bulk_split(
+        reach_target_code = access_location->generate_bulk_split(
             access_action, origin_target_canvas_copy->get_origin_name(), origin_target_canvas_copy->get_target_name(), distance_variant,
             generate_preconditions_check_distance, generate_preconditions_check_in_range, generate_counter_update
           );
-        }
       }
       else
       {
@@ -104,80 +86,108 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> LinearOOBA::generate(
         if ( distance_as_static_number == static_cast<ssize_t>(origin_target_canvas_copy->get_origin_size()) )
         {
           // special case for when there is no space in between the origin and the target
-          std::vector<std::string> access_target_code = access_location->generate(
+          std::vector<AccessLocation::SplitAccess> access_target_codes = access_location->generate_split(
             access_action,
             "(" + origin_target_canvas_copy->get_origin_name() + " + " + std::to_string(origin_target_canvas_copy->get_target_size()) + ")",
             distance_as_static_number);
-          origin_target_canvas_copy->add_during_lifetime(access_target_code);
-          origin_target_canvas_copy->add_during_lifetime("_use(" + origin_target_canvas_copy->get_origin_name() + ");");
-          origin_target_canvas_copy->add_during_lifetime("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
-          full_variants.push_back(origin_target_canvas_copy);
+          for ( auto &access_target_code : access_target_codes )
+          {
+            auto origin_target_canvas_with_access = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas_copy);
+            origin_target_canvas_with_access->add_during_lifetime(access_target_code.to_lines());
+            origin_target_canvas_with_access->add_during_lifetime("_use(" + origin_target_canvas_copy->get_origin_name() + ");");
+            origin_target_canvas_with_access->add_during_lifetime("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
+            full_variants.push_back(origin_target_canvas_with_access);
+          }
           continue;
         }
         reach_target_code = access_location->generate_bulk_split(
-          access_action,origin_target_canvas_copy->get_origin_name(), origin_target_canvas_copy->get_target_name(), distance_as_static_number,
-          generate_preconditions_check_in_range, generate_counter_update
+          access_action,origin_target_canvas_copy->get_origin_name(), origin_target_canvas_copy->get_target_name(), distance_variant,
+          generate_preconditions_check_distance, generate_preconditions_check_in_range, generate_counter_update
         );
       }
 
-      std::vector<std::string> access_target_code = access_location->generate(
+      std::vector<AccessLocation::SplitAccess> access_target_codes = access_location->generate_split(
         access_action,
         reach_target_code.result,
         origin_target_canvas_copy->get_target_size()
       );
 
 
-      origin_target_canvas_copy->add_during_lifetime("_use(" + origin_target_canvas_copy->get_target_name() + ");");
-      origin_target_canvas_copy->add_during_lifetime("_use(" + origin_target_canvas_copy->get_origin_name() + ");");
-      origin_target_canvas_copy->add_during_lifetime(reach_target_code.access_lines);
-      origin_target_canvas_copy->add_during_lifetime(access_target_code);
-      origin_target_canvas_copy->add_during_lifetime("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
-      if (reach_target_code.aux_variable_needs_allocation)
+      for ( auto &access_target_code : access_target_codes )
       {
-        assert(!reach_target_code.aux_variable.empty());
-        std::shared_ptr<OriginTargetCodeCanvas> aux_ptr_global_last_variant = std::make_shared<OriginTargetCodeCanvas>(
-          *origin_target_canvas_copy);
-        aux_ptr_global_last_variant->add_global(reach_target_code.aux_variable_type + " " + reach_target_code.aux_variable + ";");
-        full_variants.push_back(aux_ptr_global_last_variant);
-
-        if (origin_target_canvas_copy->get_number_of_globals() > 0)
+        auto origin_target_canvas_with_access = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas_copy);
+        origin_target_canvas_with_access->add_during_lifetime("_use(" + origin_target_canvas_copy->get_target_name() + ");");
+        origin_target_canvas_with_access->add_during_lifetime("_use(" + origin_target_canvas_copy->get_origin_name() + ");");
+        origin_target_canvas_with_access->add_during_lifetime(reach_target_code.access_lines);
+        origin_target_canvas_with_access->add_during_lifetime(access_target_code.to_lines());
+        origin_target_canvas_with_access->add_during_lifetime("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
+        if ( is_a<ReadAction>( access_action ) )
         {
-          std::shared_ptr<OriginTargetCodeCanvas> aux_ptr_global_first_variant = std::make_shared<
-            OriginTargetCodeCanvas>(*origin_target_canvas_copy);
-          aux_ptr_global_first_variant->add_global_first(reach_target_code.aux_variable_type + " " + reach_target_code.aux_variable + ";");
-          full_variants.push_back(aux_ptr_global_first_variant);
+          // since reading cannot corrupt, just allocate the aux variables as globals
+          std::shared_ptr<OriginTargetCodeCanvas> aux_ptr_global_variant = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas_with_access);
+          aux_ptr_global_variant->add_globals( AccessLocation::AuxiliaryVariable::to_string_vector( reach_target_code.aux_variables ) );
+
+          full_variants.push_back(aux_ptr_global_variant);
         }
-        // else there is no difference between add_global and add_global_first
-
-        std::shared_ptr<OriginTargetCodeCanvas> aux_ptr_global_init_last_variant = std::make_shared<
-          OriginTargetCodeCanvas>(*origin_target_canvas_copy);
-        aux_ptr_global_init_last_variant->add_global(reach_target_code.aux_variable_type + " " + reach_target_code.aux_variable + " = 0;");
-        full_variants.push_back(aux_ptr_global_init_last_variant);
-
-        if (origin_target_canvas_copy->get_number_of_globals() > 0)
+        else
         {
-          std::shared_ptr<OriginTargetCodeCanvas> aux_ptr_global_init_first_variant = std::make_shared<
-            OriginTargetCodeCanvas>(*origin_target_canvas_copy);
-          aux_ptr_global_init_first_variant->add_global_first(reach_target_code.aux_variable_type + " " + reach_target_code.aux_variable + " = 0;");
-          full_variants.push_back(aux_ptr_global_init_first_variant);
-        }
-        // else there is no difference between add_global and add_global_first
+          std::shared_ptr<OriginTargetCodeCanvas> aux_ptr_global_last_variant = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas_with_access);
+          aux_ptr_global_last_variant->add_globals( AccessLocation::AuxiliaryVariable::to_string_vector( reach_target_code.aux_variables ) );
+          full_variants.push_back(aux_ptr_global_last_variant);
 
-        std::shared_ptr<OriginTargetCodeCanvas> aux_ptr_stack_last_variant = std::make_shared<OriginTargetCodeCanvas>(
-          *origin_target_canvas_copy);
-        aux_ptr_stack_last_variant->add_local(reach_target_code.aux_variable_type + " " + reach_target_code.aux_variable + ";");
-        full_variants.push_back(aux_ptr_stack_last_variant);
+          if (origin_target_canvas_with_access->get_number_of_globals() > 0)
+          {
+            std::shared_ptr<OriginTargetCodeCanvas> aux_ptr_global_first_variant = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas_with_access);
+            aux_ptr_global_first_variant->add_globals_first( AccessLocation::AuxiliaryVariable::to_string_vector( reach_target_code.aux_variables ) );
+            full_variants.push_back(aux_ptr_global_first_variant);
+          }
+          // else there is no difference between add_global and add_global_first
 
-        if (origin_target_canvas_copy->get_number_of_locals() > 0)
-        {
-          std::shared_ptr<OriginTargetCodeCanvas> aux_ptr_stack_first_variant = std::make_shared<
-            OriginTargetCodeCanvas>(*origin_target_canvas_copy);
-          aux_ptr_stack_first_variant->add_local_first(reach_target_code.aux_variable_type + " " + reach_target_code.aux_variable + ";");
-          full_variants.push_back(aux_ptr_stack_first_variant);
+
+          std::shared_ptr<OriginTargetCodeCanvas> aux_ptr_global_init_last_variant = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas_with_access);
+          std::shared_ptr<OriginTargetCodeCanvas> aux_ptr_global_init_first_variant = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas_with_access);
+          bool global_init_added = false;
+          for ( const AccessLocation::AuxiliaryVariable& aux_variable: reach_target_code.aux_variables )
+          {
+            if ( aux_variable.init_value.empty() )
+            {
+              // initialize this variable
+              AccessLocation::AuxiliaryVariable aux_variable_init = aux_variable;
+              aux_variable_init.init_value = "0";
+              aux_ptr_global_init_last_variant->add_global( aux_variable_init.to_string() );
+              aux_ptr_global_init_first_variant->add_global_first( aux_variable_init.to_string() );
+              global_init_added = true;
+            }
+            else
+            {
+              aux_ptr_global_init_last_variant->add_global( aux_variable.to_string() );
+              aux_ptr_global_init_first_variant->add_global_first( aux_variable.to_string() );
+            }
+          }
+          if (global_init_added)
+          {
+            full_variants.push_back(aux_ptr_global_init_last_variant);
+            if (origin_target_canvas_with_access->get_number_of_globals() > 0)
+            {
+              full_variants.push_back(aux_ptr_global_init_first_variant);
+            }
+            // else there is no difference between add_global and add_global_first
+          }
+
+
+          std::shared_ptr<OriginTargetCodeCanvas> aux_ptr_stack_last_variant = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas_with_access);
+          aux_ptr_stack_last_variant->add_locals( AccessLocation::AuxiliaryVariable::to_string_vector( reach_target_code.aux_variables ) );
+          full_variants.push_back(aux_ptr_stack_last_variant);
+
+          if (origin_target_canvas_with_access->get_number_of_locals() > 0)
+          {
+            std::shared_ptr<OriginTargetCodeCanvas> aux_ptr_stack_first_variant = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas_with_access);
+            aux_ptr_stack_first_variant->add_locals_first( AccessLocation::AuxiliaryVariable::to_string_vector( reach_target_code.aux_variables ) );
+            full_variants.push_back(aux_ptr_stack_first_variant);
+          }
+          // else there is no difference
+
         }
-      } else
-      {
-        full_variants.push_back(origin_target_canvas_copy);
       }
     }
   }
@@ -230,33 +240,17 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> LinearOOBA::generate_valida
       if ( is_number(distance_variant) )
       {
         distance_as_static_number = std::stoll(distance_variant);
-        distance_statically_known = true;
         if ( !flow->accepts_static_distance(distance_as_static_number) ) continue;
+        distance_statically_known = true;
       }
       auto origin_target_canvas_copy = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas);
-      AccessLocation::SplitAccessLines reach_target_code;
+      AccessLocation::SplitAccess reach_target_code;
       if (!distance_statically_known)
       {
-        if (is_a<IntraObject>(origin_target_relation)
-            && is_a<Overflow>(flow)
-            && is_a<ReadAction>(access_action)
-            && is_a<DirectLocation>(access_location) )
-        {
-          std::vector<std::string> lines = access_location->generate_with_runtime_index(
-            access_action, var_name_to_access, "index", distance_variant,
-            nullptr, nullptr
-          );
-          reach_target_code.result = "(" + var_name_to_access + " + index)";
-          reach_target_code.access_lines = {"size_t index = 0;"};
-          reach_target_code.access_lines.insert( reach_target_code.access_lines.end(), lines.begin(), lines.end() );
-        }
-        else
-        {
-          reach_target_code = access_location->generate_bulk_split(
-            access_action, var_name_to_access, var_name_to_access, distance_variant,
-            nullptr, nullptr, generate_counter_update
-          );
-        }
+        reach_target_code = access_location->generate_bulk_split(
+          access_action, var_name_to_access, var_name_to_access, distance_variant,
+          nullptr, nullptr, generate_counter_update
+        );
       }
       else
       {
@@ -275,8 +269,8 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> LinearOOBA::generate_valida
           continue;
         }
         reach_target_code = access_location->generate_bulk_split(
-          access_action, var_name_to_access, var_name_to_access, distance_as_static_number,
-          nullptr, generate_counter_update
+          access_action, var_name_to_access, var_name_to_access, distance_variant,
+          nullptr, nullptr, generate_counter_update
         );
       }
 
@@ -292,52 +286,59 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> LinearOOBA::generate_valida
       origin_target_canvas_copy->add_during_lifetime(reach_target_code.access_lines);
       origin_target_canvas_copy->add_during_lifetime(access_target_code);
       origin_target_canvas_copy->add_during_lifetime("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
-      if (reach_target_code.aux_variable_needs_allocation)
+      if ( is_a<ReadAction>(access_action) )
       {
-        assert(!reach_target_code.aux_variable.empty());
+        // since reading cannot corrupt, just allocate the aux variables as globals
+        std::shared_ptr<OriginTargetCodeCanvas> aux_ptr_global_variant = std::make_shared<OriginTargetCodeCanvas>(
+          *origin_target_canvas_copy);
+        aux_ptr_global_variant->add_globals( AccessLocation::AuxiliaryVariable::to_string_vector( reach_target_code.aux_variables ) );
+
+        full_variants.push_back(aux_ptr_global_variant);
+      }
+      else
+      {
         std::shared_ptr<OriginTargetCodeCanvas> aux_ptr_global_last_variant = std::make_shared<OriginTargetCodeCanvas>(
           *origin_target_canvas_copy);
-        aux_ptr_global_last_variant->add_global(reach_target_code.aux_variable_type + " " + reach_target_code.aux_variable + ";");
+        aux_ptr_global_last_variant->add_globals( AccessLocation::AuxiliaryVariable::to_string_vector( reach_target_code.aux_variables ) );
+
         full_variants.push_back(aux_ptr_global_last_variant);
 
         if (origin_target_canvas_copy->get_number_of_globals() > 0)
         {
-          std::shared_ptr<OriginTargetCodeCanvas> aux_ptr_global_first_variant = std::make_shared<
-            OriginTargetCodeCanvas>(*origin_target_canvas_copy);
-          aux_ptr_global_first_variant->add_global_first(reach_target_code.aux_variable_type + " " + reach_target_code.aux_variable + ";");
+          std::shared_ptr<OriginTargetCodeCanvas> aux_ptr_global_first_variant = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas_copy);
+          aux_ptr_global_first_variant->add_globals_first( AccessLocation::AuxiliaryVariable::to_string_vector( reach_target_code.aux_variables ) );
+
           full_variants.push_back(aux_ptr_global_first_variant);
         }
         // else there is no difference between add_global and add_global_first
 
-        std::shared_ptr<OriginTargetCodeCanvas> aux_ptr_global_init_last_variant = std::make_shared<
-          OriginTargetCodeCanvas>(*origin_target_canvas_copy);
-        aux_ptr_global_init_last_variant->add_global(reach_target_code.aux_variable_type + " " + reach_target_code.aux_variable + " = 0;");
+        std::shared_ptr<OriginTargetCodeCanvas> aux_ptr_global_init_last_variant = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas_copy);
+        aux_ptr_global_init_last_variant->add_globals( AccessLocation::AuxiliaryVariable::to_string_vector( reach_target_code.aux_variables ) );
+
         full_variants.push_back(aux_ptr_global_init_last_variant);
 
         if (origin_target_canvas_copy->get_number_of_globals() > 0)
         {
           std::shared_ptr<OriginTargetCodeCanvas> aux_ptr_global_init_first_variant = std::make_shared<
             OriginTargetCodeCanvas>(*origin_target_canvas_copy);
-          aux_ptr_global_init_first_variant->add_global_first(reach_target_code.aux_variable_type + " " + reach_target_code.aux_variable + " = 0;");
+          aux_ptr_global_init_first_variant->add_globals_first( AccessLocation::AuxiliaryVariable::to_string_vector( reach_target_code.aux_variables ) );
+
           full_variants.push_back(aux_ptr_global_init_first_variant);
         }
         // else there is no difference between add_global and add_global_first
 
-        std::shared_ptr<OriginTargetCodeCanvas> aux_ptr_stack_last_variant = std::make_shared<OriginTargetCodeCanvas>(
-          *origin_target_canvas_copy);
-        aux_ptr_stack_last_variant->add_local(reach_target_code.aux_variable_type + " " + reach_target_code.aux_variable + ";");
+        std::shared_ptr<OriginTargetCodeCanvas> aux_ptr_stack_last_variant = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas_copy);
+        aux_ptr_stack_last_variant->add_locals( AccessLocation::AuxiliaryVariable::to_string_vector( reach_target_code.aux_variables ) );
+
         full_variants.push_back(aux_ptr_stack_last_variant);
 
         if (origin_target_canvas_copy->get_number_of_locals() > 0)
         {
-          std::shared_ptr<OriginTargetCodeCanvas> aux_ptr_stack_first_variant = std::make_shared<
-            OriginTargetCodeCanvas>(*origin_target_canvas_copy);
-          aux_ptr_stack_first_variant->add_local_first(reach_target_code.aux_variable_type + " " + reach_target_code.aux_variable + ";");
+          std::shared_ptr<OriginTargetCodeCanvas> aux_ptr_stack_first_variant = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas_copy);
+          aux_ptr_stack_first_variant->add_locals_first( AccessLocation::AuxiliaryVariable::to_string_vector( reach_target_code.aux_variables ) );
+
           full_variants.push_back(aux_ptr_stack_first_variant);
         }
-      } else
-      {
-        full_variants.push_back(origin_target_canvas_copy);
       }
     }
   }

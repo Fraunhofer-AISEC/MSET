@@ -18,11 +18,28 @@ public:
   {
   }
 
+  // simple generate
   std::vector<std::string> generate(
     std::shared_ptr<AccessAction> action,
     const std::string &access_var_name,
     size_t size
   ) const override;
+
+  // simple split, using const size and content variables
+  SplitAccess generate_split_aux_vars(
+    std::shared_ptr<AccessAction> action,
+    const std::string &access_var_name,
+    size_t size
+    ) const override;
+
+  // simple split, using auxiliary size and content variables
+  SplitAccess generate_split_const_vars(
+    std::shared_ptr<AccessAction> action,
+    const std::string &access_var_name,
+    size_t size
+  ) const override;
+
+  // generate from the given index to index + size
   std::vector<std::string> generate_at_index(
     std::shared_ptr<AccessAction> action,
     const std::string &access_var_name,
@@ -30,25 +47,19 @@ public:
     size_t size,
     std::function<std::string(const std::string&)>  generate_preconditions_check_distance
   ) const override;
-  std::vector<std::string> generate_with_runtime_index(
+
+  // generate using the given index up to index + distance
+  std::vector<std::string> generate_using_runtime_index(
     std::shared_ptr<AccessAction> action,
     const std::string &access_var_name,
     std::string index,
     std::string distance,
     std::function<std::string(const std::string&)> generate_preconditions_check_distance,
     std::function<std::string(const std::string&, const std::string&, const std::string&)> generate_preconditions_check_in_range
-) const override;
-  SplitAccessLines generate_split(
-    std::shared_ptr<AccessAction> action,
-    const std::string &access_var_name,
-    size_t size
-    ) const override;
-  SplitAccessLines generate_split_known_size(
-    std::shared_ptr<AccessAction> action,
-    const std::string &access_var_name,
-    size_t size
   ) const override;
-  SplitAccessLines generate_bulk_split(
+
+  // generate in bulks
+  SplitAccess generate_bulk_split(
     std::shared_ptr<AccessAction> action,
     std::string from,
     std::string to,
@@ -57,15 +68,19 @@ public:
     std::function<std::string(const std::string&, const std::string&, const std::string&)>  generate_preconditions_check_in_range,
     std::function<std::string(const std::string&)>  generate_counter_update
     ) const override;
-  SplitAccessLines generate_bulk_split(
+
+  // generate in bulks using an auxiliary pointer
+  SplitAccess generate_bulk_split_using_aux_ptr(
     std::shared_ptr<AccessAction> action,
     std::string from,
     std::string to,
-    ssize_t distance,
+    std::string distance,
+    std::function<std::string(const std::string&)>  generate_preconditions_check_distance,
     std::function<std::string(const std::string&, const std::string&, const std::string&)>  generate_preconditions_check_in_range,
     std::function<std::string(const std::string&)>  generate_counter_update
   ) const override;
 
+  // generate using a load widening to uint32
   std::vector<std::string> generate_uint32(
     std::shared_ptr<AccessAction> action,
     std::string from,
@@ -74,6 +89,8 @@ public:
     size_t size,
     std::function<std::string(const std::string&)>  generate_preconditions_check_distance
     ) const override;
+
+  // generate after casting to uint8
   std::vector<std::string> generate_uint8(
     std::shared_ptr<AccessAction> action,
     std::string from,
