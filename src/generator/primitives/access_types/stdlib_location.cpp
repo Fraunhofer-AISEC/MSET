@@ -33,6 +33,7 @@ AccessLocation::SplitAccess StdlibLocation::generate_split_aux_vars(
     split_access.access_lines.push_back( "memcpy( (void *)read_value, (void *)" + access_var_name + ", " + std::to_string(size) + ");" );
     split_access.access_lines.emplace_back("_use( read_value );" );
     split_access.result = "&" + access_var_name + "[" + std::to_string(size) + "]";
+    split_access.description = "stdlib reading using auxiliary variables";
   }
   else
   {
@@ -43,6 +44,7 @@ AccessLocation::SplitAccess StdlibLocation::generate_split_aux_vars(
     split_access.access_lines.push_back( "memset( (void *)" + access_var_name + ", 0xFF, size);" );
     split_access.access_lines.emplace_back("_use(" + access_var_name + ");" );
     split_access.result = "&" + access_var_name + "[var_size]";
+    split_access.description = "stdlib writing using auxiliary variables";
   }
   return split_access;
 }
@@ -59,21 +61,23 @@ AccessLocation::SplitAccess StdlibLocation::generate_split_const_vars(
       {"read_value", "volatile char", std::to_string(size)},
     };
 
-    split_access.access_lines.push_back( "memcpy( (void *)read_value, " + access_var_name + ", " + std::to_string(size) + ");" );
+    split_access.access_lines.push_back( "memcpy( (void *)read_value, (void *)" + access_var_name + ", " + std::to_string(size) + ");" );
     split_access.access_lines.emplace_back("_use( read_value );" );
     split_access.result = "&" + access_var_name + "[" + std::to_string(size) + "]";
+    split_access.description = "stdlib reading using constants";
   }
   else
   {
     // WRITE
-    split_access.access_lines.push_back( "memset( " + access_var_name + ", 0xFF, " + std::to_string(size) + ");" );
+    split_access.access_lines.push_back( "memset( (void *)" + access_var_name + ", 0xFF, " + std::to_string(size) + ");" );
     split_access.access_lines.emplace_back("_use(" + access_var_name + ");" );
     split_access.result = "&" + access_var_name + "[8]";
+    split_access.description = "stdlib writing using constants";
   }
   return split_access;
 }
 
-AccessLocation::SplitAccess StdlibLocation::generate_bulk_split(
+AccessLocation::SplitAccess StdlibLocation::generate_bulk_split_using_index(
   std::shared_ptr<AccessAction> action,
   std::string from,
   std::string to,
@@ -104,12 +108,13 @@ AccessLocation::SplitAccess StdlibLocation::generate_bulk_split(
       "{",
       "  volatile char read_value[1024];",
       "  size_t step_distance = (" + distance + " > (1024 + i)) ? 1024 : " + distance + " - i;",
-      "  memcpy((void *)read_value, &" + from + "[i], step_distance);",
+      "  memcpy((void *)read_value, (void *)&" + from + "[i], step_distance);",
       "  i += step_distance;",
       "  _use(&read_value);",
       "}",
     } );
     split_access.result = "&" + from + "[i]";
+    split_access.description = "stdlib reading using an index";
   }
   else
   {
@@ -132,13 +137,14 @@ AccessLocation::SplitAccess StdlibLocation::generate_bulk_split(
       "while( GET_ADDR_BITS(&" + from + "[i]) < GET_ADDR_BITS(" + to + ") )",
       "{",
       "  step_distance = (GET_ADDR_BITS(" + to + ") > (1024 + GET_ADDR_BITS(&" + from + "[i]))) ? 1024 : GET_ADDR_BITS(" + to + ") - GET_ADDR_BITS(&" + from + "[i]);",
-      "  memset(&" + from + "[i], 0xFF, step_distance);",
+      "  memset((void *)&" + from + "[i], 0xFF, step_distance);",
       "  i += step_distance;",
       "  _use(&" + from + "[i]);",
       "}",
       "_use(" + from + ");"
     } );
     split_access.result = "&" + from + "[i]";
+    split_access.description = "stdlib writing using an index";
   }
   return split_access;
 }
@@ -159,21 +165,28 @@ AccessLocation::SplitAccess StdlibLocation::generate_bulk_split_using_aux_ptr(
   {
     // READ
     split_access.aux_variables = {
-      {"aux_ptr", "volatile char *", "", from},
+      {"aux_ptr", "volatile char *", ""},
       {"i", "volatile size_t", "", "0"},
     };
-    split_access.access_lines = { {
+    split_access.access_lines = {};
+    if (generate_preconditions_check_distance)
+    {
+      split_access.access_lines.push_back( "if ( !(" + generate_preconditions_check_distance(distance) + ") ) _exit(PRECONDITIONS_FAILED_VALUE);" );
+    }
+    split_access.access_lines.insert(split_access.access_lines.end(), {
+      "aux_ptr = " + from + ";",
       "while( i < " + distance + " )",
       "{",
       "  volatile char read_value[1024];",
       "  size_t step_distance = (" + distance + " > (1024 + i)) ? 1024 : " + distance + " - i;",
-      "  memcpy((void *)read_value, aux_ptr, step_distance);",
+      "  memcpy((void *)read_value, (void *)aux_ptr, step_distance);",
       "  aux_ptr += step_distance;",
       "  i += step_distance;",
       "  _use(&read_value);",
       "}",
-    } };
+    });
     split_access.result = "aux_ptr";
+    split_access.description = "stdlib reading using an auxiliary pointer";
   }
   else
   {
@@ -188,18 +201,25 @@ AccessLocation::SplitAccess StdlibLocation::generate_bulk_split_using_aux_ptr(
       split_access.access_lines.push_back( "if ( " + generate_preconditions_check_in_range("aux_ptr", from, to) + " ) _exit(PRECONDITIONS_FAILED_VALUE);" );
       split_access.access_lines.push_back( "if ( " + generate_preconditions_check_in_range("step_distance", from, to) + " ) _exit(PRECONDITIONS_FAILED_VALUE);" );
     }
+
+    if (generate_preconditions_check_distance)
+    {
+      split_access.access_lines.push_back( "if ( !(" + generate_preconditions_check_distance(distance) + ") ) _exit(PRECONDITIONS_FAILED_VALUE);" );
+    }
+
     split_access.access_lines.insert( split_access.access_lines.end(), {
       "aux_ptr = " + from + ";",
       "while( GET_ADDR_BITS(aux_ptr) < GET_ADDR_BITS(" + to + ") )",
       "{",
       "  step_distance = (GET_ADDR_BITS(" + to + ") > (1024 + GET_ADDR_BITS(aux_ptr))) ? 1024 : GET_ADDR_BITS(" + to + ") - GET_ADDR_BITS(aux_ptr);",
-      "  memset(aux_ptr, 0xFF, step_distance);",
+      "  memset((void *)aux_ptr, 0xFF, step_distance);",
       "  aux_ptr += step_distance;",
       "  _use(aux_ptr);",
       "}",
       "_use(" + from + ");"
     } );
     split_access.result = "aux_ptr";
+    split_access.description = "stdlib writing using an auxiliary pointer";
   }
 
   return split_access;
@@ -226,7 +246,7 @@ std::vector<std::string> StdlibLocation::generate_at_index(
       lines.push_back( "if ( !(" + generate_preconditions_check_distance(index) + ") ) _exit(PRECONDITIONS_FAILED_VALUE);" );
     }
     lines.insert( lines.end(), {
-      "memcpy(read_value, &" + access_var_name + "[" + index + "], " + std::to_string(size) + ");",
+      "memcpy(read_value, (void *)&" + access_var_name + "[" + index + "], " + std::to_string(size) + ");",
       "_use(read_value);"
     } );
   }

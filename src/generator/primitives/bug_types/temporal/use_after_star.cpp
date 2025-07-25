@@ -86,6 +86,10 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >UseAfterStar::_generate_unused_m
 
   region_canvas->add_globals( AccessLocation::AuxiliaryVariable::to_string_vector( access_type_code.aux_variables ) );
 
+  region_canvas->add_test_case_description_line("Memory region: stack");
+  region_canvas->add_test_case_description_line("Bug type: use-after-*, freed memory");
+  region_canvas->add_test_case_description_line("Access type: " + access_location->get_name() + ", " + access_action->get_name());
+
   variants.push_back( region_canvas );
 
   return variants;
@@ -109,6 +113,11 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >UseAfterStar::_generate_unused_m
   // region_canvas->add_during_lifetime("target_address = &target[0];");
   index = region_canvas->add_at(index, access_type_code, "  ");
   region_canvas->add_at(index, "_exit(TEST_CASE_SUCCESSFUL_VALUE);", "  ");
+
+  region_canvas->add_test_case_description_line("Memory region: heap");
+  region_canvas->add_test_case_description_line("Bug type: use-after-*, freed memory");
+  region_canvas->add_test_case_description_line("Access type: " + access_location->get_name() + ", " + access_action->get_name());
+
   variants.push_back( region_canvas );
 
   return variants;
@@ -133,7 +142,6 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >UseAfterStar::_generate_reused_m
   std::vector< std::shared_ptr<RegionCodeCanvas> >variants;
   CodeCanvas code;
   code.add_global("char *target_address;");
-  // code.add_global("char *last_address = NULL;");
   std::shared_ptr<RegionCodeCanvas> region_canvas = memory_region->generate(std::make_shared<CodeCanvas>(code), "target", 8, false);
 
   assert ( is_a<HeapRegion>(memory_region) );
@@ -151,6 +159,10 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >UseAfterStar::_generate_reused_m
   );
   reused_region_canvas_simple->add_during_lifetime(access_type_code);
   reused_region_canvas_simple->add_during_lifetime("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
+
+  region_canvas->add_test_case_description_line("Memory region: heap");
+  region_canvas->add_test_case_description_line("Bug type: use-after-*, reused memory");
+  region_canvas->add_test_case_description_line("Access type: " + access_location->get_name() + ", " + access_action->get_name());
 
   std::shared_ptr<RegionCodeCanvas> reused_region_canvas_repeat = std::make_shared<RegionCodeCanvas>(*reused_region_canvas);
   std::vector<std::string> allocation = heap_memory_region->generate_reallocation("reallocated", 8, true, "  ");
@@ -171,6 +183,9 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >UseAfterStar::_generate_reused_m
   });
   reused_region_canvas_repeat->add_during_lifetime(access_type_code);
   reused_region_canvas_repeat->add_during_lifetime("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
+
+  reused_region_canvas_repeat->add_to_variant_description("repeated attempts");
+
   variants = {reused_region_canvas_simple, reused_region_canvas_repeat};
 
   return variants;
@@ -199,6 +214,11 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >UseAfterStar::_generate_reused_m
   reused_region_canvas_simple->add_during_lifetime("_use(reallocated);");
   reused_region_canvas_simple->add_during_lifetime("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
   reused_region_canvas_simple->add_globals( AccessLocation::AuxiliaryVariable::to_string_vector( access_type_code.aux_variables ) );
+
+  region_canvas->add_test_case_description_line("Memory region: stack");
+  region_canvas->add_test_case_description_line("Bug type: use-after-*, reused memory");
+  region_canvas->add_test_case_description_line("Access type: " + access_location->get_name() + ", " + access_action->get_name());
+
   variants.push_back( reused_region_canvas_simple );
 
   std::shared_ptr<RegionCodeCanvas> reused_region_canvas_repeated = stack_memory_region_simple->generate_in_other_f(
@@ -229,6 +249,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >UseAfterStar::_generate_reused_m
     },
     "  "
   );
+  reused_region_canvas_repeated->add_to_variant_description("repeated attempts");
   variants.push_back( reused_region_canvas_repeated );
 
   CodeCanvas code_array;
@@ -254,6 +275,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >UseAfterStar::_generate_reused_m
   reused_region_canvas_simple_array->add_during_lifetime(access_type_code.access_lines);
   reused_region_canvas_simple_array->add_during_lifetime("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
   reused_region_canvas_simple_array->add_globals( AccessLocation::AuxiliaryVariable::to_string_vector( access_type_code.aux_variables ) );
+  reused_region_canvas_simple_array->add_to_variant_description("using an array of objects");
   variants.push_back( reused_region_canvas_simple_array );
 
   CodeCanvas code_array_repeated;
@@ -297,7 +319,8 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >UseAfterStar::_generate_reused_m
       "_exit(PRECONDITIONS_FAILED_VALUE);"
     },
     "  "
-  );
+    );
+  reused_region_canvas_array_repeated->add_to_variant_description("repeated attempts, using an array of objects");
   variants.push_back( reused_region_canvas_array_repeated );
 
   return variants;
@@ -350,6 +373,12 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >UseAfterStar::_generate_unused_m
   region_canvas->add_to_f_body(access_type_code.access_lines);
   region_canvas->add_to_f_body("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
   region_canvas->add_globals( AccessLocation::AuxiliaryVariable::to_string_vector( access_type_code.aux_variables ) );
+
+  region_canvas->add_test_case_description_line("Memory region: stack");
+  region_canvas->add_test_case_description_line("Bug type: use-after-*, freed memory");
+  region_canvas->add_test_case_description_line("Access type: " + access_location->get_name() + ", " + access_action->get_name());
+
+
   variants.push_back( region_canvas );
 
 
@@ -374,6 +403,11 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >UseAfterStar::_generate_unused_m
   auto index = region_canvas->add_to_f_body("target_address = &target[0];");
   index = region_canvas->add_at(index, access_type_code, "  ");
   region_canvas->add_at(index, "_exit(TEST_CASE_SUCCESSFUL_VALUE);", "  ");
+
+  region_canvas->add_test_case_description_line("Memory region: heap");
+  region_canvas->add_test_case_description_line("Bug type: use-after-*, freed memory");
+  region_canvas->add_test_case_description_line("Access type: " + access_location->get_name() + ", " + access_action->get_name());
+
   variants.push_back( region_canvas );
 
   return variants;
@@ -415,6 +449,11 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >UseAfterStar::_generate_reused_m
   reused_region_canvas_simple->add_during_lifetime(access_type_code);
   reused_region_canvas_simple->add_during_lifetime("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
 
+  region_canvas->add_test_case_description_line("Memory region: heap");
+  region_canvas->add_test_case_description_line("Bug type: use-after-*, reused memory");
+  region_canvas->add_test_case_description_line("Access type: " + access_location->get_name() + ", " + access_action->get_name());
+
+
   std::shared_ptr<RegionCodeCanvas> reused_region_canvas_repeat = std::make_shared<RegionCodeCanvas>(*reused_region_canvases);
   std::vector<std::string> allocation = heap_memory_region->generate_reallocation("reallocated", 8, true, "  ");
   std::vector<std::string> deallocation = heap_memory_region->generate_deallocation("reallocated", "  ");
@@ -432,6 +471,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >UseAfterStar::_generate_reused_m
   });
   reused_region_canvas_repeat->add_during_lifetime(access_type_code);
   reused_region_canvas_repeat->add_during_lifetime("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
+  reused_region_canvas_repeat->add_to_variant_description("repeated attempts");
   variants = {reused_region_canvas_simple, reused_region_canvas_repeat};
 
   return variants;
@@ -445,6 +485,10 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >UseAfterStar::_generate_reused_m
   std::vector< std::shared_ptr<RegionCodeCanvas> >variants = {};
   CodeCanvas code_simple;
   code_simple.add_global("char *target_address;");
+  code_simple.add_test_case_description_line("Memory region: heap");
+  code_simple.add_test_case_description_line("Bug type: use-after-*, reused memory");
+  code_simple.add_test_case_description_line("Access type: " + access_location->get_name() + ", " + access_action->get_name());
+
   std::shared_ptr<StackRegion> stack_memory_region = std::dynamic_pointer_cast<StackRegion>(memory_region);
   std::shared_ptr<StackRegion> stack_memory_region_simple = std::make_shared<StackRegion>(*stack_memory_region);
   std::shared_ptr<RegionCodeCanvas> region_canvas = stack_memory_region_simple->generate(std::make_shared<CodeCanvas>(code_simple), "target", 8, true);
@@ -487,6 +531,8 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >UseAfterStar::_generate_reused_m
     },
     "  "
   );
+  reused_region_canvas_repeated->add_to_variant_description("repeated attempts");
+
   variants.push_back( reused_region_canvas_repeated );
 
   CodeCanvas code_array;
@@ -512,6 +558,8 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >UseAfterStar::_generate_reused_m
   reused_region_canvas_simple_array->add_to_f_body(access_type_code.access_lines);
   reused_region_canvas_simple_array->add_to_f_body("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
   reused_region_canvas_simple_array->add_globals( AccessLocation::AuxiliaryVariable::to_string_vector( access_type_code.aux_variables ) );
+  reused_region_canvas_simple_array->add_to_variant_description("using an array of objects");
+
   variants.push_back( reused_region_canvas_simple_array );
 
   CodeCanvas code_array_repeated;
@@ -554,6 +602,8 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >UseAfterStar::_generate_reused_m
     },
     "  "
   );
+  reused_region_canvas_array_repeated->add_to_variant_description("repeated attempts, using an array of objects");
+
   variants.push_back( reused_region_canvas_array_repeated );
 
   return variants;

@@ -16,24 +16,7 @@ class RegionCodeCanvas;
 class CodeCanvas
 {
 public:
-  CodeCanvas(const CodeCanvas &other)
-    : code_lines(other.code_lines),
-      types_pos(other.types_pos),
-      global_start_pos(other.global_start_pos),
-      global_pos(other.global_pos),
-      f_call_pos(other.f_call_pos),
-      start_of_f_pos(other.start_of_f_pos),
-      end_of_f_pos(other.end_of_f_pos),
-      locals_start_pos(other.locals_start_pos),
-      locals_end_pos(other.locals_end_pos),
-      current_pos_in_f(other.current_pos_in_f),
-      current_pos_in_main(other.current_pos_in_main),
-      other_f_call_pos(other.other_f_call_pos),
-      current_pos_in_other_f(other.current_pos_in_other_f),
-      number_of_globals(other.number_of_globals),
-      number_of_locals(other.number_of_locals)
-  {
-  }
+  CodeCanvas(const CodeCanvas &other) = default;
 
   CodeCanvas(CodeCanvas &&other) noexcept
     : code_lines(std::move(other.code_lines)),
@@ -50,7 +33,9 @@ public:
       other_f_call_pos(other.other_f_call_pos),
       current_pos_in_other_f(other.current_pos_in_other_f),
       number_of_globals(other.number_of_globals),
-      number_of_locals(other.number_of_locals)
+      number_of_locals(other.number_of_locals),
+      test_case_description_lines(std::move(other.test_case_description_lines)),
+      variant_description(std::move(other.variant_description))
   {
   }
 
@@ -73,6 +58,8 @@ public:
     current_pos_in_other_f = other.current_pos_in_other_f;
     number_of_globals = other.number_of_globals;
     number_of_locals = other.number_of_locals;
+    test_case_description_lines = other.test_case_description_lines;
+    variant_description = other.variant_description;
     return *this;
   }
 
@@ -95,11 +82,13 @@ public:
     current_pos_in_other_f = other.current_pos_in_other_f;
     number_of_globals = other.number_of_globals;
     number_of_locals = other.number_of_locals;
+    test_case_description_lines = other.test_case_description_lines;
+    variant_description = other.variant_description;
     return *this;
   }
 
   using code_pos_t = size_t;
-  static const size_t INVALID_CODE_POS = SIZE_MAX;
+  static constexpr size_t INVALID_CODE_POS = SIZE_MAX;
 
   CodeCanvas();
   virtual ~CodeCanvas() = default;
@@ -147,6 +136,19 @@ public:
   {
     return number_of_locals;
   }
+
+  void add_test_case_description_line( const std::string &description_line ) { test_case_description_lines.push_back(description_line); }
+  void add_to_variant_description( const std::string &description )
+  {
+    if (variant_description.empty())
+    {
+      variant_description = description;
+    }
+    else
+    {
+      variant_description += ", " + description;
+    }
+  }
 protected:
   void _generate_other_f_and_call();
   virtual void _update_indexes(code_pos_t from, size_t amount);
@@ -166,4 +168,7 @@ protected:
 
   int number_of_globals;
   int number_of_locals;
+
+  std::vector< std::string > test_case_description_lines;
+  std::string variant_description;
 };

@@ -54,11 +54,13 @@ std::vector< std::shared_ptr<OriginTargetCodeCanvas> > IntraObject::generate(
 
   std::shared_ptr<OriginTargetCodeCanvas> variant = std::make_shared<OriginTargetCodeCanvas>( region_canvas, 8, origin_size, target_access, origin_access, distance, distance_negated );
   variant->set_lifetime_pos( region_canvas->get_lifetime_pos() );
+  variant->add_to_variant_description("target declared after origin");
   variants.push_back(variant);
 
   region_canvas = origin->generate(canvas_ptr, "s", "target", target_size, "origin", origin_size, true);
   variant = std::make_shared<OriginTargetCodeCanvas>( region_canvas, 8, origin_size, target_access, origin_access, distance, distance_negated );
   variant->set_lifetime_pos( region_canvas->get_lifetime_pos() );
+  variant->add_to_variant_description("target declared before origin");
   variants.push_back(variant);
 
   return variants;

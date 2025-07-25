@@ -42,6 +42,7 @@ AccessLocation::SplitAccess DirectLocation::generate_split_aux_vars(
     split_access.access_lines.push_back("  read_value[i] = " + access_var_name + "[i];");
     split_access.access_lines.emplace_back("}");
     split_access.access_lines.emplace_back("_use(read_value);" );
+    split_access.description = "reading using auxiliary variables";
   }
   else
   {
@@ -56,6 +57,7 @@ AccessLocation::SplitAccess DirectLocation::generate_split_aux_vars(
     split_access.access_lines.emplace_back("}");
 
     split_access.access_lines.emplace_back("_use(" + access_var_name + ");" );
+    split_access.description = "writing using auxiliary variables";
   }
   return split_access;
 }
@@ -81,6 +83,7 @@ AccessLocation::SplitAccess DirectLocation::generate_split_const_vars(
     split_access.access_lines.push_back("  read_value[i] = " + access_var_name + "[i];");
     split_access.access_lines.emplace_back("}");
     split_access.access_lines.emplace_back("_use(read_value);" );
+    split_access.description = "reading using constants";
   }
   else
   {
@@ -95,6 +98,7 @@ AccessLocation::SplitAccess DirectLocation::generate_split_const_vars(
     split_access.access_lines.emplace_back("}");
 
     split_access.access_lines.emplace_back("_use(" + access_var_name + ");" );
+    split_access.description = "writing using constants";
   }
   return split_access;
 }
@@ -193,7 +197,7 @@ std::vector<std::string> DirectLocation::generate_using_runtime_index(
 }
 
 // generate in bulks using an auxiliary pointer
-AccessLocation::SplitAccess DirectLocation::generate_bulk_split(
+AccessLocation::SplitAccess DirectLocation::generate_bulk_split_using_index(
   std::shared_ptr<AccessAction> action,
   std::string from,
   std::string to,
@@ -226,11 +230,12 @@ AccessLocation::SplitAccess DirectLocation::generate_bulk_split(
     {
       split_access.access_lines.insert(split_access.access_lines.begin(), "if ( !(" + generate_preconditions_check_distance(distance) + ") ) _exit(PRECONDITIONS_FAILED_VALUE);");
     }
+    split_access.description = "reading using an index";
   }
   else
   {
     // WRITE
-    // the caller must handle the allocation of aux_ptr, as it might be overwritten
+    // the caller must handle the allocation of reach_index, as it might be overwritten
     split_access.aux_variables = {
       {"reach_index", "ssize_t", "", "0"} // ssize_t reach_index = 0;
     };
@@ -251,6 +256,7 @@ AccessLocation::SplitAccess DirectLocation::generate_bulk_split(
     {
       split_access.access_lines.insert(split_access.access_lines.begin(), "if ( " + generate_preconditions_check_in_range("reach_index", from, to) + " ) _exit(PRECONDITIONS_FAILED_VALUE);");
     }
+    split_access.description = "writing using an index";
   }
   return split_access;
 }
@@ -264,7 +270,7 @@ AccessLocation::SplitAccess DirectLocation::generate_bulk_split_using_aux_ptr(
   std::function<std::string(const std::string&)>  generate_preconditions_check_distance,
   std::function<std::string(const std::string&, const std::string&, const std::string&)>  generate_preconditions_check_in_range,
   std::function<std::string(const std::string&)>  generate_counter_update
-)const
+) const
 {
   SplitAccess split_access;
   if (is_a<ReadAction>(action))
@@ -291,13 +297,14 @@ AccessLocation::SplitAccess DirectLocation::generate_bulk_split_using_aux_ptr(
     {
       split_access.access_lines.insert(split_access.access_lines.begin(), "if ( !(" + generate_preconditions_check_distance(distance) + ") ) _exit(PRECONDITIONS_FAILED_VALUE);");
     }
+    split_access.description = "reading using an auxiliary pointer";
   }
   else
   {
     // WRITE
     // the caller must handle the allocation of aux_ptr, as it might be overwritten
     split_access.aux_variables = {
-      {"aux_ptr", "char *"}
+      {"aux_ptr", "volatile char *"}
     };
     split_access.result = "aux_ptr";
     split_access.access_lines = {
@@ -314,6 +321,7 @@ AccessLocation::SplitAccess DirectLocation::generate_bulk_split_using_aux_ptr(
       if (generate_preconditions_check_in_range) split_access.access_lines.insert(split_access.access_lines.begin(), "if ( " + generate_preconditions_check_in_range("aux_ptr", from, to) + " ) _exit(PRECONDITIONS_FAILED_VALUE);");
       if (generate_preconditions_check_distance) split_access.access_lines.insert(split_access.access_lines.begin(), "if ( !(" + generate_preconditions_check_distance(distance) + ") ) _exit(PRECONDITIONS_FAILED_VALUE);");
     }
+    split_access.description = "writing using an auxiliary pointer";
   }
   return split_access;
 }

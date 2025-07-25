@@ -101,6 +101,7 @@ public:
     std::vector<AuxiliaryVariable> aux_variables;
     std::string result;
     std::vector<std::string> access_lines;
+    std::string description;
 
     std::vector<std::string> to_lines() const
     {
@@ -123,7 +124,8 @@ public:
     SplitAccess(SplitAccess &&other) noexcept :
       aux_variables(std::move(other.aux_variables)),
       result(std::move(other.result)),
-      access_lines(std::move(other.access_lines))
+      access_lines(std::move(other.access_lines)),
+      description(std::move(other.description))
     {
     }
 
@@ -134,6 +136,7 @@ public:
       aux_variables = other.aux_variables;
       result = other.result;
       access_lines = other.access_lines;
+      description = other.description;
       return *this;
     }
 
@@ -144,6 +147,7 @@ public:
       aux_variables = std::move(other.aux_variables);
       result = std::move(other.result);
       access_lines = std::move(other.access_lines);
+      description = std::move(other.description);
       return *this;
     }
   };
@@ -157,7 +161,7 @@ public:
 
 
   // simple split, all variants
-  std::vector<SplitAccess> generate_split(std::shared_ptr<AccessAction> action, const std::string &access_var_name, size_t size) const;
+  std::vector<SplitAccess> generate_split_all(std::shared_ptr<AccessAction> action, const std::string &access_var_name, size_t size) const;
   // simple split, using auxiliary size and content variables
   virtual SplitAccess generate_split_aux_vars(std::shared_ptr<AccessAction> action, const std::string &access_var_name, size_t size) const = 0;
   // simple split, using const size and content variables
@@ -182,8 +186,18 @@ public:
     std::function<std::string(const std::string&, const std::string&, const std::string&)> generate_preconditions_check_in_range
   ) const = 0;
 
-  // generate in bulks
-  virtual SplitAccess generate_bulk_split(
+  // simple split, all variants
+  std::vector<SplitAccess> generate_bulk_split_all(
+    std::shared_ptr<AccessAction> action,
+    std::string from,
+    std::string to,
+    std::string distance,
+    std::function<std::string(const std::string&)>  generate_preconditions_check_distance,
+    std::function<std::string(const std::string&, const std::string&, const std::string&)>  generate_preconditions_check_in_range,
+    std::function<std::string(const std::string&)>  generate_counter_update
+  ) const;
+  // generate in bulks using an index
+  virtual SplitAccess generate_bulk_split_using_index(
     std::shared_ptr<AccessAction> action,
     std::string from,
     std::string to,

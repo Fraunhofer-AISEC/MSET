@@ -62,7 +62,7 @@ public:
   ) const override;
 
   // generate in bulks
-  SplitAccess generate_bulk_split(
+  SplitAccess generate_bulk_split_using_index(
     std::shared_ptr<AccessAction> action,
     std::string from,
     std::string to,

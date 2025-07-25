@@ -62,12 +62,19 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >MisuseOfFree::generate(
 
   CodeCanvas code;
 
+  code.add_test_case_description_line("Memory region: " + memory_region->get_name());
+  code.add_test_case_description_line("Bug type: misuse-of-free, " + memory_state->get_printable_name());
+  code.add_test_case_description_line("Access type: " + access_location->get_name() + ", " + access_action->get_name());
+
   std::vector< std::string > magic_values = {"0x20", "0x40", "0x60"};
   std::shared_ptr<RegionCodeCanvas> region_canvas = memory_region->generate(std::make_shared<CodeCanvas>(code), "target", 160, false);
 
   for ( const std::string &magic_value: magic_values)
   {
     std::shared_ptr<RegionCodeCanvas> region_canvas_with_magic_value = std::make_shared<RegionCodeCanvas>(*region_canvas);
+
+    region_canvas_with_magic_value->add_to_variant_description("magic value " + magic_value);
+
     region_canvas_with_magic_value->add_global("char* heap_obj;");
     region_canvas_with_magic_value->add_during_lifetime({
       "#ifndef __GLIBC__",
@@ -154,6 +161,10 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >MisuseOfFree::generate_validatio
   */
 
   CodeCanvas code;
+  code.add_test_case_description_line("Memory region: " + memory_region->get_name());
+  code.add_test_case_description_line("Bug type: misuse-of-free, " + memory_state->get_printable_name());
+  code.add_test_case_description_line("Access type: " + access_location->get_name() + ", " + access_action->get_name());
+
 
   std::vector< std::string > magic_values = {"0x20", "0x40", "0x60"};
   std::shared_ptr<RegionCodeCanvas> region_canvas = memory_region->generate(std::make_shared<CodeCanvas>(code), "target", 160, false);
@@ -161,6 +172,9 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >MisuseOfFree::generate_validatio
   for ( const std::string &magic_value: magic_values)
   {
     std::shared_ptr<RegionCodeCanvas> region_canvas_with_magic_value = std::make_shared<RegionCodeCanvas>(*region_canvas);
+
+    region_canvas_with_magic_value->add_to_variant_description("magic value " + magic_value);
+
     region_canvas_with_magic_value->add_global("char* heap_obj;");
     region_canvas_with_magic_value->add_during_lifetime({
       "#ifndef __GLIBC__",

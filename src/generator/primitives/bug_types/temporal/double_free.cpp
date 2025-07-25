@@ -59,6 +59,13 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >DoubleFree::generate(
     <target_deallocation>
   */
   CodeCanvas variant_with_use_after_free;
+
+  variant_with_use_after_free.add_test_case_description_line("Memory region: " + memory_region->get_name());
+  variant_with_use_after_free.add_test_case_description_line("Bug type: double-free, " + memory_state->get_printable_name());
+  variant_with_use_after_free.add_test_case_description_line("Access type: " + access_location->get_name() + ", " + access_action->get_name());
+
+  variant_with_use_after_free.add_to_variant_description("with use-after-free");
+
   variant_with_use_after_free.add_to_f_body({
     "#ifndef __GLIBC__",
     "exit(PRECONDITIONS_FAILED_VALUE); // not using glibc",
@@ -82,6 +89,11 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >DoubleFree::generate(
   full_variants.push_back( region_canvas );
 
   CodeCanvas variant_without_use_after_free;
+  variant_without_use_after_free.add_test_case_description_line("Memory region: " + memory_region->get_name());
+  variant_without_use_after_free.add_test_case_description_line("Bug type: double-free, " + memory_state->get_printable_name());
+  variant_without_use_after_free.add_test_case_description_line("Access type: " + access_location->get_name() + ", " + access_action->get_name());
+
+  variant_without_use_after_free.add_to_variant_description("without use-after-free");
   variant_without_use_after_free.add_to_f_body({
     "#ifndef __GLIBC__",
     "exit(PRECONDITIONS_FAILED_VALUE); // not using glibc",
@@ -136,6 +148,13 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >DoubleFree::generate_validation(
     <target_deallocation>
   */
   CodeCanvas variant_with_use_after_free;
+
+  variant_with_use_after_free.add_test_case_description_line("Memory region: " + memory_region->get_name());
+  variant_with_use_after_free.add_test_case_description_line("Bug type: double-free, " + memory_state->get_printable_name());
+  variant_with_use_after_free.add_test_case_description_line("Access type: " + access_location->get_name() + ", " + access_action->get_name());
+
+  variant_with_use_after_free.add_to_variant_description("with use-after-free");
+
   variant_with_use_after_free.add_to_f_body({
     "#ifndef __GLIBC__",
     "exit(PRECONDITIONS_FAILED_VALUE); // not using glibc",
@@ -156,6 +175,13 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >DoubleFree::generate_validation(
   full_variants.push_back( region_canvas );
 
   CodeCanvas variant_without_use_after_free;
+
+  variant_without_use_after_free.add_test_case_description_line("Memory region: " + memory_region->get_name());
+  variant_without_use_after_free.add_test_case_description_line("Bug type: double-free, " + memory_state->get_printable_name());
+  variant_without_use_after_free.add_test_case_description_line("Access type: " + access_location->get_name() + ", " + access_action->get_name());
+
+  variant_without_use_after_free.add_to_variant_description("without use-after-free");
+
   variant_without_use_after_free.add_to_f_body({
     "#ifndef __GLIBC__",
     "exit(PRECONDITIONS_FAILED_VALUE); // not using glibc",

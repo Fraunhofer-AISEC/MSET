@@ -45,6 +45,10 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> NonLinearOOBA::generate(
   */
   CodeCanvas variant;
 
+  variant.add_test_case_description_line("Origin: " + origin->get_name());
+  variant.add_test_case_description_line("Target: " + target->get_name());
+  variant.add_test_case_description_line("Bug type: " + origin_target_relation->get_printable_name() + ", non-linear OOBA, " + flow->get_name());
+  variant.add_test_case_description_line("Access type: " + access_location->get_name() + ", " + access_action->get_name());
 
   auto generate_preconditions_check_distance = std::bind(&Flow::generate_preconditions_check_distance, flow.get(), std::placeholders::_1);
 
@@ -53,23 +57,22 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> NonLinearOOBA::generate(
 
   for ( auto &origin_target_canvas : origin_target_canvases )
   {
-    if ( origin_target_canvas->get_forces_underflow() && !is_a<Underflow>(flow) ) continue; // the origin-target requires an underflow, but the for is not an underflow -> skip
-    std::vector< std::string > distance_variants = { origin_target_canvas->get_distance() };
-    for ( auto &distance_variant : distance_variants )
-    {
-      if ( distance_variant == "N/A" ) continue;
-      auto origin_target_canvas_copy = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas);
-      std::vector<std::string> access_target_code = access_location->generate_at_index(
-        access_action,
-        origin_target_canvas_copy->get_origin_name(),
-        distance_variant,
-        origin_target_canvas_copy->get_target_size(),
-        generate_preconditions_check_distance
-      );
-      origin_target_canvas_copy->add_during_lifetime(access_target_code);
-      origin_target_canvas_copy->add_during_lifetime("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
-      full_variants.push_back( origin_target_canvas_copy );
-    }
+    if ( origin_target_canvas->get_forces_underflow() && !is_a<Underflow>(flow) ) continue; // the origin-target requires an underflow, but this is not an underflow -> skip
+    std::string distance = origin_target_canvas->get_distance();
+
+    if ( distance == "N/A" ) continue;
+    auto origin_target_canvas_copy = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas);
+    std::vector<std::string> access_target_code = access_location->generate_at_index(
+      access_action,
+      origin_target_canvas_copy->get_origin_name(),
+      distance,
+      origin_target_canvas_copy->get_target_size(),
+      generate_preconditions_check_distance
+    );
+    origin_target_canvas_copy->add_during_lifetime(access_target_code);
+    origin_target_canvas_copy->add_during_lifetime("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
+    full_variants.push_back( origin_target_canvas_copy );
+
   }
 
   return full_variants;
@@ -92,6 +95,11 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> NonLinearOOBA::generate_val
     _exit(TEST_CASE_SUCCESSFUL_VALUE);
   */
   CodeCanvas variant;
+  variant.add_test_case_description_line("Origin: " + origin->get_name());
+  variant.add_test_case_description_line("Target: " + target->get_name());
+  variant.add_test_case_description_line("Bug type: " + origin_target_relation->get_printable_name() + ", non-linear OOBA, " + flow->get_name());
+  variant.add_test_case_description_line("Access type: " + access_location->get_name() + ", " + access_action->get_name());
+
 
   std::vector< std::shared_ptr<OriginTargetCodeCanvas> > origin_target_canvases = origin_target_relation->generate(
     variant, origin, 8, target, 8);
@@ -99,22 +107,21 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> NonLinearOOBA::generate_val
   for ( auto &origin_target_canvas : origin_target_canvases )
   {
     if ( origin_target_canvas->get_forces_underflow() && !is_a<Underflow>(flow) ) continue; // the origin-target requires an underflow, but the for is not an underflow -> skip
-    std::vector< std::string > distance_variants = { "0" };
-    for ( auto &distance_variant : distance_variants )
-    {
-      if ( distance_variant == "N/A" ) continue;
-      auto origin_target_canvas_copy = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas);
-      std::vector<std::string> access_target_code = access_location->generate_at_index(
-        access_action,
-        origin_target_canvas_copy->get_target_name(),
-        distance_variant,
-        origin_target_canvas_copy->get_target_size(),
-        nullptr
-      );
-      origin_target_canvas_copy->add_during_lifetime(access_target_code);
-      origin_target_canvas_copy->add_during_lifetime("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
-      full_variants.push_back( origin_target_canvas_copy );
-    }
+    std::string distance = { "0" };
+
+    if ( distance == "N/A" ) continue;
+    auto origin_target_canvas_copy = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas);
+    std::vector<std::string> access_target_code = access_location->generate_at_index(
+      access_action,
+      origin_target_canvas_copy->get_target_name(),
+      distance,
+      origin_target_canvas_copy->get_target_size(),
+      nullptr
+    );
+    origin_target_canvas_copy->add_during_lifetime(access_target_code);
+    origin_target_canvas_copy->add_during_lifetime("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
+    full_variants.push_back( origin_target_canvas_copy );
+
   }
 
   return full_variants;

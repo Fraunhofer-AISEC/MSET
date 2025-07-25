@@ -33,6 +33,12 @@ bool is_a(const std::shared_ptr<U>& ptr)
   return std::dynamic_pointer_cast<T>(ptr) != nullptr;
 }
 
+template <typename T, typename U>
+bool are_the_same_type(const std::shared_ptr<T>& a, const std::shared_ptr<U>& b)
+{
+  return a && b && typeid(*a) == typeid(*b);
+}
+
 extern bool directory_exists(const std::string& dir_path);
 extern bool is_directory_empty(const std::string& dir_path);
 extern void remove_all_files_from_directory(const std::string& dir_path);

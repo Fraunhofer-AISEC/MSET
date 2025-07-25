@@ -43,6 +43,11 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> TypeConfusion::generate(
     _exit(TEST_CASE_SUCCESSFUL_VALUE);
   */
   CodeCanvas variant;
+  variant.add_test_case_description_line("Origin: " + origin->get_name());
+  variant.add_test_case_description_line("Target: " + target->get_name());
+  variant.add_test_case_description_line("Bug type: " + origin_target_relation->get_printable_name() + ", type confusion OOBA, " + flow->get_name());
+  variant.add_test_case_description_line("Access type: " + access_location->get_name() + ", " + access_action->get_name());
+
 
 
   auto generate_preconditions_check_distance = std::bind(&Flow::generate_preconditions_check_distance, flow.get(), std::placeholders::_1);
@@ -53,7 +58,7 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> TypeConfusion::generate(
 
   for ( auto &origin_target_canvas : origin_target_canvases )
   {
-    if ( origin_target_canvas->get_forces_underflow() ) continue; // skip underflows
+    if ( origin_target_canvas->get_forces_underflow() ) continue; // skip underflows as they are incompatible with type confusions
 
     // simple variant with BigType
     std::shared_ptr<OriginTargetCodeCanvas> variant_with_big_type = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas);
@@ -86,16 +91,21 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> TypeConfusion::generate(
       "  char buffer[(size_t)1 << 27];",
       "};"
     });
+    variant_with_big_type->add_to_variant_description("using big structure cast");
+
     std::shared_ptr<OriginTargetCodeCanvas> variant_with_big_type_local = std::make_shared<OriginTargetCodeCanvas>(*variant_with_big_type);
     if (variant_with_big_type->get_number_of_globals() > 0)
     {
       std::shared_ptr<OriginTargetCodeCanvas> variant_with_big_type_global_first = std::make_shared<OriginTargetCodeCanvas>(*variant_with_big_type);
       variant_with_big_type_global_first->add_global_first("static ssize_t i;");
+      variant_with_big_type_global_first->add_to_variant_description("global index, declared first");
       full_variants.push_back( variant_with_big_type_global_first );
     }
     variant_with_big_type->add_global("static ssize_t i;");
+    variant_with_big_type->add_to_variant_description("global index");
     variant_with_big_type_local->add_local_first("ssize_t i;");
     full_variants.push_back( variant_with_big_type );
+    variant_with_big_type_local->add_to_variant_description("stack index");
     full_variants.push_back( variant_with_big_type_local );
 
     // load widening variant
@@ -110,6 +120,7 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> TypeConfusion::generate(
     );
     variant_with_load_widening->add_during_lifetime(access_target_code);
     variant_with_load_widening->add_during_lifetime("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
+    variant_with_big_type->add_to_variant_description("using load widening");
     full_variants.push_back( variant_with_load_widening );
   }
 
@@ -133,6 +144,10 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> TypeConfusion::generate_val
     _exit(TEST_CASE_SUCCESSFUL_VALUE);
   */
   CodeCanvas variant;
+  variant.add_test_case_description_line("Origin: " + origin->get_name());
+  variant.add_test_case_description_line("Target: " + target->get_name());
+  variant.add_test_case_description_line("Bug type: " + origin_target_relation->get_printable_name() + ", type confusion OOBA, " + flow->get_name());
+  variant.add_test_case_description_line("Access type: " + access_location->get_name() + ", " + access_action->get_name());
 
   std::vector< std::shared_ptr<OriginTargetCodeCanvas> > origin_target_canvases = origin_target_relation->generate(
     variant, origin, 8, target, 8);
@@ -168,6 +183,7 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> TypeConfusion::generate_val
       "  char buffer[(size_t)1 << 27];",
       "};"
     });
+    variant_with_big_type->add_to_variant_description("using big structure cast");
     full_variants.push_back( variant_with_big_type );
 
     // load widening variant
@@ -182,6 +198,7 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> TypeConfusion::generate_val
     );
     variant_with_load_widening->add_during_lifetime(access_target_code);
     variant_with_load_widening->add_during_lifetime("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
+    variant_with_load_widening->add_to_variant_description("using load widening");
     full_variants.push_back( variant_with_load_widening );
   }
 
