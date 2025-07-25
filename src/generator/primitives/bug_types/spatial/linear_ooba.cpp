@@ -64,8 +64,8 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> LinearOOBA::generate(
     if ( origin_target_canvas->get_forces_underflow() && !is_a<Underflow>(flow) ) continue; // the origin-target requires an underflow, but the for is not an underflow -> skip
 
     std::vector< std::tuple< std::string, std::string > > distance_variants = {
-      { origin_target_canvas->get_distance(), "distance is checked as it is" },
-      { origin_target_canvas->get_distance_negated(), "distance is negated before checking" }
+      std::tuple< std::string, std::string >{ origin_target_canvas->get_distance(), "distance is checked as it is" },
+      std::tuple< std::string, std::string >{ origin_target_canvas->get_distance_negated(), "distance is negated before checking" }
     };
     for ( auto &distance_variant : distance_variants )
     {
