@@ -312,8 +312,8 @@ static void collapse_results(bool compute_baseline)
 
     exec_result_t overall_result = compute_overall_result( results );
 
-    raw_spatial_results[compressed_result_info->origin_name].push_back(overall_result);
-    raw_spatial_results[compressed_result_info->target_name].push_back(overall_result);
+    raw_spatial_results["origin " + compressed_result_info->origin_name].push_back(overall_result);
+    raw_spatial_results["target " + compressed_result_info->target_name].push_back(overall_result);
     raw_spatial_results[compressed_result_info->origin_target_relation_name].push_back(overall_result);
     raw_spatial_results[compressed_result_info->flow_name].push_back(overall_result);
     raw_spatial_results[compressed_result_info->spatial_bug_name].push_back(overall_result);
@@ -329,8 +329,8 @@ static void collapse_results(bool compute_baseline)
 
       exec_result_t overall_baseline_result = compute_overall_result( baseline_results );
 
-      raw_spatial_baseline_results[compressed_result_info->origin_name].push_back(overall_baseline_result);
-      raw_spatial_baseline_results[compressed_result_info->target_name].push_back(overall_baseline_result);
+      raw_spatial_baseline_results["origin " + compressed_result_info->origin_name].push_back(overall_baseline_result);
+      raw_spatial_baseline_results["target " + compressed_result_info->target_name].push_back(overall_baseline_result);
       raw_spatial_baseline_results[compressed_result_info->origin_target_relation_name].push_back(overall_baseline_result);
       raw_spatial_baseline_results[compressed_result_info->flow_name].push_back(overall_baseline_result);
       raw_spatial_baseline_results[compressed_result_info->spatial_bug_name].push_back(overall_baseline_result);
@@ -507,13 +507,13 @@ static void process_results(bool print_table_summary, bool with_baseline)
   for ( const auto& info: regions_info )
   {
     Logger(log_level_t::VERBOSE) << info << ":\n";
-    print_results(raw_spatial_results[info], raw_spatial_baseline_results[info], log_level_t::VERBOSE);
+    print_results(raw_spatial_results["origin " + info], raw_spatial_baseline_results["origin " + info], log_level_t::VERBOSE);
   }
   Logger(log_level_t::VERBOSE) << "Bug detection distribution per target:\n";
   for ( const auto& info: regions_info )
   {
     Logger(log_level_t::VERBOSE) << info << ":\n";
-    print_results(raw_spatial_results[info], raw_spatial_baseline_results[info], log_level_t::VERBOSE);
+    print_results(raw_spatial_results["target " + info], raw_spatial_baseline_results["target " + info], log_level_t::VERBOSE);
   }
   Logger(log_level_t::VERBOSE) << "Bug detection distribution per origin-target relation:\n";
   for ( const auto& info: origin_target_relations_info )
