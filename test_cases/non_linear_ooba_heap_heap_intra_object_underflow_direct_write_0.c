@@ -10,7 +10,8 @@
  * Target: heap
  * Bug type: intra-object, non-linear OOBA, underflow
  * Access type: direct, write
- * Variant: target declared after origin
+ * Variant:
+ *  - target declared after origin
  */
 
 #include <unistd.h> // _exit

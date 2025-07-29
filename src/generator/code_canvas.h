@@ -35,7 +35,7 @@ public:
       number_of_globals(other.number_of_globals),
       number_of_locals(other.number_of_locals),
       test_case_description_lines(std::move(other.test_case_description_lines)),
-      variant_description(std::move(other.variant_description))
+      variant_description_lines(std::move(other.variant_description_lines))
   {
   }
 
@@ -59,7 +59,7 @@ public:
     number_of_globals = other.number_of_globals;
     number_of_locals = other.number_of_locals;
     test_case_description_lines = other.test_case_description_lines;
-    variant_description = other.variant_description;
+    variant_description_lines = other.variant_description_lines;
     return *this;
   }
 
@@ -83,7 +83,7 @@ public:
     number_of_globals = other.number_of_globals;
     number_of_locals = other.number_of_locals;
     test_case_description_lines = other.test_case_description_lines;
-    variant_description = other.variant_description;
+    variant_description_lines = other.variant_description_lines;
     return *this;
   }
 
@@ -138,17 +138,8 @@ public:
   }
 
   void add_test_case_description_line( const std::string &description_line ) { test_case_description_lines.push_back(description_line); }
-  void add_to_variant_description( const std::string &description )
-  {
-    if (variant_description.empty())
-    {
-      variant_description = description;
-    }
-    else
-    {
-      variant_description += ", " + description;
-    }
-  }
+  void add_variant_description_line( const std::string &description_line ) { variant_description_lines.push_back(description_line); }
+
 protected:
   void _generate_other_f_and_call();
   virtual void _update_indexes(code_pos_t from, size_t amount);
@@ -170,5 +161,5 @@ protected:
   int number_of_locals;
 
   std::vector< std::string > test_case_description_lines;
-  std::string variant_description;
+  std::vector< std::string > variant_description_lines;
 };

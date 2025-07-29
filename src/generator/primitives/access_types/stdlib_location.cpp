@@ -33,7 +33,6 @@ AccessLocation::SplitAccess StdlibLocation::generate_split_aux_vars(
     split_access.access_lines.push_back( "memcpy( (void *)read_value, (void *)" + access_var_name + ", " + std::to_string(size) + ");" );
     split_access.access_lines.emplace_back("_use( read_value );" );
     split_access.result = "&" + access_var_name + "[" + std::to_string(size) + "]";
-    split_access.description = "stdlib reading using auxiliary variables";
   }
   else
   {
@@ -44,8 +43,8 @@ AccessLocation::SplitAccess StdlibLocation::generate_split_aux_vars(
     split_access.access_lines.push_back( "memset( (void *)" + access_var_name + ", 0xFF, size);" );
     split_access.access_lines.emplace_back("_use(" + access_var_name + ");" );
     split_access.result = "&" + access_var_name + "[var_size]";
-    split_access.description = "stdlib writing using auxiliary variables";
   }
+  split_access.description = "auxiliary variables";
   return split_access;
 }
 
@@ -64,7 +63,6 @@ AccessLocation::SplitAccess StdlibLocation::generate_split_const_vars(
     split_access.access_lines.push_back( "memcpy( (void *)read_value, (void *)" + access_var_name + ", " + std::to_string(size) + ");" );
     split_access.access_lines.emplace_back("_use( read_value );" );
     split_access.result = "&" + access_var_name + "[" + std::to_string(size) + "]";
-    split_access.description = "stdlib reading using constants";
   }
   else
   {
@@ -72,8 +70,8 @@ AccessLocation::SplitAccess StdlibLocation::generate_split_const_vars(
     split_access.access_lines.push_back( "memset( (void *)" + access_var_name + ", 0xFF, " + std::to_string(size) + ");" );
     split_access.access_lines.emplace_back("_use(" + access_var_name + ");" );
     split_access.result = "&" + access_var_name + "[8]";
-    split_access.description = "stdlib writing using constants";
   }
+  split_access.description = "constants";
   return split_access;
 }
 
@@ -114,7 +112,6 @@ AccessLocation::SplitAccess StdlibLocation::generate_bulk_split_using_index(
       "}",
     } );
     split_access.result = "&" + from + "[i]";
-    split_access.description = "stdlib reading using an index";
   }
   else
   {
@@ -144,8 +141,8 @@ AccessLocation::SplitAccess StdlibLocation::generate_bulk_split_using_index(
       "_use(" + from + ");"
     } );
     split_access.result = "&" + from + "[i]";
-    split_access.description = "stdlib writing using an index";
   }
+  split_access.description = "index";
   return split_access;
 }
 
@@ -186,7 +183,6 @@ AccessLocation::SplitAccess StdlibLocation::generate_bulk_split_using_aux_ptr(
       "}",
     });
     split_access.result = "aux_ptr";
-    split_access.description = "stdlib reading using an auxiliary pointer";
   }
   else
   {
@@ -219,9 +215,9 @@ AccessLocation::SplitAccess StdlibLocation::generate_bulk_split_using_aux_ptr(
       "_use(" + from + ");"
     } );
     split_access.result = "aux_ptr";
-    split_access.description = "stdlib writing using an auxiliary pointer";
   }
 
+  split_access.description = "auxiliary pointer";
   return split_access;
 }
 

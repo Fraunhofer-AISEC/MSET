@@ -184,7 +184,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >UseAfterStar::_generate_reused_m
   reused_region_canvas_repeat->add_during_lifetime(access_type_code);
   reused_region_canvas_repeat->add_during_lifetime("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
 
-  reused_region_canvas_repeat->add_to_variant_description("repeated attempts");
+  reused_region_canvas_repeat->add_variant_description_line("with repeated attempts");
 
   variants = {reused_region_canvas_simple, reused_region_canvas_repeat};
 
@@ -249,7 +249,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >UseAfterStar::_generate_reused_m
     },
     "  "
   );
-  reused_region_canvas_repeated->add_to_variant_description("repeated attempts");
+  reused_region_canvas_repeated->add_variant_description_line("with repeated attempts");
   variants.push_back( reused_region_canvas_repeated );
 
   CodeCanvas code_array;
@@ -275,7 +275,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >UseAfterStar::_generate_reused_m
   reused_region_canvas_simple_array->add_during_lifetime(access_type_code.access_lines);
   reused_region_canvas_simple_array->add_during_lifetime("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
   reused_region_canvas_simple_array->add_globals( AccessLocation::AuxiliaryVariable::to_string_vector( access_type_code.aux_variables ) );
-  reused_region_canvas_simple_array->add_to_variant_description("using an array of objects");
+  reused_region_canvas_simple_array->add_variant_description_line("using an array of objects");
   variants.push_back( reused_region_canvas_simple_array );
 
   CodeCanvas code_array_repeated;
@@ -320,7 +320,9 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >UseAfterStar::_generate_reused_m
     },
     "  "
     );
-  reused_region_canvas_array_repeated->add_to_variant_description("repeated attempts, using an array of objects");
+  reused_region_canvas_array_repeated->add_variant_description_line("with repeated attempts");
+  reused_region_canvas_array_repeated->add_variant_description_line("using an array of objects");
+
   variants.push_back( reused_region_canvas_array_repeated );
 
   return variants;
@@ -471,7 +473,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >UseAfterStar::_generate_reused_m
   });
   reused_region_canvas_repeat->add_during_lifetime(access_type_code);
   reused_region_canvas_repeat->add_during_lifetime("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
-  reused_region_canvas_repeat->add_to_variant_description("repeated attempts");
+  reused_region_canvas_repeat->add_variant_description_line("with repeated attempts");
   variants = {reused_region_canvas_simple, reused_region_canvas_repeat};
 
   return variants;
@@ -531,7 +533,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >UseAfterStar::_generate_reused_m
     },
     "  "
   );
-  reused_region_canvas_repeated->add_to_variant_description("repeated attempts");
+  reused_region_canvas_repeated->add_variant_description_line("with repeated attempts");
 
   variants.push_back( reused_region_canvas_repeated );
 
@@ -558,7 +560,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >UseAfterStar::_generate_reused_m
   reused_region_canvas_simple_array->add_to_f_body(access_type_code.access_lines);
   reused_region_canvas_simple_array->add_to_f_body("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
   reused_region_canvas_simple_array->add_globals( AccessLocation::AuxiliaryVariable::to_string_vector( access_type_code.aux_variables ) );
-  reused_region_canvas_simple_array->add_to_variant_description("using an array of objects");
+  reused_region_canvas_simple_array->add_variant_description_line("using an array of objects");
 
   variants.push_back( reused_region_canvas_simple_array );
 
@@ -602,7 +604,8 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >UseAfterStar::_generate_reused_m
     },
     "  "
   );
-  reused_region_canvas_array_repeated->add_to_variant_description("repeated attempts, using an array of objects");
+  reused_region_canvas_array_repeated->add_variant_description_line("repeated attempts");
+  reused_region_canvas_array_repeated->add_variant_description_line("using an array of objects");
 
   variants.push_back( reused_region_canvas_array_repeated );
 

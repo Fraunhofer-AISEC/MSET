@@ -6,7 +6,8 @@
  */
 
 /*
- * Variant: using an array of objects
+ * Variant:
+ *  - using an array of objects
  */
 
 #include <unistd.h> // _exit

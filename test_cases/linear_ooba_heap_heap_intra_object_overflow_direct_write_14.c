@@ -10,7 +10,11 @@
  * Target: heap
  * Bug type: intra-object, linear OOBA, overflow
  * Access type: direct, write
- * Variant: target declared after origin, distance is negated before checking, target reached by writing using an auxiliary pointer, target accessed by writing using auxiliary variables, global auxiliary variables, declared last
+ * Variant:
+ *  - target declared after origin
+ *  - distance is negated before checking
+ *  - target reached by using a global auxiliary pointer, declared last
+ *  - target accessed by using auxiliary variables
  */
 
 #include <unistd.h> // _exit

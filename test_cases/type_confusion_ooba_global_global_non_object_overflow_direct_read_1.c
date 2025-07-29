@@ -10,7 +10,10 @@
  * Target: global
  * Bug type: non-object, type confusion OOBA, overflow
  * Access type: direct, read
- * Variant: using big structure cast, global index, using load widening
+ * Variant:
+ *  - using big structure cast
+ *  - using a global index
+ *  - using load widening
  */
 
 #include <unistd.h> // _exit

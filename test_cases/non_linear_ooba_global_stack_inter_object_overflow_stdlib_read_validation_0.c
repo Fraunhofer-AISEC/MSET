@@ -10,7 +10,8 @@
  * Target: stack
  * Bug type: inter-object, non-linear OOBA, overflow
  * Access type: stdlib, read
- * Variant: target declared after origin
+ * Variant:
+ *  - target declared after origin
  */
 
 #include <unistd.h> // _exit

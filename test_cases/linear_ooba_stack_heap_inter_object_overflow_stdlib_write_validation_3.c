@@ -10,7 +10,9 @@
  * Target: heap
  * Bug type: inter-object, linear OOBA, overflow
  * Access type: stdlib, write
- * Variant: target declared after origin, target reached by stdlib writing using an index, stack auxiliary variables, declared first
+ * Variant:
+ *  - target declared after origin
+ *  - target reached using stack index, declared first
  */
 
 #include <unistd.h> // _exit

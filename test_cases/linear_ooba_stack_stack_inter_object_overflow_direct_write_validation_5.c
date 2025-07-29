@@ -10,7 +10,9 @@
  * Target: stack
  * Bug type: inter-object, linear OOBA, overflow
  * Access type: direct, write
- * Variant: target declared before origin, target reached by writing using an index, stack auxiliary variables, declared first
+ * Variant:
+ *  - target declared before origin
+ *  - target reached using stack index, declared first
  */
 
 #include <unistd.h> // _exit

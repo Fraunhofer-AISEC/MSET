@@ -10,7 +10,9 @@
  * Target: global
  * Bug type: inter-object, type confusion OOBA, overflow
  * Access type: direct, read
- * Variant: target declared before origin, using big structure cast
+ * Variant:
+ *  - target declared before origin
+ *  - using big structure cast
  */
 
 #include <unistd.h> // _exit

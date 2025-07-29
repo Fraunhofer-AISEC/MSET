@@ -64,7 +64,7 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> LinearOOBA::generate(
     if ( origin_target_canvas->get_forces_underflow() && !is_a<Underflow>(flow) ) continue; // the origin-target requires an underflow, but the for is not an underflow -> skip
 
     std::vector< std::tuple< std::string, std::string > > distance_variants = {
-      std::tuple< std::string, std::string >{ origin_target_canvas->get_distance(), "distance is checked as it is" },
+      std::tuple< std::string, std::string >{ origin_target_canvas->get_distance(), "distance is checked as is" },
       std::tuple< std::string, std::string >{ origin_target_canvas->get_distance_negated(), "distance is negated before checking" }
     };
     for ( auto &distance_variant : distance_variants )
@@ -89,7 +89,7 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> LinearOOBA::generate(
             access_action, origin_target_canvas_copy->get_origin_name(), origin_target_canvas_copy->get_target_name(), distance,
             generate_preconditions_check_distance, generate_preconditions_check_in_range, generate_counter_update
           );
-        origin_target_canvas_copy->add_to_variant_description( distance_description );
+        origin_target_canvas_copy->add_variant_description_line( distance_description );
       }
       else
       {
@@ -97,7 +97,7 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> LinearOOBA::generate(
         if ( distance_as_static_number == static_cast<ssize_t>(origin_target_canvas_copy->get_origin_size()) )
         {
           // special case for when there is no space in between the origin and the target
-          origin_target_canvas_copy->add_to_variant_description("no space in between origin and target");
+          origin_target_canvas_copy->add_variant_description_line("no space in between origin and target");
           std::vector<AccessLocation::SplitAccess> access_target_codes = access_location->generate_split_all(
             access_action,
             "(" + origin_target_canvas_copy->get_origin_name() + " + " + std::to_string(origin_target_canvas_copy->get_target_size()) + ")",
@@ -108,7 +108,7 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> LinearOOBA::generate(
             origin_target_canvas_with_access->add_during_lifetime(access_target_code.to_lines());
             origin_target_canvas_with_access->add_during_lifetime("_use(" + origin_target_canvas_copy->get_origin_name() + ");");
             origin_target_canvas_with_access->add_during_lifetime("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
-            origin_target_canvas_with_access->add_to_variant_description("target accessed by " + access_target_code.description);
+            origin_target_canvas_with_access->add_variant_description_line("target accessed by using " + access_target_code.description);
             full_variants.push_back(origin_target_canvas_with_access);
           }
           continue;
@@ -117,7 +117,7 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> LinearOOBA::generate(
           access_action,origin_target_canvas_copy->get_origin_name(), origin_target_canvas_copy->get_target_name(), distance,
           generate_preconditions_check_distance, generate_preconditions_check_in_range, generate_counter_update
         );
-        origin_target_canvas_copy->add_to_variant_description( distance_description );
+        origin_target_canvas_copy->add_variant_description_line( distance_description );
       }
 
 
@@ -131,33 +131,35 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> LinearOOBA::generate(
         for ( auto &access_target_code : access_target_codes )
         {
           auto origin_target_canvas_with_access = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas_copy);
-          origin_target_canvas_with_access->add_to_variant_description("target reached by " + reach_target_code.description);
           origin_target_canvas_with_access->add_during_lifetime("_use(" + origin_target_canvas_copy->get_target_name() + ");");
           origin_target_canvas_with_access->add_during_lifetime("_use(" + origin_target_canvas_copy->get_origin_name() + ");");
           origin_target_canvas_with_access->add_during_lifetime(reach_target_code.access_lines);
           origin_target_canvas_with_access->add_during_lifetime(access_target_code.to_lines());
           origin_target_canvas_with_access->add_during_lifetime("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
-          origin_target_canvas_with_access->add_to_variant_description("target accessed by " + access_target_code.description);
           if ( is_a<ReadAction>( access_action ) )
           {
             // since reading cannot corrupt, just allocate the aux variables as globals
             std::shared_ptr<OriginTargetCodeCanvas> aux_ptr_global_variant = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas_with_access);
             aux_ptr_global_variant->add_globals( AccessLocation::AuxiliaryVariable::to_string_vector( reach_target_code.aux_variables ) );
 
+            aux_ptr_global_variant->add_variant_description_line("target reached by using a global " + reach_target_code.description);
+            aux_ptr_global_variant->add_variant_description_line("target accessed by using " + access_target_code.description);
             full_variants.push_back(aux_ptr_global_variant);
           }
           else
           {
             std::shared_ptr<OriginTargetCodeCanvas> aux_ptr_global_last_variant = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas_with_access);
             aux_ptr_global_last_variant->add_globals( AccessLocation::AuxiliaryVariable::to_string_vector( reach_target_code.aux_variables ) );
-            aux_ptr_global_last_variant->add_to_variant_description("global auxiliary variables, declared last");
+            aux_ptr_global_last_variant->add_variant_description_line("target reached by using a global " + reach_target_code.description + ", declared last");
+            aux_ptr_global_last_variant->add_variant_description_line("target accessed by using " + access_target_code.description);
             full_variants.push_back(aux_ptr_global_last_variant);
 
             if (origin_target_canvas_with_access->get_number_of_globals() > 0)
             {
               std::shared_ptr<OriginTargetCodeCanvas> aux_ptr_global_first_variant = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas_with_access);
               aux_ptr_global_first_variant->add_globals_first( AccessLocation::AuxiliaryVariable::to_string_vector( reach_target_code.aux_variables ) );
-              aux_ptr_global_first_variant->add_to_variant_description("global auxiliary variables, declared first");
+              aux_ptr_global_first_variant->add_variant_description_line("target reached by using a global " + reach_target_code.description + ", declared first");
+              aux_ptr_global_first_variant->add_variant_description_line("target accessed by using " + access_target_code.description);
               full_variants.push_back(aux_ptr_global_first_variant);
             }
             // else there is no difference between add_global and add_global_first
@@ -185,11 +187,13 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> LinearOOBA::generate(
             }
             if (global_init_added)
             {
-              aux_ptr_global_init_last_variant->add_to_variant_description("global auxiliary variables, initialized, declared last");
+              aux_ptr_global_init_last_variant->add_variant_description_line("target reached by using a global " + reach_target_code.description + ", initialized, declared last");
+              aux_ptr_global_init_last_variant->add_variant_description_line("target accessed by using " + access_target_code.description);
               full_variants.push_back(aux_ptr_global_init_last_variant);
               if (origin_target_canvas_with_access->get_number_of_globals() > 0)
               {
-                aux_ptr_global_init_first_variant->add_to_variant_description("global auxiliary variables, initialized, declared first");
+                aux_ptr_global_init_first_variant->add_variant_description_line("target reached by using a global " + reach_target_code.description + ", initialized, declared first");
+                aux_ptr_global_init_first_variant->add_variant_description_line("target accessed by using " + access_target_code.description);
                 full_variants.push_back(aux_ptr_global_init_first_variant);
               }
               // else there is no difference between add_global and add_global_first
@@ -198,14 +202,16 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> LinearOOBA::generate(
 
             std::shared_ptr<OriginTargetCodeCanvas> aux_ptr_stack_last_variant = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas_with_access);
             aux_ptr_stack_last_variant->add_locals( AccessLocation::AuxiliaryVariable::to_string_vector( reach_target_code.aux_variables ) );
-            aux_ptr_stack_last_variant->add_to_variant_description("stack auxiliary variables, declared last");
+            aux_ptr_stack_last_variant->add_variant_description_line("target reached by using a stack " + reach_target_code.description + ", declared last");
+            aux_ptr_stack_last_variant->add_variant_description_line("target accessed by using " + access_target_code.description);
             full_variants.push_back(aux_ptr_stack_last_variant);
 
             if (origin_target_canvas_with_access->get_number_of_locals() > 0)
             {
               std::shared_ptr<OriginTargetCodeCanvas> aux_ptr_stack_first_variant = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas_with_access);
               aux_ptr_stack_first_variant->add_locals_first( AccessLocation::AuxiliaryVariable::to_string_vector( reach_target_code.aux_variables ) );
-              aux_ptr_stack_first_variant->add_to_variant_description("stack auxiliary variables, declared first");
+              aux_ptr_stack_first_variant->add_variant_description_line("target reached by using a stack " + reach_target_code.description + ", declared first");
+              aux_ptr_stack_first_variant->add_variant_description_line("target accessed by using " + access_target_code.description);
               full_variants.push_back(aux_ptr_stack_first_variant);
             }
             // else there is no difference
@@ -280,7 +286,6 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> LinearOOBA::generate_valida
           access_action, var_name_to_access, var_name_to_access, distance_variant,
           nullptr, nullptr, generate_counter_update
         );
-        origin_target_canvas_copy->add_to_variant_description("target reached by " + reach_target_code.description);
       }
       else
       {
@@ -295,7 +300,7 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> LinearOOBA::generate_valida
           origin_target_canvas_copy->add_during_lifetime(access_target_code);
           origin_target_canvas_copy->add_during_lifetime("_use(" + origin_target_canvas_copy->get_origin_name() + ");");
           origin_target_canvas_copy->add_during_lifetime("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
-          origin_target_canvas_copy->add_to_variant_description("no space between origin and target");
+          origin_target_canvas_copy->add_variant_description_line("no space between origin and target");
           full_variants.push_back(origin_target_canvas_copy);
           continue;
         }
@@ -303,7 +308,6 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> LinearOOBA::generate_valida
           access_action, var_name_to_access, var_name_to_access, distance_variant,
           nullptr, nullptr, generate_counter_update
         );
-        origin_target_canvas_copy->add_to_variant_description("target reached by " + reach_target_code.description);
       }
 
       std::vector<std::string> access_target_code = access_location->generate(
@@ -324,7 +328,7 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> LinearOOBA::generate_valida
         std::shared_ptr<OriginTargetCodeCanvas> aux_ptr_global_variant = std::make_shared<OriginTargetCodeCanvas>(
           *origin_target_canvas_copy);
         aux_ptr_global_variant->add_globals( AccessLocation::AuxiliaryVariable::to_string_vector( reach_target_code.aux_variables ) );
-        aux_ptr_global_variant->add_to_variant_description("global auxiliary variables");
+        aux_ptr_global_variant->add_variant_description_line("target reached using global " + reach_target_code.description);
         full_variants.push_back(aux_ptr_global_variant);
       }
       else
@@ -332,14 +336,14 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> LinearOOBA::generate_valida
         std::shared_ptr<OriginTargetCodeCanvas> aux_ptr_global_last_variant = std::make_shared<OriginTargetCodeCanvas>(
           *origin_target_canvas_copy);
         aux_ptr_global_last_variant->add_globals( AccessLocation::AuxiliaryVariable::to_string_vector( reach_target_code.aux_variables ) );
-        aux_ptr_global_last_variant->add_to_variant_description("global auxiliary variables, declared last");
+        aux_ptr_global_last_variant->add_variant_description_line("target reached using global " + reach_target_code.description + ", declared last");
         full_variants.push_back(aux_ptr_global_last_variant);
 
         if (origin_target_canvas_copy->get_number_of_globals() > 0)
         {
           std::shared_ptr<OriginTargetCodeCanvas> aux_ptr_global_first_variant = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas_copy);
           aux_ptr_global_first_variant->add_globals_first( AccessLocation::AuxiliaryVariable::to_string_vector( reach_target_code.aux_variables ) );
-          aux_ptr_global_first_variant->add_to_variant_description("global auxiliary variables, declared first");
+          aux_ptr_global_first_variant->add_variant_description_line("target reached using global " + reach_target_code.description + ", declared first");
           full_variants.push_back(aux_ptr_global_first_variant);
         }
         // else there is no difference between add_global and add_global_first
@@ -367,11 +371,11 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> LinearOOBA::generate_valida
         }
         if (global_init_added)
         {
-          aux_ptr_global_init_last_variant->add_to_variant_description("global auxiliary variables, declared last");
+          aux_ptr_global_init_last_variant->add_variant_description_line("target reached using global " + reach_target_code.description + ", declared last");
           full_variants.push_back(aux_ptr_global_init_last_variant);
           if (origin_target_canvas_copy->get_number_of_globals() > 0)
           {
-            aux_ptr_global_init_first_variant->add_to_variant_description("global auxiliary variables, declared first");
+            aux_ptr_global_init_first_variant->add_variant_description_line("target reached using global " + reach_target_code.description + ", declared first");
             full_variants.push_back(aux_ptr_global_init_first_variant);
           }
           // else there is no difference between add_global and add_global_first
@@ -380,7 +384,7 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> LinearOOBA::generate_valida
 
         std::shared_ptr<OriginTargetCodeCanvas> aux_ptr_stack_last_variant = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas_copy);
         aux_ptr_stack_last_variant->add_locals( AccessLocation::AuxiliaryVariable::to_string_vector( reach_target_code.aux_variables ) );
-        aux_ptr_stack_last_variant->add_to_variant_description("stack auxiliary variables, declared last");
+        aux_ptr_stack_last_variant->add_variant_description_line("target reached using stack " + reach_target_code.description + ", declared last");
 
         full_variants.push_back(aux_ptr_stack_last_variant);
 
@@ -388,7 +392,7 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> LinearOOBA::generate_valida
         {
           std::shared_ptr<OriginTargetCodeCanvas> aux_ptr_stack_first_variant = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas_copy);
           aux_ptr_stack_first_variant->add_locals_first( AccessLocation::AuxiliaryVariable::to_string_vector( reach_target_code.aux_variables ) );
-          aux_ptr_stack_first_variant->add_to_variant_description("stack auxiliary variables, declared first");
+          aux_ptr_stack_first_variant->add_variant_description_line("target reached using stack " + reach_target_code.description + ", declared first");
 
           full_variants.push_back(aux_ptr_stack_first_variant);
         }

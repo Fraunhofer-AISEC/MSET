@@ -10,7 +10,9 @@
  * Target: heap
  * Bug type: inter-object, type confusion OOBA, overflow
  * Access type: direct, read
- * Variant: target declared after origin, using big structure cast
+ * Variant:
+ *  - target declared after origin
+ *  - using big structure cast
  */
 
 #include <unistd.h> // _exit

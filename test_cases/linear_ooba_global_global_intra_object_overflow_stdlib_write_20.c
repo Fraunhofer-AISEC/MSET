@@ -10,7 +10,11 @@
  * Target: global
  * Bug type: intra-object, linear OOBA, overflow
  * Access type: stdlib, write
- * Variant: target declared after origin, distance is negated before checking, target reached by stdlib writing using an index, target accessed by stdlib writing using auxiliary variables, global auxiliary variables, declared last
+ * Variant:
+ *  - target declared after origin
+ *  - distance is negated before checking
+ *  - target reached by using a global index, declared last
+ *  - target accessed by using auxiliary variables
  */
 
 #include <unistd.h> // _exit

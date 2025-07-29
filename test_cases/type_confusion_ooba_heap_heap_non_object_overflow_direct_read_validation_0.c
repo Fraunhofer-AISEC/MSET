@@ -10,7 +10,8 @@
  * Target: heap
  * Bug type: non-object, type confusion OOBA, overflow
  * Access type: direct, read
- * Variant: using big structure cast
+ * Variant:
+ *  - using big structure cast
  */
 
 #include <unistd.h> // _exit

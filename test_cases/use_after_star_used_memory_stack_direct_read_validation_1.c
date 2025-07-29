@@ -9,7 +9,8 @@
  * Memory region: heap
  * Bug type: use-after-*, reused memory
  * Access type: direct, read
- * Variant: repeated attempts
+ * Variant:
+ *  - with repeated attempts
  */
 
 #include <unistd.h> // _exit

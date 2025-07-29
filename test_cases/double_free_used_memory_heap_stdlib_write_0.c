@@ -9,7 +9,8 @@
  * Memory region: heap
  * Bug type: double-free, used-memory
  * Access type: stdlib, write
- * Variant: with use-after-free
+ * Variant:
+ *  - with use-after-free
  */
 
 #include <unistd.h> // _exit

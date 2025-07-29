@@ -10,7 +10,8 @@
  * Target: heap
  * Bug type: non-object, linear OOBA, overflow
  * Access type: direct, write
- * Variant: target reached by writing using an index, stack auxiliary variables, declared last
+ * Variant:
+ *  - target reached using stack index, declared last
  */
 
 #include <unistd.h> // _exit

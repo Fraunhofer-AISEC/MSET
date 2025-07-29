@@ -42,7 +42,6 @@ AccessLocation::SplitAccess DirectLocation::generate_split_aux_vars(
     split_access.access_lines.push_back("  read_value[i] = " + access_var_name + "[i];");
     split_access.access_lines.emplace_back("}");
     split_access.access_lines.emplace_back("_use(read_value);" );
-    split_access.description = "reading using auxiliary variables";
   }
   else
   {
@@ -57,8 +56,8 @@ AccessLocation::SplitAccess DirectLocation::generate_split_aux_vars(
     split_access.access_lines.emplace_back("}");
 
     split_access.access_lines.emplace_back("_use(" + access_var_name + ");" );
-    split_access.description = "writing using auxiliary variables";
   }
+  split_access.description = "auxiliary variables";
   return split_access;
 }
 
@@ -83,7 +82,6 @@ AccessLocation::SplitAccess DirectLocation::generate_split_const_vars(
     split_access.access_lines.push_back("  read_value[i] = " + access_var_name + "[i];");
     split_access.access_lines.emplace_back("}");
     split_access.access_lines.emplace_back("_use(read_value);" );
-    split_access.description = "reading using constants";
   }
   else
   {
@@ -98,8 +96,8 @@ AccessLocation::SplitAccess DirectLocation::generate_split_const_vars(
     split_access.access_lines.emplace_back("}");
 
     split_access.access_lines.emplace_back("_use(" + access_var_name + ");" );
-    split_access.description = "writing using constants";
   }
+  split_access.description = "constants";
   return split_access;
 }
 
@@ -230,7 +228,6 @@ AccessLocation::SplitAccess DirectLocation::generate_bulk_split_using_index(
     {
       split_access.access_lines.insert(split_access.access_lines.begin(), "if ( !(" + generate_preconditions_check_distance(distance) + ") ) _exit(PRECONDITIONS_FAILED_VALUE);");
     }
-    split_access.description = "reading using an index";
   }
   else
   {
@@ -256,8 +253,8 @@ AccessLocation::SplitAccess DirectLocation::generate_bulk_split_using_index(
     {
       split_access.access_lines.insert(split_access.access_lines.begin(), "if ( " + generate_preconditions_check_in_range("reach_index", from, to) + " ) _exit(PRECONDITIONS_FAILED_VALUE);");
     }
-    split_access.description = "writing using an index";
   }
+  split_access.description = "index";
   return split_access;
 }
 
@@ -297,7 +294,6 @@ AccessLocation::SplitAccess DirectLocation::generate_bulk_split_using_aux_ptr(
     {
       split_access.access_lines.insert(split_access.access_lines.begin(), "if ( !(" + generate_preconditions_check_distance(distance) + ") ) _exit(PRECONDITIONS_FAILED_VALUE);");
     }
-    split_access.description = "reading using an auxiliary pointer";
   }
   else
   {
@@ -321,8 +317,8 @@ AccessLocation::SplitAccess DirectLocation::generate_bulk_split_using_aux_ptr(
       if (generate_preconditions_check_in_range) split_access.access_lines.insert(split_access.access_lines.begin(), "if ( " + generate_preconditions_check_in_range("aux_ptr", from, to) + " ) _exit(PRECONDITIONS_FAILED_VALUE);");
       if (generate_preconditions_check_distance) split_access.access_lines.insert(split_access.access_lines.begin(), "if ( !(" + generate_preconditions_check_distance(distance) + ") ) _exit(PRECONDITIONS_FAILED_VALUE);");
     }
-    split_access.description = "writing using an auxiliary pointer";
   }
+  split_access.description = "auxiliary pointer";
   return split_access;
 }
 

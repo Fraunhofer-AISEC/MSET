@@ -9,7 +9,8 @@
  * Memory region: stack
  * Bug type: misuse-of-free, freed-memory
  * Access type: stdlib, read
- * Variant: magic value 0x40
+ * Variant:
+ *  - magic value 0x40
  */
 
 #include <unistd.h> // _exit

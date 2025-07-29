@@ -10,7 +10,8 @@
  * Target: global
  * Bug type: intra-object, type confusion OOBA, overflow
  * Access type: direct, write
- * Variant: target declared before origin
+ * Variant:
+ *  - target declared before origin
  */
 
 #include <unistd.h> // _exit

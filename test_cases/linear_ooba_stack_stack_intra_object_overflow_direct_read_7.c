@@ -10,7 +10,11 @@
  * Target: stack
  * Bug type: intra-object, linear OOBA, overflow
  * Access type: direct, read
- * Variant: target declared after origin, distance is negated before checking, target reached by reading using an auxiliary pointer, target accessed by reading using constants
+ * Variant:
+ *  - target declared after origin
+ *  - distance is negated before checking
+ *  - target reached by using a global auxiliary pointer
+ *  - target accessed by using constants
  */
 
 #include <unistd.h> // _exit

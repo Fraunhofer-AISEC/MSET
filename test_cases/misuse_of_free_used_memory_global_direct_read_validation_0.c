@@ -9,7 +9,8 @@
  * Memory region: global
  * Bug type: misuse-of-free, used-memory
  * Access type: direct, read
- * Variant: magic value 0x20
+ * Variant:
+ *  - magic value 0x20
  */
 
 #include <unistd.h> // _exit

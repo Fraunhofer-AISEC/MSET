@@ -9,7 +9,8 @@
  * Memory region: heap
  * Bug type: misuse-of-free, used-memory
  * Access type: stdlib, write
- * Variant: magic value 0x60
+ * Variant:
+ *  - magic value 0x60
  */
 
 #include <unistd.h> // _exit

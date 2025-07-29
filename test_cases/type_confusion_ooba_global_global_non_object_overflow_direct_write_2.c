@@ -10,7 +10,9 @@
  * Target: global
  * Bug type: non-object, type confusion OOBA, overflow
  * Access type: direct, write
- * Variant: using big structure cast, stack index
+ * Variant:
+ *  - using big structure cast
+ *  - using a stack index
  */
 
 #include <unistd.h> // _exit

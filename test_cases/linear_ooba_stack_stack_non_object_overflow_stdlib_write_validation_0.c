@@ -10,7 +10,8 @@
  * Target: stack
  * Bug type: non-object, linear OOBA, overflow
  * Access type: stdlib, write
- * Variant: target reached by stdlib writing using an index, global auxiliary variables, declared last
+ * Variant:
+ *  - target reached using global index, declared last
  */
 
 #include <unistd.h> // _exit

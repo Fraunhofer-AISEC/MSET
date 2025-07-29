@@ -64,7 +64,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >DoubleFree::generate(
   variant_with_use_after_free.add_test_case_description_line("Bug type: double-free, " + memory_state->get_printable_name());
   variant_with_use_after_free.add_test_case_description_line("Access type: " + access_location->get_name() + ", " + access_action->get_name());
 
-  variant_with_use_after_free.add_to_variant_description("with use-after-free");
+  variant_with_use_after_free.add_variant_description_line("with use-after-free");
 
   variant_with_use_after_free.add_to_f_body({
     "#ifndef __GLIBC__",
@@ -93,7 +93,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >DoubleFree::generate(
   variant_without_use_after_free.add_test_case_description_line("Bug type: double-free, " + memory_state->get_printable_name());
   variant_without_use_after_free.add_test_case_description_line("Access type: " + access_location->get_name() + ", " + access_action->get_name());
 
-  variant_without_use_after_free.add_to_variant_description("without use-after-free");
+  variant_without_use_after_free.add_variant_description_line("without use-after-free");
   variant_without_use_after_free.add_to_f_body({
     "#ifndef __GLIBC__",
     "exit(PRECONDITIONS_FAILED_VALUE); // not using glibc",
@@ -153,7 +153,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >DoubleFree::generate_validation(
   variant_with_use_after_free.add_test_case_description_line("Bug type: double-free, " + memory_state->get_printable_name());
   variant_with_use_after_free.add_test_case_description_line("Access type: " + access_location->get_name() + ", " + access_action->get_name());
 
-  variant_with_use_after_free.add_to_variant_description("with use-after-free");
+  variant_with_use_after_free.add_variant_description_line("with use-after-free");
 
   variant_with_use_after_free.add_to_f_body({
     "#ifndef __GLIBC__",
@@ -180,7 +180,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >DoubleFree::generate_validation(
   variant_without_use_after_free.add_test_case_description_line("Bug type: double-free, " + memory_state->get_printable_name());
   variant_without_use_after_free.add_test_case_description_line("Access type: " + access_location->get_name() + ", " + access_action->get_name());
 
-  variant_without_use_after_free.add_to_variant_description("without use-after-free");
+  variant_without_use_after_free.add_variant_description_line("without use-after-free");
 
   variant_without_use_after_free.add_to_f_body({
     "#ifndef __GLIBC__",

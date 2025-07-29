@@ -6,7 +6,9 @@
  */
 
 /*
- * Variant: repeated attempts, using an array of objects
+ * Variant:
+ *  - repeated attempts
+ *  - using an array of objects
  */
 
 #include <unistd.h> // _exit

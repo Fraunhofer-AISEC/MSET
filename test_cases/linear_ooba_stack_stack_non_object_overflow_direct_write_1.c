@@ -10,7 +10,9 @@
  * Target: stack
  * Bug type: non-object, linear OOBA, overflow
  * Access type: direct, write
- * Variant: no space in between origin and target, target accessed by writing using constants
+ * Variant:
+ *  - no space in between origin and target
+ *  - target accessed by using constants
  */
 
 #include <unistd.h> // _exit

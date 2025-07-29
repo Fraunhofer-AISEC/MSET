@@ -295,7 +295,11 @@ std::string CodeCanvas::to_string() const
   {
     result << " * " << str << "\n";
   }
-  result << " * Variant: " + variant_description + "\n";
+  result << " * Variant:\n";
+  for (const auto& str : variant_description_lines)
+  {
+    result << " *  - " << str << "\n";
+  }
   result << " */\n\n";
 
   for (const auto& str : code_lines)

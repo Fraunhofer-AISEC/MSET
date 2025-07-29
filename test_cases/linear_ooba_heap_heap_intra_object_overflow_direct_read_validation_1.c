@@ -10,7 +10,9 @@
  * Target: heap
  * Bug type: intra-object, linear OOBA, overflow
  * Access type: direct, read
- * Variant: target declared before origin, target reached by reading using an index, global auxiliary variables
+ * Variant:
+ *  - target declared before origin
+ *  - target reached using global index
  */
 
 #include <unistd.h> // _exit

@@ -6,7 +6,7 @@
  */
 
 /*
- * Variant: 
+ * Variant:
  */
 
 #include <unistd.h> // _exit

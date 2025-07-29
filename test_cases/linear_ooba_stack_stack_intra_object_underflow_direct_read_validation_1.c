@@ -10,7 +10,9 @@
  * Target: stack
  * Bug type: intra-object, linear OOBA, underflow
  * Access type: direct, read
- * Variant: target declared before origin, target reached by reading using an index, global auxiliary variables
+ * Variant:
+ *  - target declared before origin
+ *  - target reached using global index
  */
 
 #include <unistd.h> // _exit

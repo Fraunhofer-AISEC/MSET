@@ -10,7 +10,9 @@
  * Target: global
  * Bug type: inter-object, linear OOBA, underflow
  * Access type: direct, read
- * Variant: target declared after origin, target reached by reading using an index, global auxiliary variables
+ * Variant:
+ *  - target declared after origin
+ *  - target reached using global index
  */
 
 #include <unistd.h> // _exit

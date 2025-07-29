@@ -10,7 +10,11 @@
  * Target: stack
  * Bug type: inter-object, linear OOBA, underflow
  * Access type: direct, write
- * Variant: target declared after origin, distance is negated before checking, target reached by writing using an auxiliary pointer, target accessed by writing using constants, global auxiliary variables, initialized, declared last
+ * Variant:
+ *  - target declared after origin
+ *  - distance is negated before checking
+ *  - target reached by using a global auxiliary pointer, initialized, declared last
+ *  - target accessed by using constants
  */
 
 #include <unistd.h> // _exit

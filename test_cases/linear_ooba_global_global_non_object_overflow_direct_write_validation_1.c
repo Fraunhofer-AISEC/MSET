@@ -10,7 +10,8 @@
  * Target: global
  * Bug type: non-object, linear OOBA, overflow
  * Access type: direct, write
- * Variant: target reached by writing using an index, global auxiliary variables, declared first
+ * Variant:
+ *  - target reached using global index, declared first
  */
 
 #include <unistd.h> // _exit

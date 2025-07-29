@@ -6,7 +6,8 @@
  */
 
 /*
- * Variant: repeated attempts
+ * Variant:
+ *  - with repeated attempts
  */
 
 #include <unistd.h> // _exit

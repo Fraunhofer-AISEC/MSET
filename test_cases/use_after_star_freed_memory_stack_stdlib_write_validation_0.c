@@ -9,7 +9,7 @@
  * Memory region: stack
  * Bug type: use-after-*, freed memory
  * Access type: stdlib, write
- * Variant: 
+ * Variant:
  */
 
 #include <unistd.h> // _exit

@@ -10,7 +10,10 @@
  * Target: heap
  * Bug type: non-object, linear OOBA, underflow
  * Access type: direct, write
- * Variant: distance is checked as it is, target reached by writing using an index, target accessed by writing using auxiliary variables, stack auxiliary variables, declared last
+ * Variant:
+ *  - distance is checked as is
+ *  - target reached by using a stack index, declared last
+ *  - target accessed by using auxiliary variables
  */
 
 #include <unistd.h> // _exit

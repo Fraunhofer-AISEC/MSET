@@ -10,7 +10,11 @@
  * Target: heap
  * Bug type: intra-object, type confusion OOBA, overflow
  * Access type: direct, write
- * Variant: target declared before origin, using big structure cast, global index, using load widening
+ * Variant:
+ *  - target declared before origin
+ *  - using big structure cast
+ *  - using a global index
+ *  - using load widening
  */
 
 #include <unistd.h> // _exit

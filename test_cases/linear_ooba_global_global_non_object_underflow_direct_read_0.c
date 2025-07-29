@@ -10,7 +10,10 @@
  * Target: global
  * Bug type: non-object, linear OOBA, underflow
  * Access type: direct, read
- * Variant: distance is checked as it is, target reached by reading using an index, target accessed by reading using auxiliary variables
+ * Variant:
+ *  - distance is checked as is
+ *  - target reached by using a global index
+ *  - target accessed by using auxiliary variables
  */
 
 #include <unistd.h> // _exit

@@ -10,7 +10,8 @@
  * Target: stack
  * Bug type: non-object, type confusion OOBA, overflow
  * Access type: direct, read
- * Variant: using load widening
+ * Variant:
+ *  - using load widening
  */
 
 #include <unistd.h> // _exit

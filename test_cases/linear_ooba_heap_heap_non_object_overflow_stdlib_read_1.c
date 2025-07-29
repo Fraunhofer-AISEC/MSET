@@ -10,7 +10,9 @@
  * Target: heap
  * Bug type: non-object, linear OOBA, overflow
  * Access type: stdlib, read
- * Variant: no space in between origin and target, target accessed by stdlib reading using constants
+ * Variant:
+ *  - no space in between origin and target
+ *  - target accessed by using constants
  */
 
 #include <unistd.h> // _exit

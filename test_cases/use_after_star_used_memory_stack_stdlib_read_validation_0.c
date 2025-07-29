@@ -9,7 +9,7 @@
  * Memory region: heap
  * Bug type: use-after-*, reused memory
  * Access type: stdlib, read
- * Variant: 
+ * Variant:
  */
 
 #include <unistd.h> // _exit

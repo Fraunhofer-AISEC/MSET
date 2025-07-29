@@ -10,7 +10,10 @@
  * Target: stack
  * Bug type: intra-object, type confusion OOBA, overflow
  * Access type: direct, write
- * Variant: target declared after origin, using big structure cast, stack index
+ * Variant:
+ *  - target declared after origin
+ *  - using big structure cast
+ *  - using a stack index
  */
 
 #include <unistd.h> // _exit

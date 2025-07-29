@@ -10,7 +10,11 @@
  * Target: heap
  * Bug type: intra-object, linear OOBA, overflow
  * Access type: stdlib, read
- * Variant: target declared before origin, distance is checked as it is, target reached by stdlib reading using an auxiliary pointer, target accessed by stdlib reading using constants
+ * Variant:
+ *  - target declared before origin
+ *  - distance is checked as is
+ *  - target reached by using a global auxiliary pointer
+ *  - target accessed by using constants
  */
 
 #include <unistd.h> // _exit

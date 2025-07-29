@@ -73,7 +73,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >MisuseOfFree::generate(
   {
     std::shared_ptr<RegionCodeCanvas> region_canvas_with_magic_value = std::make_shared<RegionCodeCanvas>(*region_canvas);
 
-    region_canvas_with_magic_value->add_to_variant_description("magic value " + magic_value);
+    region_canvas_with_magic_value->add_variant_description_line("magic value " + magic_value);
 
     region_canvas_with_magic_value->add_global("char* heap_obj;");
     region_canvas_with_magic_value->add_during_lifetime({
@@ -173,7 +173,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >MisuseOfFree::generate_validatio
   {
     std::shared_ptr<RegionCodeCanvas> region_canvas_with_magic_value = std::make_shared<RegionCodeCanvas>(*region_canvas);
 
-    region_canvas_with_magic_value->add_to_variant_description("magic value " + magic_value);
+    region_canvas_with_magic_value->add_variant_description_line("magic value " + magic_value);
 
     region_canvas_with_magic_value->add_global("char* heap_obj;");
     region_canvas_with_magic_value->add_during_lifetime({

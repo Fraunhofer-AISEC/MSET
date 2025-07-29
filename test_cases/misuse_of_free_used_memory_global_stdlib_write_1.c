@@ -9,7 +9,8 @@
  * Memory region: global
  * Bug type: misuse-of-free, used-memory
  * Access type: stdlib, write
- * Variant: magic value 0x40
+ * Variant:
+ *  - magic value 0x40
  */
 
 #include <unistd.h> // _exit

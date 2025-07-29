@@ -36,7 +36,7 @@ std::vector< std::shared_ptr<OriginTargetCodeCanvas> > InterObject::generate(
 
   std::shared_ptr<OriginTargetCodeCanvas> variant = std::make_shared<OriginTargetCodeCanvas>( target_canvas, target_size, origin_size, "target", "origin", distance, distance_negated );
   variant->set_lifetime_pos( target_canvas->get_lifetime_pos() );
-  variant->add_to_variant_description("target declared after origin");
+  variant->add_variant_description_line("target declared after origin");
   variants.push_back(variant);
 
   if ( are_the_same_type(origin, target) )
@@ -45,7 +45,7 @@ std::vector< std::shared_ptr<OriginTargetCodeCanvas> > InterObject::generate(
     origin_canvas = origin->generate(target_canvas->get_lifetime_pos(), target_canvas, "origin", origin_size, true);
     variant = std::make_shared<OriginTargetCodeCanvas>( origin_canvas, target_size, origin_size, "target", "origin", distance, distance_negated );
     variant->set_lifetime_pos( origin_canvas->get_lifetime_pos() );
-  variant->add_to_variant_description("target declared before origin");
+    variant->add_variant_description_line("target declared before origin");
     variants.push_back(variant);
   }
 
