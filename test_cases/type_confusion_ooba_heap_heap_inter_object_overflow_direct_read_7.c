@@ -12,6 +12,7 @@
  * Access type: direct, read
  * Variant:
  *  - target declared before origin
+ *  - using load widening
  */
 
 #include <unistd.h> // _exit

@@ -13,7 +13,6 @@
  * Variant:
  *  - using big structure cast
  *  - using a global index
- *  - using load widening
  */
 
 #include <unistd.h> // _exit

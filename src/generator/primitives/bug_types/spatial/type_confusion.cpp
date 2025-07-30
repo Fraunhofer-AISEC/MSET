@@ -103,8 +103,9 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> TypeConfusion::generate(
     }
     variant_with_big_type->add_global("static ssize_t i;");
     variant_with_big_type->add_variant_description_line("using a global index");
-    variant_with_big_type_local->add_local_first("ssize_t i;");
     full_variants.push_back( variant_with_big_type );
+
+    variant_with_big_type_local->add_local_first("ssize_t i;");
     variant_with_big_type_local->add_variant_description_line("using a stack index");
     full_variants.push_back( variant_with_big_type_local );
 
@@ -120,7 +121,7 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> TypeConfusion::generate(
     );
     variant_with_load_widening->add_during_lifetime(access_target_code);
     variant_with_load_widening->add_during_lifetime("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
-    variant_with_big_type->add_variant_description_line("using load widening");
+    variant_with_load_widening->add_variant_description_line("using load widening");
     full_variants.push_back( variant_with_load_widening );
   }
 

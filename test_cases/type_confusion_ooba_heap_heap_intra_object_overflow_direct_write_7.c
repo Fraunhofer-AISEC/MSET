@@ -12,6 +12,7 @@
  * Access type: direct, write
  * Variant:
  *  - target declared before origin
+ *  - using load widening
  */
 
 #include <unistd.h> // _exit
