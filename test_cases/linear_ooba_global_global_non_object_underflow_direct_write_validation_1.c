@@ -11,7 +11,7 @@
  * Bug type: non-object, linear OOBA, underflow
  * Access type: direct, write
  * Variant:
- *  - target reached using global index, declared first
+ *  - target reached using global index
  */
 
 #include <unistd.h> // _exit
@@ -31,9 +31,9 @@ const char content[8] = "ZZZZZZZ";
 // types
 
 // globals
-ssize_t reach_index = 0;
 
 char origin[8] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
+__attribute__((section(".data.index"))) ssize_t reach_index = 0;
 
 int f()
 {

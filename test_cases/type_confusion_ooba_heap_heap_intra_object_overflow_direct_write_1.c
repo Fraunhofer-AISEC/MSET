@@ -13,7 +13,7 @@
  * Variant:
  *  - target declared after origin
  *  - using big structure cast
- *  - using a global index
+ *  - using a stack index
  */
 
 #include <unistd.h> // _exit
@@ -36,18 +36,18 @@ struct T
   char origin[8];
   char target[8];
 };
-
-// globals
-
 struct BigType
 {
   char buffer[(size_t)1 << 27];
 };
-static ssize_t i;
+
+// globals
+
 
 int f()
 {
   // locals
+  ssize_t i;
 
 
   struct T *s = (struct T *)malloc( sizeof(struct T) );

@@ -12,7 +12,7 @@
  * Access type: stdlib, write
  * Variant:
  *  - target declared after origin
- *  - target reached using global index, declared last
+ *  - target reached using global index
  */
 
 #include <unistd.h> // _exit
@@ -39,8 +39,8 @@ struct T
 // globals
 
 struct T s = { {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA}, {0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB} };
-volatile ssize_t i = 0;
-volatile size_t step_distance;
+__attribute__((section(".data.index"))) volatile ssize_t i = 0;
+__attribute__((section(".data.index"))) volatile size_t step_distance;
 
 int f()
 {

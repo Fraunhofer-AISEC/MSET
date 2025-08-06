@@ -11,9 +11,9 @@
  * Bug type: intra-object, linear OOBA, underflow
  * Access type: direct, write
  * Variant:
- *  - target declared after origin
- *  - distance is checked as is
- *  - target reached by using a stack auxiliary pointer, declared last
+ *  - target declared before origin
+ *  - distance is negated before checking
+ *  - target reached by using a auxiliary pointer
  *  - target accessed by using constants
  */
 
@@ -34,23 +34,23 @@ const char content[8] = "ZZZZZZZ";
 // types
 struct T
 {
-  char origin[8];
   char target[8];
+  char origin[8];
 };
 
 // globals
 
 struct T s = { {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA}, {0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB} };
+__attribute__((section(".data.index"))) volatile char * aux_ptr;
 
 int f()
 {
   // locals
 
-  volatile char * aux_ptr;
 
   _use(s.target);
   _use(s.origin);
-  if ( !((ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin)) <= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
+  if ( !(-(ssize_t)(GET_ADDR_BITS(s.origin) - GET_ADDR_BITS(s.target)) <= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
   if ( GET_ADDR_BITS(&aux_ptr) < GET_ADDR_BITS(s.origin) && GET_ADDR_BITS(&aux_ptr) > GET_ADDR_BITS(s.target) ) _exit(PRECONDITIONS_FAILED_VALUE);
   aux_ptr = s.origin;
   while( GET_ADDR_BITS(aux_ptr) != GET_ADDR_BITS(s.target) )

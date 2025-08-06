@@ -30,15 +30,15 @@ volatile void *_use(volatile void *p) { return p; }
 const char content[8] = "ZZZZZZZ";
 
 // types
+struct BigType
+{
+  char buffer[(size_t)1 << 27];
+};
 
 // globals
 
 char target[8] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
 char origin[8] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
-struct BigType
-{
-  char buffer[(size_t)1 << 27];
-};
 
 int f()
 {

@@ -1,7 +1,7 @@
 <sanitizer>
     <name>RedFat</name>
     <setup>
-        <compile_cmd>clang $SOURCE_FILE -o $GENERATED_BINARY</compile_cmd>
+        <compile_cmd>clang -Wl,-T,../../sanitizers/before_bss.ld $SOURCE_FILE -o $GENERATED_BINARY</compile_cmd>
         <cmd>../../sanitizers/redfat/redfat -Xreads -Xadjust -Oglobal=false -Ostack=false -Obatch=1 -Omerge=false $GENERATED_BINARY -o $GENERATED_BINARY.redfat</cmd>
     </setup>
     <run_env_args>
@@ -9,7 +9,7 @@
     </run_env_args>
     <run>$GENERATED_BINARY.redfat</run>
     <setup_baseline>
-        <compile_cmd>clang $SOURCE_FILE -o $GENERATED_BINARY</compile_cmd>
+        <compile_cmd>clang -Wl,-T,../../sanitizers/before_bss.ld $SOURCE_FILE -o $GENERATED_BINARY</compile_cmd>
     </setup_baseline>
     <run_baseline>$GENERATED_BINARY</run_baseline>
     <bug_detected_exit_values>

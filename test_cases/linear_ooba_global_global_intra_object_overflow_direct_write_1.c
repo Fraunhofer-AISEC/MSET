@@ -13,8 +13,8 @@
  * Variant:
  *  - target declared after origin
  *  - distance is checked as is
- *  - target reached by using a global index, declared first
- *  - target accessed by using auxiliary variables
+ *  - target reached by using a index
+ *  - target accessed by using constants
  */
 
 #include <unistd.h> // _exit
@@ -39,9 +39,9 @@ struct T
 };
 
 // globals
-ssize_t reach_index = 0;
 
 struct T s = { {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA}, {0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB} };
+__attribute__((section(".data.index"))) ssize_t reach_index = 0;
 
 int f()
 {
@@ -59,10 +59,9 @@ int f()
     _use(&s.origin[reach_index]);
   }
   volatile size_t i;
-  volatile size_t size = 8;
-  for (i = 0; i < size; i++)
+  for (i = 0; i < 8; i++)
   {
-    (s.origin + reach_index)[i] = content[i];
+    (s.origin + reach_index)[i] = 0xFF;
   }
   _use((s.origin + reach_index));
   _exit(TEST_CASE_SUCCESSFUL_VALUE);

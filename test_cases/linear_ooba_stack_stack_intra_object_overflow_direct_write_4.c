@@ -12,9 +12,9 @@
  * Access type: direct, write
  * Variant:
  *  - target declared after origin
- *  - distance is checked as is
- *  - target reached by using a stack index, declared last
- *  - target accessed by using constants
+ *  - distance is negated before checking
+ *  - target reached by using a index
+ *  - target accessed by using auxiliary variables
  */
 
 #include <unistd.h> // _exit
@@ -40,13 +40,13 @@ struct T
 
 // globals
 
+__attribute__((section(".data.index"))) ssize_t reach_index = 0;
 
 int f()
 {
   // locals
 
   struct T s;
-  ssize_t reach_index = 0;
 
   s.origin[0] = 0xAA;
   s.origin[1] = 0xAA;
@@ -67,7 +67,7 @@ int f()
   _use(s.target);
   _use(s.origin);
   if ( GET_ADDR_BITS(&reach_index) < GET_ADDR_BITS(s.target) && GET_ADDR_BITS(&reach_index) > GET_ADDR_BITS(s.origin) ) _exit(PRECONDITIONS_FAILED_VALUE);
-  if ( !((ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
+  if ( !(-(ssize_t)(GET_ADDR_BITS(s.origin) - GET_ADDR_BITS(s.target)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
   while( GET_ADDR_BITS(&s.origin[reach_index]) != GET_ADDR_BITS(s.target) )
   {
     s.origin[reach_index] = 0xFF;
@@ -75,9 +75,10 @@ int f()
     _use(&s.origin[reach_index]);
   }
   volatile size_t i;
-  for (i = 0; i < 8; i++)
+  volatile size_t size = 8;
+  for (i = 0; i < size; i++)
   {
-    (s.origin + reach_index)[i] = 0xFF;
+    (s.origin + reach_index)[i] = content[i];
   }
   _use((s.origin + reach_index));
   _exit(TEST_CASE_SUCCESSFUL_VALUE);

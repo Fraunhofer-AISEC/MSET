@@ -12,8 +12,8 @@
  * Access type: direct, write
  * Variant:
  *  - target declared after origin
- *  - distance is checked as is
- *  - target reached by using a global auxiliary pointer, declared last
+ *  - distance is negated before checking
+ *  - target reached by using a auxiliary pointer
  *  - target accessed by using auxiliary variables
  */
 
@@ -35,7 +35,7 @@ const char content[8] = "ZZZZZZZ";
 
 // globals
 
-volatile char * aux_ptr;
+__attribute__((section(".data.index"))) volatile char * aux_ptr;
 
 int f()
 {
@@ -62,7 +62,7 @@ int f()
   target[7] = 0xAA;
   _use(target);
   _use(origin);
-  if ( !((ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
+  if ( !(-(ssize_t)(GET_ADDR_BITS(origin) - GET_ADDR_BITS(target)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
   if ( GET_ADDR_BITS(&aux_ptr) < GET_ADDR_BITS(target) && GET_ADDR_BITS(&aux_ptr) > GET_ADDR_BITS(origin) ) _exit(PRECONDITIONS_FAILED_VALUE);
   aux_ptr = origin;
   while( GET_ADDR_BITS(aux_ptr) != GET_ADDR_BITS(target) )

@@ -11,10 +11,10 @@
  * Bug type: inter-object, linear OOBA, underflow
  * Access type: direct, write
  * Variant:
- *  - target declared after origin
+ *  - target declared before origin
  *  - distance is negated before checking
- *  - target reached by using a global index, declared last
- *  - target accessed by using constants
+ *  - target reached by using a index
+ *  - target accessed by using auxiliary variables
  */
 
 #include <unistd.h> // _exit
@@ -35,22 +35,13 @@ const char content[8] = "ZZZZZZZ";
 
 // globals
 
-ssize_t reach_index = 0;
+__attribute__((section(".data.index"))) ssize_t reach_index = 0;
 
 int f()
 {
   // locals
 
 
-  char *origin = (char *)malloc( 8 );
-  origin[0] = 0xAA;
-  origin[1] = 0xAA;
-  origin[2] = 0xAA;
-  origin[3] = 0xAA;
-  origin[4] = 0xAA;
-  origin[5] = 0xAA;
-  origin[6] = 0xAA;
-  origin[7] = 0xAA;
   char *target = (char *)malloc( 8 );
   target[0] = 0xAA;
   target[1] = 0xAA;
@@ -60,6 +51,15 @@ int f()
   target[5] = 0xAA;
   target[6] = 0xAA;
   target[7] = 0xAA;
+  char *origin = (char *)malloc( 8 );
+  origin[0] = 0xAA;
+  origin[1] = 0xAA;
+  origin[2] = 0xAA;
+  origin[3] = 0xAA;
+  origin[4] = 0xAA;
+  origin[5] = 0xAA;
+  origin[6] = 0xAA;
+  origin[7] = 0xAA;
   _use(target);
   _use(origin);
   if ( GET_ADDR_BITS(&reach_index) < GET_ADDR_BITS(origin) && GET_ADDR_BITS(&reach_index) > GET_ADDR_BITS(target) ) _exit(PRECONDITIONS_FAILED_VALUE);
@@ -71,15 +71,16 @@ int f()
     _use(&origin[reach_index]);
   }
   volatile size_t i;
-  for (i = 0; i < 8; i++)
+  volatile size_t size = 8;
+  for (i = 0; i < size; i++)
   {
-    (origin + reach_index)[i] = 0xFF;
+    (origin + reach_index)[i] = content[i];
   }
   _use((origin + reach_index));
   _exit(TEST_CASE_SUCCESSFUL_VALUE);
 
-  free(origin);
   free(target);
+  free(origin);
   return 0;
 }
 

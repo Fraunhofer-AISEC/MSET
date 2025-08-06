@@ -13,8 +13,8 @@
  * Variant:
  *  - target declared after origin
  *  - distance is checked as is
- *  - target reached by using a global index, initialized, declared last
- *  - target accessed by using auxiliary variables
+ *  - target reached by using a index
+ *  - target accessed by using constants
  */
 
 #include <unistd.h> // _exit
@@ -40,8 +40,8 @@ struct T
 
 // globals
 
-volatile ssize_t i = 0;
-volatile size_t step_distance = 0;
+__attribute__((section(".data.index"))) volatile ssize_t i = 0;
+__attribute__((section(".data.index"))) volatile size_t step_distance;
 
 int f()
 {
@@ -79,8 +79,7 @@ int f()
     _use(&s.origin[i]);
   }
   _use(s.origin);
-  volatile size_t size = 8;
-  memset( (void *)&s.origin[i], 0xFF, size);
+  memset( (void *)&s.origin[i], 0xFF, 8);
   _use(&s.origin[i]);
   _exit(TEST_CASE_SUCCESSFUL_VALUE);
 

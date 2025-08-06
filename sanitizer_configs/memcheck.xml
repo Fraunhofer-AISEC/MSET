@@ -1,11 +1,11 @@
 <sanitizer>
     <name>Memcheck</name>
     <setup_baseline>
-        <compile_cmd>clang -g $SOURCE_FILE -o $GENERATED_BINARY</compile_cmd>
+        <compile_cmd>clang -Wl,-T,../../sanitizers/after_text.ld -g $SOURCE_FILE -o $GENERATED_BINARY</compile_cmd>
     </setup_baseline>
     <run_baseline>$GENERATED_BINARY</run_baseline>
     <setup>
-        <compile_cmd>/clang -g $SOURCE_FILE -o $GENERATED_BINARY</compile_cmd>
+        <compile_cmd>/clang -Wl,-T,../../sanitizers/after_text.ld -g $SOURCE_FILE -o $GENERATED_BINARY</compile_cmd>
     </setup>
     <run>../../sanitizers/memcheck/valgrind --exit-on-first-error=yes --error-exitcode=44 --undef-value-errors=no $GENERATED_BINARY</run>
     <bug_detected_exit_values>

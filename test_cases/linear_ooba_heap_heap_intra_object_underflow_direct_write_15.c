@@ -11,10 +11,10 @@
  * Bug type: intra-object, linear OOBA, underflow
  * Access type: direct, write
  * Variant:
- *  - target declared after origin
+ *  - target declared before origin
  *  - distance is negated before checking
- *  - target reached by using a global auxiliary pointer, initialized, declared last
- *  - target accessed by using auxiliary variables
+ *  - target reached by using a auxiliary pointer
+ *  - target accessed by using constants
  */
 
 #include <unistd.h> // _exit
@@ -34,13 +34,13 @@ const char content[8] = "ZZZZZZZ";
 // types
 struct T
 {
-  char origin[8];
   char target[8];
+  char origin[8];
 };
 
 // globals
 
-volatile char * aux_ptr = 0;
+__attribute__((section(".data.index"))) volatile char * aux_ptr;
 
 int f()
 {
@@ -48,22 +48,22 @@ int f()
 
 
   struct T *s = (struct T *)malloc( sizeof(struct T) );
-  s->origin[0] = 0xAA;
-  s->origin[1] = 0xAA;
-  s->origin[2] = 0xAA;
-  s->origin[3] = 0xAA;
-  s->origin[4] = 0xAA;
-  s->origin[5] = 0xAA;
-  s->origin[6] = 0xAA;
-  s->origin[7] = 0xAA;
-  s->target[0] = 0xBB;
-  s->target[1] = 0xBB;
-  s->target[2] = 0xBB;
-  s->target[3] = 0xBB;
-  s->target[4] = 0xBB;
-  s->target[5] = 0xBB;
-  s->target[6] = 0xBB;
-  s->target[7] = 0xBB;
+  s->target[0] = 0xAA;
+  s->target[1] = 0xAA;
+  s->target[2] = 0xAA;
+  s->target[3] = 0xAA;
+  s->target[4] = 0xAA;
+  s->target[5] = 0xAA;
+  s->target[6] = 0xAA;
+  s->target[7] = 0xAA;
+  s->origin[0] = 0xBB;
+  s->origin[1] = 0xBB;
+  s->origin[2] = 0xBB;
+  s->origin[3] = 0xBB;
+  s->origin[4] = 0xBB;
+  s->origin[5] = 0xBB;
+  s->origin[6] = 0xBB;
+  s->origin[7] = 0xBB;
   _use(s->target);
   _use(s->origin);
   if ( !(-(ssize_t)(GET_ADDR_BITS(s->origin) - GET_ADDR_BITS(s->target)) <= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
@@ -76,10 +76,9 @@ int f()
     _use(aux_ptr);
   }
   volatile size_t i;
-  volatile size_t size = 8;
-  for (i = 0; i < size; i++)
+  for (i = 0; i < 8; i++)
   {
-    aux_ptr[i] = content[i];
+    aux_ptr[i] = 0xFF;
   }
   _use(aux_ptr);
   _exit(TEST_CASE_SUCCESSFUL_VALUE);

@@ -35,13 +35,13 @@ struct T
   char target[8];
   char origin[8];
 };
-
-// globals
-
 struct BigType
 {
   char buffer[(size_t)1 << 27];
 };
+
+// globals
+
 
 int f()
 {

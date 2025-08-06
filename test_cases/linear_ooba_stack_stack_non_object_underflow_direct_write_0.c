@@ -12,7 +12,7 @@
  * Access type: direct, write
  * Variant:
  *  - distance is checked as is
- *  - target reached by using a global index, declared last
+ *  - target reached by using a index
  *  - target accessed by using auxiliary variables
  */
 
@@ -34,7 +34,7 @@ const char content[8] = "ZZZZZZZ";
 
 // globals
 
-ssize_t reach_index = 0;
+__attribute__((section(".data.index"))) ssize_t reach_index = 0;
 
 int f()
 {

@@ -94,18 +94,15 @@ public:
   virtual ~CodeCanvas() = default;
 
   code_pos_t add_type(const std::vector<std::string> &lines);
-  code_pos_t add_global(const std::vector<std::string> &lines);
-  code_pos_t add_global(const std::string &line);
-  code_pos_t add_globals(const std::vector< std::vector<std::string> > &globals);
-  code_pos_t add_global_first(const std::vector<std::string> &lines);
-  code_pos_t add_global_first(const std::string &line);
-  code_pos_t add_globals_first(const std::vector< std::vector<std::string> > &globals);
-  code_pos_t add_local(const std::vector<std::string> &lines);
+  code_pos_t add_global(const std::string &global);
+  code_pos_t add_globals(const std::vector<std::string> &globals);
+  code_pos_t add_global_first(const std::string &global);
+  code_pos_t add_globals_first(const std::vector<std::string> &globals);
   code_pos_t add_local(const std::string &line);
-  code_pos_t add_locals(const std::vector< std::vector<std::string> > &locals);
-  code_pos_t add_local_first(const std::vector<std::string> &lines);
+  code_pos_t add_locals(const std::vector<std::string> &locals);
   code_pos_t add_local_first(const std::string &line);
-  code_pos_t add_locals_first(const std::vector< std::vector<std::string> > &locals);
+  code_pos_t add_locals_first(const std::vector<std::string> &locals);
+  code_pos_t add_to_custom_section(const std::vector<std::string> &vars);
 
   code_pos_t add_to_f_body(const std::vector<std::string> &lines);
   code_pos_t add_to_f_body(const std::string &line);

@@ -12,7 +12,7 @@
  * Access type: direct, write
  * Variant:
  *  - distance is checked as is
- *  - target reached by using a global index, declared last
+ *  - target reached by using a auxiliary pointer
  *  - target accessed by using constants
  */
 
@@ -35,7 +35,7 @@ const char content[8] = "ZZZZZZZ";
 // globals
 
 char origin[8] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
-ssize_t reach_index = 0;
+__attribute__((section(".data.index"))) volatile char * aux_ptr;
 
 int f()
 {
@@ -44,20 +44,21 @@ int f()
 
   _use((origin - 1));
   _use(origin);
-  if ( GET_ADDR_BITS(&reach_index) < GET_ADDR_BITS(origin) && GET_ADDR_BITS(&reach_index) > GET_ADDR_BITS((origin - 1)) ) _exit(PRECONDITIONS_FAILED_VALUE);
   if ( !(-1 <= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
-  while( GET_ADDR_BITS(&origin[reach_index]) != GET_ADDR_BITS((origin - 1)) )
+  if ( GET_ADDR_BITS(&aux_ptr) < GET_ADDR_BITS(origin) && GET_ADDR_BITS(&aux_ptr) > GET_ADDR_BITS((origin - 1)) ) _exit(PRECONDITIONS_FAILED_VALUE);
+  aux_ptr = origin;
+  while( GET_ADDR_BITS(aux_ptr) != GET_ADDR_BITS((origin - 1)) )
   {
-    origin[reach_index] = 0xFF;
-    --reach_index;
-    _use(&origin[reach_index]);
+    *aux_ptr = 0xFF;
+    --aux_ptr;
+    _use(aux_ptr);
   }
   volatile size_t i;
   for (i = 0; i < 1; i++)
   {
-    (origin + reach_index)[i] = 0xFF;
+    aux_ptr[i] = 0xFF;
   }
-  _use((origin + reach_index));
+  _use(aux_ptr);
   _exit(TEST_CASE_SUCCESSFUL_VALUE);
 
   return 0;

@@ -11,8 +11,7 @@
  * Bug type: non-object, type confusion OOBA, overflow
  * Access type: direct, write
  * Variant:
- *  - using big structure cast
- *  - using a stack index
+ *  - using load widening
  */
 
 #include <unistd.h> // _exit
@@ -33,15 +32,10 @@ const char content[8] = "ZZZZZZZ";
 
 // globals
 
-struct BigType
-{
-  char buffer[(size_t)1 << 27];
-};
 
 int f()
 {
   // locals
-  ssize_t i;
 
   char origin[8] = "";
 
@@ -53,20 +47,10 @@ int f()
   origin[5] = 0xAA;
   origin[6] = 0xAA;
   origin[7] = 0xAA;
-  if ( (8 > 0 && 8 > ((size_t)1 << 27))
-       || (8 < 0 && 8< -((size_t)1 << 27) ) )  _exit(PRECONDITIONS_FAILED_VALUE);
   if ( !(8 >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
-  if ( GET_ADDR_BITS(&i) < GET_ADDR_BITS(&((struct BigType *)origin)->buffer[8]) && GET_ADDR_BITS(&i) > GET_ADDR_BITS(&((struct BigType *)origin)->buffer[0]) ) _exit(PRECONDITIONS_FAILED_VALUE);
-  for (i = 0; i < 8; i++)
-  {
-    ((struct BigType *)origin)->buffer[i] = 0xFF;
-  }
-  _use(((struct BigType *)origin)->buffer);
-  for (ssize_t i = 0; i < 1; i++)
-  {
-    ((struct BigType *)origin)->buffer[i + 8] = 0xFF;
-  }
-  _use(((struct BigType *)origin)->buffer);
+  if ( !(8 < (8 + 3) ) ) _exit(PRECONDITIONS_FAILED_VALUE);
+  *((volatile uint32_t *)(origin + (8 - 1))) = 0xFFFFFFFF;
+  _use(origin);
   _exit(TEST_CASE_SUCCESSFUL_VALUE);
 
   return 0;

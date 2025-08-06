@@ -13,7 +13,7 @@
  * Variant:
  *  - target declared after origin
  *  - distance is checked as is
- *  - target reached by using a global index
+ *  - target reached by using a index
  *  - target accessed by using constants
  */
 
@@ -36,7 +36,7 @@ const char content[8] = "ZZZZZZZ";
 // globals
 
 char origin[8] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
-volatile ssize_t i = 0;
+__attribute__((section(".data.index"))) volatile ssize_t i = 0;
 
 int f()
 {

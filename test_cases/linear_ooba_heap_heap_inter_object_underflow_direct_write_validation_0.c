@@ -12,7 +12,7 @@
  * Access type: direct, write
  * Variant:
  *  - target declared after origin
- *  - target reached using global index, declared last
+ *  - target reached using global index
  */
 
 #include <unistd.h> // _exit
@@ -33,7 +33,7 @@ const char content[8] = "ZZZZZZZ";
 
 // globals
 
-ssize_t reach_index = 0;
+__attribute__((section(".data.index"))) ssize_t reach_index = 0;
 
 int f()
 {

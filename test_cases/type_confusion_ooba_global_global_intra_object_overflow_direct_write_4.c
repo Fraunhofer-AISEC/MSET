@@ -36,15 +36,15 @@ struct T
   char target[8];
   char origin[8];
 };
+struct BigType
+{
+  char buffer[(size_t)1 << 27];
+};
 
 // globals
 static ssize_t i;
 
 struct T s = { {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA}, {0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB} };
-struct BigType
-{
-  char buffer[(size_t)1 << 27];
-};
 
 int f()
 {

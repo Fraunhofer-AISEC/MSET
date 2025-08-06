@@ -12,8 +12,8 @@
  * Access type: direct, write
  * Variant:
  *  - target declared after origin
- *  - distance is checked as is
- *  - target reached by using a stack index, declared last
+ *  - distance is negated before checking
+ *  - target reached by using a index
  *  - target accessed by using constants
  */
 
@@ -36,12 +36,12 @@ const char content[8] = "ZZZZZZZ";
 // globals
 
 char origin[8] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
+__attribute__((section(".data.index"))) ssize_t reach_index = 0;
 
 int f()
 {
   // locals
 
-  ssize_t reach_index = 0;
 
   char *target = (char *)malloc( 8 );
   target[0] = 0xAA;
@@ -55,7 +55,7 @@ int f()
   _use(target);
   _use(origin);
   if ( GET_ADDR_BITS(&reach_index) < GET_ADDR_BITS(target) && GET_ADDR_BITS(&reach_index) > GET_ADDR_BITS(origin) ) _exit(PRECONDITIONS_FAILED_VALUE);
-  if ( !((ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
+  if ( !(-(ssize_t)(GET_ADDR_BITS(origin) - GET_ADDR_BITS(target)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
   while( GET_ADDR_BITS(&origin[reach_index]) != GET_ADDR_BITS(target) )
   {
     origin[reach_index] = 0xFF;

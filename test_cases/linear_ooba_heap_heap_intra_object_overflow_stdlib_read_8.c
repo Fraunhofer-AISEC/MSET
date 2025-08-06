@@ -13,7 +13,7 @@
  * Variant:
  *  - target declared before origin
  *  - distance is checked as is
- *  - target reached by using a global index
+ *  - target reached by using a index
  *  - target accessed by using auxiliary variables
  */
 
@@ -40,7 +40,7 @@ struct T
 
 // globals
 
-volatile ssize_t i = 0;
+__attribute__((section(".data.index"))) volatile ssize_t i = 0;
 
 int f()
 {

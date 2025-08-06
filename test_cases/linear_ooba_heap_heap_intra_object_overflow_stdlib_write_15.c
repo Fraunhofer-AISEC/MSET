@@ -11,9 +11,9 @@
  * Bug type: intra-object, linear OOBA, overflow
  * Access type: stdlib, write
  * Variant:
- *  - target declared after origin
+ *  - target declared before origin
  *  - distance is negated before checking
- *  - target reached by using a global index, declared last
+ *  - target reached by using a auxiliary pointer
  *  - target accessed by using constants
  */
 
@@ -34,14 +34,14 @@ const char content[8] = "ZZZZZZZ";
 // types
 struct T
 {
-  char origin[8];
   char target[8];
+  char origin[8];
 };
 
 // globals
 
-volatile ssize_t i = 0;
-volatile size_t step_distance;
+__attribute__((section(".data.index"))) volatile char * aux_ptr;
+__attribute__((section(".data.index"))) volatile size_t step_distance;
 
 int f()
 {
@@ -49,38 +49,38 @@ int f()
 
 
   struct T *s = (struct T *)malloc( sizeof(struct T) );
-  s->origin[0] = 0xAA;
-  s->origin[1] = 0xAA;
-  s->origin[2] = 0xAA;
-  s->origin[3] = 0xAA;
-  s->origin[4] = 0xAA;
-  s->origin[5] = 0xAA;
-  s->origin[6] = 0xAA;
-  s->origin[7] = 0xAA;
-  s->target[0] = 0xBB;
-  s->target[1] = 0xBB;
-  s->target[2] = 0xBB;
-  s->target[3] = 0xBB;
-  s->target[4] = 0xBB;
-  s->target[5] = 0xBB;
-  s->target[6] = 0xBB;
-  s->target[7] = 0xBB;
+  s->target[0] = 0xAA;
+  s->target[1] = 0xAA;
+  s->target[2] = 0xAA;
+  s->target[3] = 0xAA;
+  s->target[4] = 0xAA;
+  s->target[5] = 0xAA;
+  s->target[6] = 0xAA;
+  s->target[7] = 0xAA;
+  s->origin[0] = 0xBB;
+  s->origin[1] = 0xBB;
+  s->origin[2] = 0xBB;
+  s->origin[3] = 0xBB;
+  s->origin[4] = 0xBB;
+  s->origin[5] = 0xBB;
+  s->origin[6] = 0xBB;
+  s->origin[7] = 0xBB;
   _use(s->target);
   _use(s->origin);
-  if ( !(-(ssize_t)(GET_ADDR_BITS(s->origin) - GET_ADDR_BITS(s->target)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
-  if ( GET_ADDR_BITS(&i) < GET_ADDR_BITS(s->target) && GET_ADDR_BITS(&i) > GET_ADDR_BITS(s->origin) ) _exit(PRECONDITIONS_FAILED_VALUE);
+  if ( GET_ADDR_BITS(&aux_ptr) < GET_ADDR_BITS(s->target) && GET_ADDR_BITS(&aux_ptr) > GET_ADDR_BITS(s->origin) ) _exit(PRECONDITIONS_FAILED_VALUE);
   if ( GET_ADDR_BITS(&step_distance) < GET_ADDR_BITS(s->target) && GET_ADDR_BITS(&step_distance) > GET_ADDR_BITS(s->origin) ) _exit(PRECONDITIONS_FAILED_VALUE);
-  i = 0;
-  while( GET_ADDR_BITS(&s->origin[i]) < GET_ADDR_BITS(s->target) )
+  if ( !(-(ssize_t)(GET_ADDR_BITS(s->origin) - GET_ADDR_BITS(s->target)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
+  aux_ptr = s->origin;
+  while( GET_ADDR_BITS(aux_ptr) < GET_ADDR_BITS(s->target) )
   {
-    step_distance = (GET_ADDR_BITS(s->target) > (1024 + GET_ADDR_BITS(&s->origin[i]))) ? 1024 : GET_ADDR_BITS(s->target) - GET_ADDR_BITS(&s->origin[i]);
-    memset((void *)&s->origin[i], 0xFF, step_distance);
-    i += step_distance;
-    _use(&s->origin[i]);
+    step_distance = (GET_ADDR_BITS(s->target) > (1024 + GET_ADDR_BITS(aux_ptr))) ? 1024 : GET_ADDR_BITS(s->target) - GET_ADDR_BITS(aux_ptr);
+    memset((void *)aux_ptr, 0xFF, step_distance);
+    aux_ptr += step_distance;
+    _use(aux_ptr);
   }
   _use(s->origin);
-  memset( (void *)&s->origin[i], 0xFF, 8);
-  _use(&s->origin[i]);
+  memset( (void *)aux_ptr, 0xFF, 8);
+  _use(aux_ptr);
   _exit(TEST_CASE_SUCCESSFUL_VALUE);
 
   free(s);

@@ -83,55 +83,38 @@ CodeCanvas::code_pos_t CodeCanvas::add_type(const std::vector<std::string> &line
   return types_pos;
 }
 
-CodeCanvas::code_pos_t CodeCanvas::add_global(const std::vector<std::string> &lines)
+CodeCanvas::code_pos_t CodeCanvas::add_global(const std::string &global)
 {
   assert( global_pos != INVALID_CODE_POS );
   assert( global_pos < code_lines.size() );
-  code_lines.insert(code_lines.begin() + global_pos, lines.begin(), lines.end());
-  _update_indexes(global_pos, lines.size());
+  code_lines.insert(code_lines.begin() + global_pos, global);
+  _update_indexes(global_pos, 1);
   ++number_of_globals;
   return global_pos;
-
 }
 
-CodeCanvas::code_pos_t CodeCanvas::add_global(const std::string &line)
-{
-  return add_global(std::vector<std::string>{line});
-}
-
-CodeCanvas::code_pos_t CodeCanvas::add_globals(const std::vector< std::vector<std::string> > &globals)
+CodeCanvas::code_pos_t CodeCanvas::add_globals(const std::vector<std::string> &globals)
 {
   code_pos_t pos = INVALID_CODE_POS;
   for ( const auto& global: globals ) pos = add_global(global);
   return pos;
 }
 
-CodeCanvas::code_pos_t CodeCanvas::add_global_first(const std::vector<std::string> &lines)
+CodeCanvas::code_pos_t CodeCanvas::add_global_first(const std::string &global)
 {
   assert( global_start_pos != INVALID_CODE_POS );
   assert( global_start_pos < code_lines.size() );
-  code_lines.insert(code_lines.begin() + global_start_pos, lines.begin(), lines.end());
-  _update_indexes(global_start_pos + 1, lines.size());
+  code_lines.insert(code_lines.begin() + global_start_pos, global);
+  _update_indexes(global_start_pos + 1, 1);
   ++number_of_globals;
   return global_start_pos;
 }
 
-CodeCanvas::code_pos_t CodeCanvas::add_global_first(const std::string &line)
-{
-  return add_global_first(std::vector<std::string>{line});
-}
-
-CodeCanvas::code_pos_t CodeCanvas::add_globals_first(const std::vector< std::vector<std::string> > &globals)
+CodeCanvas::code_pos_t CodeCanvas::add_globals_first(const std::vector<std::string> &globals)
 {
   code_pos_t pos = INVALID_CODE_POS;
   for ( const auto& global: globals ) pos = add_global_first(global);
   return pos;
-}
-
-CodeCanvas::code_pos_t CodeCanvas::add_local(const std::vector<std::string> &lines)
-{
-  ++number_of_locals;
-  return add_at(locals_end_pos, lines, "  ");
 }
 
 CodeCanvas::code_pos_t CodeCanvas::add_local(const std::string &line)
@@ -140,40 +123,36 @@ CodeCanvas::code_pos_t CodeCanvas::add_local(const std::string &line)
   return add_at(locals_end_pos, std::vector<std::string>{line}, "  ");
 }
 
-CodeCanvas::code_pos_t CodeCanvas::add_locals(const std::vector< std::vector<std::string> > &locals)
+CodeCanvas::code_pos_t CodeCanvas::add_locals(const std::vector<std::string> &locals)
 {
   code_pos_t pos = INVALID_CODE_POS;
   for ( const auto& local: locals ) pos = add_local(local);
   return pos;
 }
 
-CodeCanvas::code_pos_t CodeCanvas::add_local_first(const std::vector<std::string> &lines)
+CodeCanvas::code_pos_t CodeCanvas::add_local_first(const std::string &local)
 {
   assert( locals_start_pos != INVALID_CODE_POS );
   assert( locals_start_pos < code_lines.size() );
   ++number_of_locals;
-  std::vector<std::string> indented_lines{lines.size()};
-  for ( size_t i = 0; i < lines.size(); i++ )
-  {
-    indented_lines[i] = "  " + lines[i];
-  }
-  code_lines.insert(code_lines.begin() + locals_start_pos, indented_lines.begin(), indented_lines.end());
-  _update_indexes(locals_start_pos + 1, lines.size());
-  return locals_start_pos + lines.size();
+  code_lines.insert(code_lines.begin() + locals_start_pos, "  " + local);
+  _update_indexes(locals_start_pos + 1, 1);
+  return locals_start_pos + 1;
 }
 
-CodeCanvas::code_pos_t CodeCanvas::add_local_first(const std::string &line)
-{
-  return add_local_first(std::vector<std::string>{line});
-}
-
-CodeCanvas::code_pos_t CodeCanvas::add_locals_first(const std::vector< std::vector<std::string> > &locals)
+CodeCanvas::code_pos_t CodeCanvas::add_locals_first(const std::vector<std::string> &locals)
 {
   code_pos_t pos = INVALID_CODE_POS;
   for ( const auto& local: locals ) pos = add_local_first(local);
   return pos;
 }
 
+CodeCanvas::code_pos_t CodeCanvas::add_to_custom_section(const std::vector< std::string > &vars)
+{
+  code_pos_t pos = INVALID_CODE_POS;
+  for ( const auto& var: vars ) pos = add_global("__attribute__((section(\".data.index\"))) " + var);
+  return pos;
+}
 
 CodeCanvas::code_pos_t CodeCanvas::add_to_f_body(const std::vector<std::string> &lines)
 {

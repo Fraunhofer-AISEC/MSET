@@ -11,9 +11,9 @@
  * Bug type: intra-object, linear OOBA, overflow
  * Access type: direct, write
  * Variant:
- *  - target declared after origin
+ *  - target declared before origin
  *  - distance is checked as is
- *  - target reached by using a global auxiliary pointer, declared last
+ *  - target reached by using a auxiliary pointer
  *  - target accessed by using constants
  */
 
@@ -34,14 +34,14 @@ const char content[8] = "ZZZZZZZ";
 // types
 struct T
 {
-  char origin[8];
   char target[8];
+  char origin[8];
 };
 
 // globals
 
 struct T s = { {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA}, {0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB} };
-volatile char * aux_ptr;
+__attribute__((section(".data.index"))) volatile char * aux_ptr;
 
 int f()
 {

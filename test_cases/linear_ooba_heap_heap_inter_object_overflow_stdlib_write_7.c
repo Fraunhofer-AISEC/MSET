@@ -12,9 +12,9 @@
  * Access type: stdlib, write
  * Variant:
  *  - target declared after origin
- *  - distance is checked as is
- *  - target reached by using a global auxiliary pointer, initialized, declared last
- *  - target accessed by using auxiliary variables
+ *  - distance is negated before checking
+ *  - target reached by using a auxiliary pointer
+ *  - target accessed by using constants
  */
 
 #include <unistd.h> // _exit
@@ -35,8 +35,8 @@ const char content[8] = "ZZZZZZZ";
 
 // globals
 
-volatile char * aux_ptr = 0;
-volatile size_t step_distance = 0;
+__attribute__((section(".data.index"))) volatile char * aux_ptr;
+__attribute__((section(".data.index"))) volatile size_t step_distance;
 
 int f()
 {
@@ -65,7 +65,7 @@ int f()
   _use(origin);
   if ( GET_ADDR_BITS(&aux_ptr) < GET_ADDR_BITS(target) && GET_ADDR_BITS(&aux_ptr) > GET_ADDR_BITS(origin) ) _exit(PRECONDITIONS_FAILED_VALUE);
   if ( GET_ADDR_BITS(&step_distance) < GET_ADDR_BITS(target) && GET_ADDR_BITS(&step_distance) > GET_ADDR_BITS(origin) ) _exit(PRECONDITIONS_FAILED_VALUE);
-  if ( !((ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
+  if ( !(-(ssize_t)(GET_ADDR_BITS(origin) - GET_ADDR_BITS(target)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
   aux_ptr = origin;
   while( GET_ADDR_BITS(aux_ptr) < GET_ADDR_BITS(target) )
   {
@@ -75,8 +75,7 @@ int f()
     _use(aux_ptr);
   }
   _use(origin);
-  volatile size_t size = 8;
-  memset( (void *)aux_ptr, 0xFF, size);
+  memset( (void *)aux_ptr, 0xFF, 8);
   _use(aux_ptr);
   _exit(TEST_CASE_SUCCESSFUL_VALUE);
 

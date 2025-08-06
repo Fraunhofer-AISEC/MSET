@@ -12,7 +12,7 @@
  * Access type: direct, read
  * Variant:
  *  - distance is checked as is
- *  - target reached by using a global auxiliary pointer
+ *  - target reached by using a auxiliary pointer
  *  - target accessed by using auxiliary variables
  */
 
@@ -34,9 +34,9 @@ const char content[8] = "ZZZZZZZ";
 
 // globals
 
-volatile char tmp;
-volatile char * aux_ptr;
-volatile ssize_t reach_index = 0;
+__attribute__((section(".data.index"))) volatile char tmp;
+__attribute__((section(".data.index"))) volatile char * aux_ptr;
+__attribute__((section(".data.index"))) volatile ssize_t reach_index = 0;
 
 int f()
 {

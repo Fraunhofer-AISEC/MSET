@@ -13,7 +13,7 @@
  * Variant:
  *  - target declared after origin
  *  - distance is checked as is
- *  - target reached by using a global index, declared last
+ *  - target reached by using a index
  *  - target accessed by using auxiliary variables
  */
 
@@ -41,7 +41,7 @@ struct T
 // globals
 
 struct T s = { {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA}, {0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB} };
-ssize_t reach_index = 0;
+__attribute__((section(".data.index"))) ssize_t reach_index = 0;
 
 int f()
 {

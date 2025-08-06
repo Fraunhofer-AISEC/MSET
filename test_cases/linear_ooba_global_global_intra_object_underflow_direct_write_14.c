@@ -11,10 +11,10 @@
  * Bug type: intra-object, linear OOBA, underflow
  * Access type: direct, write
  * Variant:
- *  - target declared after origin
- *  - distance is checked as is
- *  - target reached by using a global auxiliary pointer, initialized, declared first
- *  - target accessed by using constants
+ *  - target declared before origin
+ *  - distance is negated before checking
+ *  - target reached by using a auxiliary pointer
+ *  - target accessed by using auxiliary variables
  */
 
 #include <unistd.h> // _exit
@@ -34,14 +34,14 @@ const char content[8] = "ZZZZZZZ";
 // types
 struct T
 {
-  char origin[8];
   char target[8];
+  char origin[8];
 };
 
 // globals
-volatile char * aux_ptr = 0;
 
 struct T s = { {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA}, {0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB} };
+__attribute__((section(".data.index"))) volatile char * aux_ptr;
 
 int f()
 {
@@ -50,7 +50,7 @@ int f()
 
   _use(s.target);
   _use(s.origin);
-  if ( !((ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin)) <= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
+  if ( !(-(ssize_t)(GET_ADDR_BITS(s.origin) - GET_ADDR_BITS(s.target)) <= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
   if ( GET_ADDR_BITS(&aux_ptr) < GET_ADDR_BITS(s.origin) && GET_ADDR_BITS(&aux_ptr) > GET_ADDR_BITS(s.target) ) _exit(PRECONDITIONS_FAILED_VALUE);
   aux_ptr = s.origin;
   while( GET_ADDR_BITS(aux_ptr) != GET_ADDR_BITS(s.target) )
@@ -60,9 +60,10 @@ int f()
     _use(aux_ptr);
   }
   volatile size_t i;
-  for (i = 0; i < 8; i++)
+  volatile size_t size = 8;
+  for (i = 0; i < size; i++)
   {
-    aux_ptr[i] = 0xFF;
+    aux_ptr[i] = content[i];
   }
   _use(aux_ptr);
   _exit(TEST_CASE_SUCCESSFUL_VALUE);

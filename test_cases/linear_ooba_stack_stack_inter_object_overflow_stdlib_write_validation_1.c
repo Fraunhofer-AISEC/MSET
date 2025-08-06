@@ -11,8 +11,8 @@
  * Bug type: inter-object, linear OOBA, overflow
  * Access type: stdlib, write
  * Variant:
- *  - target declared after origin
- *  - target reached using global index, declared last
+ *  - target declared before origin
+ *  - target reached using global index
  */
 
 #include <unistd.h> // _exit
@@ -33,24 +33,16 @@ const char content[8] = "ZZZZZZZ";
 
 // globals
 
-volatile ssize_t i = 0;
-volatile size_t step_distance = 0;
+__attribute__((section(".data.index"))) volatile ssize_t i = 0;
+__attribute__((section(".data.index"))) volatile size_t step_distance;
 
 int f()
 {
   // locals
 
-  char origin[8] = "";
   char target[8] = "";
+  char origin[8] = "";
 
-  origin[0] = 0xAA;
-  origin[1] = 0xAA;
-  origin[2] = 0xAA;
-  origin[3] = 0xAA;
-  origin[4] = 0xAA;
-  origin[5] = 0xAA;
-  origin[6] = 0xAA;
-  origin[7] = 0xAA;
   target[0] = 0xAA;
   target[1] = 0xAA;
   target[2] = 0xAA;
@@ -59,6 +51,14 @@ int f()
   target[5] = 0xAA;
   target[6] = 0xAA;
   target[7] = 0xAA;
+  origin[0] = 0xAA;
+  origin[1] = 0xAA;
+  origin[2] = 0xAA;
+  origin[3] = 0xAA;
+  origin[4] = 0xAA;
+  origin[5] = 0xAA;
+  origin[6] = 0xAA;
+  origin[7] = 0xAA;
   _use(target);
   _use(origin);
   i = 0;

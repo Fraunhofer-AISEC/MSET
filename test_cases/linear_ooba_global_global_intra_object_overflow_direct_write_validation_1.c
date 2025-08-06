@@ -11,8 +11,8 @@
  * Bug type: intra-object, linear OOBA, overflow
  * Access type: direct, write
  * Variant:
- *  - target declared after origin
- *  - target reached using global index, declared first
+ *  - target declared before origin
+ *  - target reached using global index
  */
 
 #include <unistd.h> // _exit
@@ -32,14 +32,14 @@ const char content[8] = "ZZZZZZZ";
 // types
 struct T
 {
-  char origin[8];
   char target[8];
+  char origin[8];
 };
 
 // globals
-ssize_t reach_index = 0;
 
 struct T s = { {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA}, {0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB} };
+__attribute__((section(".data.index"))) ssize_t reach_index = 0;
 
 int f()
 {

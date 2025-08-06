@@ -13,7 +13,7 @@
  * Variant:
  *  - target declared after origin
  *  - using big structure cast
- *  - using a global index
+ *  - using a stack index
  */
 
 #include <unistd.h> // _exit
@@ -31,18 +31,18 @@ volatile void *_use(volatile void *p) { return p; }
 const char content[8] = "ZZZZZZZ";
 
 // types
-
-// globals
-
 struct BigType
 {
   char buffer[(size_t)1 << 27];
 };
-static ssize_t i;
+
+// globals
+
 
 int f()
 {
   // locals
+  ssize_t i;
 
 
   char *origin = (char *)malloc( 8 );
