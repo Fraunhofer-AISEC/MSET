@@ -12,8 +12,8 @@
  * Access type: direct, write
  * Variant:
  *  - target declared after origin
- *  - distance is checked as is
- *  - target reached by using a stack index, declared last
+ *  - distance is negated before checking
+ *  - target reached by using a index
  *  - target accessed by using constants
  */
 
@@ -41,17 +41,17 @@ struct T
 // globals
 
 struct T s = { {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA}, {0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB} };
+__attribute__((section(".data.index"))) ssize_t reach_index = 0;
 
 int f()
 {
   // locals
 
-  ssize_t reach_index = 0;
 
   _use(s.target);
   _use(s.origin);
   if ( GET_ADDR_BITS(&reach_index) < GET_ADDR_BITS(s.target) && GET_ADDR_BITS(&reach_index) > GET_ADDR_BITS(s.origin) ) _exit(PRECONDITIONS_FAILED_VALUE);
-  if ( !((ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
+  if ( !(-(ssize_t)(GET_ADDR_BITS(s.origin) - GET_ADDR_BITS(s.target)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
   while( GET_ADDR_BITS(&s.origin[reach_index]) != GET_ADDR_BITS(s.target) )
   {
     s.origin[reach_index] = 0xFF;

@@ -11,9 +11,9 @@
  * Bug type: inter-object, linear OOBA, underflow
  * Access type: direct, write
  * Variant:
- *  - target declared after origin
- *  - distance is checked as is
- *  - target reached by using a stack auxiliary pointer, declared first
+ *  - target declared before origin
+ *  - distance is negated before checking
+ *  - target reached by using a index
  *  - target accessed by using constants
  */
 
@@ -35,23 +35,15 @@ const char content[8] = "ZZZZZZZ";
 
 // globals
 
+__attribute__((section(".data.index"))) ssize_t reach_index = 0;
 
 int f()
 {
   // locals
-  volatile char * aux_ptr;
 
-  char origin[8] = "";
   char target[8] = "";
+  char origin[8] = "";
 
-  origin[0] = 0xAA;
-  origin[1] = 0xAA;
-  origin[2] = 0xAA;
-  origin[3] = 0xAA;
-  origin[4] = 0xAA;
-  origin[5] = 0xAA;
-  origin[6] = 0xAA;
-  origin[7] = 0xAA;
   target[0] = 0xAA;
   target[1] = 0xAA;
   target[2] = 0xAA;
@@ -60,23 +52,30 @@ int f()
   target[5] = 0xAA;
   target[6] = 0xAA;
   target[7] = 0xAA;
+  origin[0] = 0xAA;
+  origin[1] = 0xAA;
+  origin[2] = 0xAA;
+  origin[3] = 0xAA;
+  origin[4] = 0xAA;
+  origin[5] = 0xAA;
+  origin[6] = 0xAA;
+  origin[7] = 0xAA;
   _use(target);
   _use(origin);
-  if ( !((ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) <= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
-  if ( GET_ADDR_BITS(&aux_ptr) < GET_ADDR_BITS(origin) && GET_ADDR_BITS(&aux_ptr) > GET_ADDR_BITS(target) ) _exit(PRECONDITIONS_FAILED_VALUE);
-  aux_ptr = origin;
-  while( GET_ADDR_BITS(aux_ptr) != GET_ADDR_BITS(target) )
+  if ( GET_ADDR_BITS(&reach_index) < GET_ADDR_BITS(origin) && GET_ADDR_BITS(&reach_index) > GET_ADDR_BITS(target) ) _exit(PRECONDITIONS_FAILED_VALUE);
+  if ( !(-(ssize_t)(GET_ADDR_BITS(origin) - GET_ADDR_BITS(target)) <= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
+  while( GET_ADDR_BITS(&origin[reach_index]) != GET_ADDR_BITS(target) )
   {
-    *aux_ptr = 0xFF;
-    --aux_ptr;
-    _use(aux_ptr);
+    origin[reach_index] = 0xFF;
+    --reach_index;
+    _use(&origin[reach_index]);
   }
   volatile size_t i;
   for (i = 0; i < 8; i++)
   {
-    aux_ptr[i] = 0xFF;
+    (origin + reach_index)[i] = 0xFF;
   }
-  _use(aux_ptr);
+  _use((origin + reach_index));
   _exit(TEST_CASE_SUCCESSFUL_VALUE);
 
   return 0;

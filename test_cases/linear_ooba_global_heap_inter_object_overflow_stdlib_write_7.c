@@ -12,8 +12,8 @@
  * Access type: stdlib, write
  * Variant:
  *  - target declared after origin
- *  - distance is checked as is
- *  - target reached by using a global index, initialized, declared last
+ *  - distance is negated before checking
+ *  - target reached by using a auxiliary pointer
  *  - target accessed by using constants
  */
 
@@ -36,8 +36,8 @@ const char content[8] = "ZZZZZZZ";
 // globals
 
 char origin[8] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
-volatile ssize_t i = 0;
-volatile size_t step_distance = 0;
+__attribute__((section(".data.index"))) volatile char * aux_ptr;
+__attribute__((section(".data.index"))) volatile size_t step_distance;
 
 int f()
 {
@@ -55,20 +55,20 @@ int f()
   target[7] = 0xAA;
   _use(target);
   _use(origin);
-  if ( !((ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
-  if ( GET_ADDR_BITS(&i) < GET_ADDR_BITS(target) && GET_ADDR_BITS(&i) > GET_ADDR_BITS(origin) ) _exit(PRECONDITIONS_FAILED_VALUE);
+  if ( GET_ADDR_BITS(&aux_ptr) < GET_ADDR_BITS(target) && GET_ADDR_BITS(&aux_ptr) > GET_ADDR_BITS(origin) ) _exit(PRECONDITIONS_FAILED_VALUE);
   if ( GET_ADDR_BITS(&step_distance) < GET_ADDR_BITS(target) && GET_ADDR_BITS(&step_distance) > GET_ADDR_BITS(origin) ) _exit(PRECONDITIONS_FAILED_VALUE);
-  i = 0;
-  while( GET_ADDR_BITS(&origin[i]) < GET_ADDR_BITS(target) )
+  if ( !(-(ssize_t)(GET_ADDR_BITS(origin) - GET_ADDR_BITS(target)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
+  aux_ptr = origin;
+  while( GET_ADDR_BITS(aux_ptr) < GET_ADDR_BITS(target) )
   {
-    step_distance = (GET_ADDR_BITS(target) > (1024 + GET_ADDR_BITS(&origin[i]))) ? 1024 : GET_ADDR_BITS(target) - GET_ADDR_BITS(&origin[i]);
-    memset((void *)&origin[i], 0xFF, step_distance);
-    i += step_distance;
-    _use(&origin[i]);
+    step_distance = (GET_ADDR_BITS(target) > (1024 + GET_ADDR_BITS(aux_ptr))) ? 1024 : GET_ADDR_BITS(target) - GET_ADDR_BITS(aux_ptr);
+    memset((void *)aux_ptr, 0xFF, step_distance);
+    aux_ptr += step_distance;
+    _use(aux_ptr);
   }
   _use(origin);
-  memset( (void *)&origin[i], 0xFF, 8);
-  _use(&origin[i]);
+  memset( (void *)aux_ptr, 0xFF, 8);
+  _use(aux_ptr);
   _exit(TEST_CASE_SUCCESSFUL_VALUE);
 
   free(target);

@@ -11,10 +11,10 @@
  * Bug type: inter-object, linear OOBA, overflow
  * Access type: stdlib, write
  * Variant:
- *  - target declared after origin
+ *  - target declared before origin
  *  - distance is checked as is
- *  - target reached by using a global auxiliary pointer, declared first
- *  - target accessed by using auxiliary variables
+ *  - target reached by using a auxiliary pointer
+ *  - target accessed by using constants
  */
 
 #include <unistd.h> // _exit
@@ -34,11 +34,11 @@ const char content[8] = "ZZZZZZZ";
 // types
 
 // globals
-volatile size_t step_distance;
-volatile char * aux_ptr;
 
-char origin[8] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
 char target[8] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
+char origin[8] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
+__attribute__((section(".data.index"))) volatile char * aux_ptr;
+__attribute__((section(".data.index"))) volatile size_t step_distance;
 
 int f()
 {
@@ -59,8 +59,7 @@ int f()
     _use(aux_ptr);
   }
   _use(origin);
-  volatile size_t size = 8;
-  memset( (void *)aux_ptr, 0xFF, size);
+  memset( (void *)aux_ptr, 0xFF, 8);
   _use(aux_ptr);
   _exit(TEST_CASE_SUCCESSFUL_VALUE);
 

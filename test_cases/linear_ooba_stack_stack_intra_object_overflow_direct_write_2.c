@@ -13,7 +13,7 @@
  * Variant:
  *  - target declared after origin
  *  - distance is checked as is
- *  - target reached by using a stack index, declared first
+ *  - target reached by using a auxiliary pointer
  *  - target accessed by using auxiliary variables
  */
 
@@ -40,11 +40,11 @@ struct T
 
 // globals
 
+__attribute__((section(".data.index"))) volatile char * aux_ptr;
 
 int f()
 {
   // locals
-  ssize_t reach_index = 0;
 
   struct T s;
 
@@ -66,21 +66,22 @@ int f()
   s.target[7] = 0xBB;
   _use(s.target);
   _use(s.origin);
-  if ( GET_ADDR_BITS(&reach_index) < GET_ADDR_BITS(s.target) && GET_ADDR_BITS(&reach_index) > GET_ADDR_BITS(s.origin) ) _exit(PRECONDITIONS_FAILED_VALUE);
   if ( !((ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
-  while( GET_ADDR_BITS(&s.origin[reach_index]) != GET_ADDR_BITS(s.target) )
+  if ( GET_ADDR_BITS(&aux_ptr) < GET_ADDR_BITS(s.target) && GET_ADDR_BITS(&aux_ptr) > GET_ADDR_BITS(s.origin) ) _exit(PRECONDITIONS_FAILED_VALUE);
+  aux_ptr = s.origin;
+  while( GET_ADDR_BITS(aux_ptr) != GET_ADDR_BITS(s.target) )
   {
-    s.origin[reach_index] = 0xFF;
-    ++reach_index;
-    _use(&s.origin[reach_index]);
+    *aux_ptr = 0xFF;
+    ++aux_ptr;
+    _use(aux_ptr);
   }
   volatile size_t i;
   volatile size_t size = 8;
   for (i = 0; i < size; i++)
   {
-    (s.origin + reach_index)[i] = content[i];
+    aux_ptr[i] = content[i];
   }
-  _use((s.origin + reach_index));
+  _use(aux_ptr);
   _exit(TEST_CASE_SUCCESSFUL_VALUE);
 
   return 0;

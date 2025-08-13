@@ -11,9 +11,9 @@
  * Bug type: inter-object, linear OOBA, overflow
  * Access type: stdlib, write
  * Variant:
- *  - target declared after origin
+ *  - target declared before origin
  *  - distance is negated before checking
- *  - target reached by using a stack index, declared last
+ *  - target reached by using a auxiliary pointer
  *  - target accessed by using auxiliary variables
  */
 
@@ -35,23 +35,14 @@ const char content[8] = "ZZZZZZZ";
 
 // globals
 
+__attribute__((section(".data.index"))) volatile char * aux_ptr;
+__attribute__((section(".data.index"))) volatile size_t step_distance;
 
 int f()
 {
   // locals
 
-  volatile ssize_t i = 0;
-  volatile size_t step_distance;
 
-  char *origin = (char *)malloc( 8 );
-  origin[0] = 0xAA;
-  origin[1] = 0xAA;
-  origin[2] = 0xAA;
-  origin[3] = 0xAA;
-  origin[4] = 0xAA;
-  origin[5] = 0xAA;
-  origin[6] = 0xAA;
-  origin[7] = 0xAA;
   char *target = (char *)malloc( 8 );
   target[0] = 0xAA;
   target[1] = 0xAA;
@@ -61,27 +52,36 @@ int f()
   target[5] = 0xAA;
   target[6] = 0xAA;
   target[7] = 0xAA;
+  char *origin = (char *)malloc( 8 );
+  origin[0] = 0xAA;
+  origin[1] = 0xAA;
+  origin[2] = 0xAA;
+  origin[3] = 0xAA;
+  origin[4] = 0xAA;
+  origin[5] = 0xAA;
+  origin[6] = 0xAA;
+  origin[7] = 0xAA;
   _use(target);
   _use(origin);
-  if ( !(-(ssize_t)(GET_ADDR_BITS(origin) - GET_ADDR_BITS(target)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
-  if ( GET_ADDR_BITS(&i) < GET_ADDR_BITS(target) && GET_ADDR_BITS(&i) > GET_ADDR_BITS(origin) ) _exit(PRECONDITIONS_FAILED_VALUE);
+  if ( GET_ADDR_BITS(&aux_ptr) < GET_ADDR_BITS(target) && GET_ADDR_BITS(&aux_ptr) > GET_ADDR_BITS(origin) ) _exit(PRECONDITIONS_FAILED_VALUE);
   if ( GET_ADDR_BITS(&step_distance) < GET_ADDR_BITS(target) && GET_ADDR_BITS(&step_distance) > GET_ADDR_BITS(origin) ) _exit(PRECONDITIONS_FAILED_VALUE);
-  i = 0;
-  while( GET_ADDR_BITS(&origin[i]) < GET_ADDR_BITS(target) )
+  if ( !(-(ssize_t)(GET_ADDR_BITS(origin) - GET_ADDR_BITS(target)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
+  aux_ptr = origin;
+  while( GET_ADDR_BITS(aux_ptr) < GET_ADDR_BITS(target) )
   {
-    step_distance = (GET_ADDR_BITS(target) > (1024 + GET_ADDR_BITS(&origin[i]))) ? 1024 : GET_ADDR_BITS(target) - GET_ADDR_BITS(&origin[i]);
-    memset((void *)&origin[i], 0xFF, step_distance);
-    i += step_distance;
-    _use(&origin[i]);
+    step_distance = (GET_ADDR_BITS(target) > (1024 + GET_ADDR_BITS(aux_ptr))) ? 1024 : GET_ADDR_BITS(target) - GET_ADDR_BITS(aux_ptr);
+    memset((void *)aux_ptr, 0xFF, step_distance);
+    aux_ptr += step_distance;
+    _use(aux_ptr);
   }
   _use(origin);
   volatile size_t size = 8;
-  memset( (void *)&origin[i], 0xFF, size);
-  _use(&origin[i]);
+  memset( (void *)aux_ptr, 0xFF, size);
+  _use(aux_ptr);
   _exit(TEST_CASE_SUCCESSFUL_VALUE);
 
-  free(origin);
   free(target);
+  free(origin);
   return 0;
 }
 

@@ -13,8 +13,8 @@
  * Variant:
  *  - target declared after origin
  *  - distance is checked as is
- *  - target reached by using a stack index, declared last
- *  - target accessed by using auxiliary variables
+ *  - target reached by using a index
+ *  - target accessed by using constants
  */
 
 #include <unistd.h> // _exit
@@ -35,13 +35,13 @@ const char content[8] = "ZZZZZZZ";
 
 // globals
 
+__attribute__((section(".data.index"))) ssize_t reach_index = 0;
 
 int f()
 {
   // locals
 
   char target[8] = "";
-  ssize_t reach_index = 0;
 
   char *origin = (char *)malloc( 8 );
   origin[0] = 0xAA;
@@ -71,10 +71,9 @@ int f()
     _use(&origin[reach_index]);
   }
   volatile size_t i;
-  volatile size_t size = 8;
-  for (i = 0; i < size; i++)
+  for (i = 0; i < 8; i++)
   {
-    (origin + reach_index)[i] = content[i];
+    (origin + reach_index)[i] = 0xFF;
   }
   _use((origin + reach_index));
   _exit(TEST_CASE_SUCCESSFUL_VALUE);

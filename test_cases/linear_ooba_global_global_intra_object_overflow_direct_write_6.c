@@ -12,8 +12,8 @@
  * Access type: direct, write
  * Variant:
  *  - target declared after origin
- *  - distance is checked as is
- *  - target reached by using a global auxiliary pointer, declared last
+ *  - distance is negated before checking
+ *  - target reached by using a auxiliary pointer
  *  - target accessed by using auxiliary variables
  */
 
@@ -41,7 +41,7 @@ struct T
 // globals
 
 struct T s = { {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA}, {0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB} };
-volatile char * aux_ptr;
+__attribute__((section(".data.index"))) volatile char * aux_ptr;
 
 int f()
 {
@@ -50,7 +50,7 @@ int f()
 
   _use(s.target);
   _use(s.origin);
-  if ( !((ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
+  if ( !(-(ssize_t)(GET_ADDR_BITS(s.origin) - GET_ADDR_BITS(s.target)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
   if ( GET_ADDR_BITS(&aux_ptr) < GET_ADDR_BITS(s.target) && GET_ADDR_BITS(&aux_ptr) > GET_ADDR_BITS(s.origin) ) _exit(PRECONDITIONS_FAILED_VALUE);
   aux_ptr = s.origin;
   while( GET_ADDR_BITS(aux_ptr) != GET_ADDR_BITS(s.target) )

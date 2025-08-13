@@ -13,7 +13,7 @@
  * Variant:
  *  - target declared after origin
  *  - distance is checked as is
- *  - target reached by using a global auxiliary pointer
+ *  - target reached by using a auxiliary pointer
  *  - target accessed by using auxiliary variables
  */
 
@@ -37,8 +37,8 @@ const char content[8] = "ZZZZZZZ";
 
 char origin[8] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
 char target[8] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
-volatile char * aux_ptr;
-volatile size_t i = 0;
+__attribute__((section(".data.index"))) volatile char * aux_ptr;
+__attribute__((section(".data.index"))) volatile size_t i = 0;
 
 int f()
 {

@@ -29,13 +29,13 @@ volatile void *_use(volatile void *p) { return p; }
 const char content[8] = "ZZZZZZZ";
 
 // types
-
-// globals
-
 struct BigType
 {
   char buffer[(size_t)1 << 27];
 };
+
+// globals
+
 
 int f()
 {

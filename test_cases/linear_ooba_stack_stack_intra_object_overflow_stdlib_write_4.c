@@ -12,9 +12,9 @@
  * Access type: stdlib, write
  * Variant:
  *  - target declared after origin
- *  - distance is checked as is
- *  - target reached by using a global index, declared last
- *  - target accessed by using constants
+ *  - distance is negated before checking
+ *  - target reached by using a index
+ *  - target accessed by using auxiliary variables
  */
 
 #include <unistd.h> // _exit
@@ -40,8 +40,8 @@ struct T
 
 // globals
 
-volatile ssize_t i = 0;
-volatile size_t step_distance;
+__attribute__((section(".data.index"))) volatile ssize_t i = 0;
+__attribute__((section(".data.index"))) volatile size_t step_distance;
 
 int f()
 {
@@ -67,7 +67,7 @@ int f()
   s.target[7] = 0xBB;
   _use(s.target);
   _use(s.origin);
-  if ( !((ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
+  if ( !(-(ssize_t)(GET_ADDR_BITS(s.origin) - GET_ADDR_BITS(s.target)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
   if ( GET_ADDR_BITS(&i) < GET_ADDR_BITS(s.target) && GET_ADDR_BITS(&i) > GET_ADDR_BITS(s.origin) ) _exit(PRECONDITIONS_FAILED_VALUE);
   if ( GET_ADDR_BITS(&step_distance) < GET_ADDR_BITS(s.target) && GET_ADDR_BITS(&step_distance) > GET_ADDR_BITS(s.origin) ) _exit(PRECONDITIONS_FAILED_VALUE);
   i = 0;
@@ -79,7 +79,8 @@ int f()
     _use(&s.origin[i]);
   }
   _use(s.origin);
-  memset( (void *)&s.origin[i], 0xFF, 8);
+  volatile size_t size = 8;
+  memset( (void *)&s.origin[i], 0xFF, size);
   _use(&s.origin[i]);
   _exit(TEST_CASE_SUCCESSFUL_VALUE);
 

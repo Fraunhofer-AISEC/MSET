@@ -11,10 +11,10 @@
  * Bug type: intra-object, linear OOBA, overflow
  * Access type: stdlib, write
  * Variant:
- *  - target declared after origin
+ *  - target declared before origin
  *  - distance is checked as is
- *  - target reached by using a global auxiliary pointer, initialized, declared last
- *  - target accessed by using constants
+ *  - target reached by using a auxiliary pointer
+ *  - target accessed by using auxiliary variables
  */
 
 #include <unistd.h> // _exit
@@ -34,14 +34,14 @@ const char content[8] = "ZZZZZZZ";
 // types
 struct T
 {
-  char origin[8];
   char target[8];
+  char origin[8];
 };
 
 // globals
 
-volatile char * aux_ptr = 0;
-volatile size_t step_distance = 0;
+__attribute__((section(".data.index"))) volatile char * aux_ptr;
+__attribute__((section(".data.index"))) volatile size_t step_distance;
 
 int f()
 {
@@ -49,22 +49,22 @@ int f()
 
 
   struct T *s = (struct T *)malloc( sizeof(struct T) );
-  s->origin[0] = 0xAA;
-  s->origin[1] = 0xAA;
-  s->origin[2] = 0xAA;
-  s->origin[3] = 0xAA;
-  s->origin[4] = 0xAA;
-  s->origin[5] = 0xAA;
-  s->origin[6] = 0xAA;
-  s->origin[7] = 0xAA;
-  s->target[0] = 0xBB;
-  s->target[1] = 0xBB;
-  s->target[2] = 0xBB;
-  s->target[3] = 0xBB;
-  s->target[4] = 0xBB;
-  s->target[5] = 0xBB;
-  s->target[6] = 0xBB;
-  s->target[7] = 0xBB;
+  s->target[0] = 0xAA;
+  s->target[1] = 0xAA;
+  s->target[2] = 0xAA;
+  s->target[3] = 0xAA;
+  s->target[4] = 0xAA;
+  s->target[5] = 0xAA;
+  s->target[6] = 0xAA;
+  s->target[7] = 0xAA;
+  s->origin[0] = 0xBB;
+  s->origin[1] = 0xBB;
+  s->origin[2] = 0xBB;
+  s->origin[3] = 0xBB;
+  s->origin[4] = 0xBB;
+  s->origin[5] = 0xBB;
+  s->origin[6] = 0xBB;
+  s->origin[7] = 0xBB;
   _use(s->target);
   _use(s->origin);
   if ( GET_ADDR_BITS(&aux_ptr) < GET_ADDR_BITS(s->target) && GET_ADDR_BITS(&aux_ptr) > GET_ADDR_BITS(s->origin) ) _exit(PRECONDITIONS_FAILED_VALUE);
@@ -79,7 +79,8 @@ int f()
     _use(aux_ptr);
   }
   _use(s->origin);
-  memset( (void *)aux_ptr, 0xFF, 8);
+  volatile size_t size = 8;
+  memset( (void *)aux_ptr, 0xFF, size);
   _use(aux_ptr);
   _exit(TEST_CASE_SUCCESSFUL_VALUE);
 

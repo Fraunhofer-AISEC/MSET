@@ -85,7 +85,7 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> TypeConfusion::generate(
     variant_with_big_type->add_during_lifetime(reach_target_code);
     variant_with_big_type->add_during_lifetime(access_target_code);
     variant_with_big_type->add_during_lifetime("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
-    variant_with_big_type->add_global({
+    variant_with_big_type->add_type({
       "struct BigType",
       "{",
       "  char buffer[(size_t)1 << 27];",
@@ -178,7 +178,7 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> TypeConfusion::generate_val
     );
     variant_with_big_type->add_during_lifetime(access_target_code);
     variant_with_big_type->add_during_lifetime("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
-    variant_with_big_type->add_global({
+    variant_with_big_type->add_type({
       "struct BigType",
       "{",
       "  char buffer[(size_t)1 << 27];",

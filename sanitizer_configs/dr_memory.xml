@@ -1,10 +1,10 @@
 <sanitizer>
     <name>Dr. Memory</name>
     <setup>
-        <compile_cmd>clang -g $SOURCE_FILE -o $GENERATED_BINARY</compile_cmd>
+        <compile_cmd>clang -Wl,-T,../../sanitizers/after_text.ld -g $SOURCE_FILE -o $GENERATED_BINARY</compile_cmd>
     </setup>
     <setup_baseline>
-        <compile_cmd>clang -g $SOURCE_FILE -o $GENERATED_BINARY</compile_cmd>
+        <compile_cmd>clang -Wl,-T,../../sanitizers/after_text.ld -g $SOURCE_FILE -o $GENERATED_BINARY</compile_cmd>
     </setup_baseline>
     <run>../../sanitizers/drmemory/bin/drmemory -light -exit_code_if_errors 44 -- $GENERATED_BINARY</run>
     <run_baseline>$GENERATED_BINARY</run_baseline>

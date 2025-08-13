@@ -13,7 +13,7 @@
  * Variant:
  *  - target declared after origin
  *  - distance is negated before checking
- *  - target reached by using a global auxiliary pointer
+ *  - target reached by using a auxiliary pointer
  *  - target accessed by using constants
  */
 
@@ -41,9 +41,9 @@ struct T
 // globals
 
 struct T s = { {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA}, {0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB} };
-volatile char tmp;
-volatile char * aux_ptr;
-volatile ssize_t reach_index = 0;
+__attribute__((section(".data.index"))) volatile char tmp;
+__attribute__((section(".data.index"))) volatile char * aux_ptr;
+__attribute__((section(".data.index"))) volatile ssize_t reach_index = 0;
 
 int f()
 {

@@ -86,12 +86,12 @@ public:
     {
     }
 
-    static std::vector< std::vector<std::string> > to_string_vector( const std::vector<AuxiliaryVariable> & auxiliary_variables )
+    static std::vector<std::string> to_string_vector( const std::vector<AuxiliaryVariable> & auxiliary_variables )
     {
-      std::vector< std::vector<std::string> > result;
+      std::vector<std::string> result;
       result.reserve( auxiliary_variables.size() );
       std::transform(auxiliary_variables.begin(), auxiliary_variables.end(), std::back_inserter(result),
-        [](const AuxiliaryVariable & auxiliary_variable) { return std::vector< std::string>{ auxiliary_variable.to_string() }; }
+        [](const AuxiliaryVariable & auxiliary_variable) { return auxiliary_variable.to_string(); }
       );
       return result;
     }

@@ -12,9 +12,9 @@
  * Access type: direct, write
  * Variant:
  *  - target declared after origin
- *  - distance is checked as is
- *  - target reached by using a global index, declared first
- *  - target accessed by using constants
+ *  - distance is negated before checking
+ *  - target reached by using a index
+ *  - target accessed by using auxiliary variables
  */
 
 #include <unistd.h> // _exit
@@ -34,10 +34,10 @@ const char content[8] = "ZZZZZZZ";
 // types
 
 // globals
-ssize_t reach_index = 0;
 
 char origin[8] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
 char target[8] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
+__attribute__((section(".data.index"))) ssize_t reach_index = 0;
 
 int f()
 {
@@ -47,7 +47,7 @@ int f()
   _use(target);
   _use(origin);
   if ( GET_ADDR_BITS(&reach_index) < GET_ADDR_BITS(origin) && GET_ADDR_BITS(&reach_index) > GET_ADDR_BITS(target) ) _exit(PRECONDITIONS_FAILED_VALUE);
-  if ( !((ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) <= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
+  if ( !(-(ssize_t)(GET_ADDR_BITS(origin) - GET_ADDR_BITS(target)) <= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
   while( GET_ADDR_BITS(&origin[reach_index]) != GET_ADDR_BITS(target) )
   {
     origin[reach_index] = 0xFF;
@@ -55,9 +55,10 @@ int f()
     _use(&origin[reach_index]);
   }
   volatile size_t i;
-  for (i = 0; i < 8; i++)
+  volatile size_t size = 8;
+  for (i = 0; i < size; i++)
   {
-    (origin + reach_index)[i] = 0xFF;
+    (origin + reach_index)[i] = content[i];
   }
   _use((origin + reach_index));
   _exit(TEST_CASE_SUCCESSFUL_VALUE);

@@ -39,9 +39,9 @@ struct T
 // globals
 
 struct T s = { {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA}, {0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB} };
-volatile char tmp;
-volatile size_t i;
-volatile ssize_t reach_index = 0;
+__attribute__((section(".data.index"))) volatile char tmp;
+__attribute__((section(".data.index"))) volatile size_t i;
+__attribute__((section(".data.index"))) volatile ssize_t reach_index = 0;
 
 int f()
 {

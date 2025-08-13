@@ -11,9 +11,9 @@
  * Bug type: intra-object, linear OOBA, overflow
  * Access type: stdlib, write
  * Variant:
- *  - target declared after origin
+ *  - target declared before origin
  *  - distance is checked as is
- *  - target reached by using a stack auxiliary pointer, declared last
+ *  - target reached by using a auxiliary pointer
  *  - target accessed by using auxiliary variables
  */
 
@@ -34,37 +34,37 @@ const char content[8] = "ZZZZZZZ";
 // types
 struct T
 {
-  char origin[8];
   char target[8];
+  char origin[8];
 };
 
 // globals
 
+__attribute__((section(".data.index"))) volatile char * aux_ptr;
+__attribute__((section(".data.index"))) volatile size_t step_distance;
 
 int f()
 {
   // locals
 
   struct T s;
-  volatile char * aux_ptr;
-  volatile size_t step_distance;
 
-  s.origin[0] = 0xAA;
-  s.origin[1] = 0xAA;
-  s.origin[2] = 0xAA;
-  s.origin[3] = 0xAA;
-  s.origin[4] = 0xAA;
-  s.origin[5] = 0xAA;
-  s.origin[6] = 0xAA;
-  s.origin[7] = 0xAA;
-  s.target[0] = 0xBB;
-  s.target[1] = 0xBB;
-  s.target[2] = 0xBB;
-  s.target[3] = 0xBB;
-  s.target[4] = 0xBB;
-  s.target[5] = 0xBB;
-  s.target[6] = 0xBB;
-  s.target[7] = 0xBB;
+  s.target[0] = 0xAA;
+  s.target[1] = 0xAA;
+  s.target[2] = 0xAA;
+  s.target[3] = 0xAA;
+  s.target[4] = 0xAA;
+  s.target[5] = 0xAA;
+  s.target[6] = 0xAA;
+  s.target[7] = 0xAA;
+  s.origin[0] = 0xBB;
+  s.origin[1] = 0xBB;
+  s.origin[2] = 0xBB;
+  s.origin[3] = 0xBB;
+  s.origin[4] = 0xBB;
+  s.origin[5] = 0xBB;
+  s.origin[6] = 0xBB;
+  s.origin[7] = 0xBB;
   _use(s.target);
   _use(s.origin);
   if ( GET_ADDR_BITS(&aux_ptr) < GET_ADDR_BITS(s.target) && GET_ADDR_BITS(&aux_ptr) > GET_ADDR_BITS(s.origin) ) _exit(PRECONDITIONS_FAILED_VALUE);

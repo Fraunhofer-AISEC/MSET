@@ -11,9 +11,9 @@
  * Bug type: inter-object, linear OOBA, overflow
  * Access type: direct, write
  * Variant:
- *  - target declared after origin
+ *  - target declared before origin
  *  - distance is negated before checking
- *  - target reached by using a stack index, declared last
+ *  - target reached by using a index
  *  - target accessed by using constants
  */
 
@@ -35,22 +35,13 @@ const char content[8] = "ZZZZZZZ";
 
 // globals
 
+__attribute__((section(".data.index"))) ssize_t reach_index = 0;
 
 int f()
 {
   // locals
 
-  ssize_t reach_index = 0;
 
-  char *origin = (char *)malloc( 8 );
-  origin[0] = 0xAA;
-  origin[1] = 0xAA;
-  origin[2] = 0xAA;
-  origin[3] = 0xAA;
-  origin[4] = 0xAA;
-  origin[5] = 0xAA;
-  origin[6] = 0xAA;
-  origin[7] = 0xAA;
   char *target = (char *)malloc( 8 );
   target[0] = 0xAA;
   target[1] = 0xAA;
@@ -60,6 +51,15 @@ int f()
   target[5] = 0xAA;
   target[6] = 0xAA;
   target[7] = 0xAA;
+  char *origin = (char *)malloc( 8 );
+  origin[0] = 0xAA;
+  origin[1] = 0xAA;
+  origin[2] = 0xAA;
+  origin[3] = 0xAA;
+  origin[4] = 0xAA;
+  origin[5] = 0xAA;
+  origin[6] = 0xAA;
+  origin[7] = 0xAA;
   _use(target);
   _use(origin);
   if ( GET_ADDR_BITS(&reach_index) < GET_ADDR_BITS(target) && GET_ADDR_BITS(&reach_index) > GET_ADDR_BITS(origin) ) _exit(PRECONDITIONS_FAILED_VALUE);
@@ -78,8 +78,8 @@ int f()
   _use((origin + reach_index));
   _exit(TEST_CASE_SUCCESSFUL_VALUE);
 
-  free(origin);
   free(target);
+  free(origin);
   return 0;
 }
 

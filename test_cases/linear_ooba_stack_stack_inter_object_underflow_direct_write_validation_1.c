@@ -11,8 +11,8 @@
  * Bug type: inter-object, linear OOBA, underflow
  * Access type: direct, write
  * Variant:
- *  - target declared after origin
- *  - target reached using stack index, declared last
+ *  - target declared before origin
+ *  - target reached using global index
  */
 
 #include <unistd.h> // _exit
@@ -33,23 +33,15 @@ const char content[8] = "ZZZZZZZ";
 
 // globals
 
+__attribute__((section(".data.index"))) ssize_t reach_index = 0;
 
 int f()
 {
   // locals
 
-  char origin[8] = "";
   char target[8] = "";
-  ssize_t reach_index = 0;
+  char origin[8] = "";
 
-  origin[0] = 0xAA;
-  origin[1] = 0xAA;
-  origin[2] = 0xAA;
-  origin[3] = 0xAA;
-  origin[4] = 0xAA;
-  origin[5] = 0xAA;
-  origin[6] = 0xAA;
-  origin[7] = 0xAA;
   target[0] = 0xAA;
   target[1] = 0xAA;
   target[2] = 0xAA;
@@ -58,6 +50,14 @@ int f()
   target[5] = 0xAA;
   target[6] = 0xAA;
   target[7] = 0xAA;
+  origin[0] = 0xAA;
+  origin[1] = 0xAA;
+  origin[2] = 0xAA;
+  origin[3] = 0xAA;
+  origin[4] = 0xAA;
+  origin[5] = 0xAA;
+  origin[6] = 0xAA;
+  origin[7] = 0xAA;
   _use(target);
   _use(origin);
   while( GET_ADDR_BITS(&target[reach_index]) != GET_ADDR_BITS(target) )

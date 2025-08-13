@@ -11,10 +11,10 @@
  * Bug type: inter-object, linear OOBA, overflow
  * Access type: stdlib, write
  * Variant:
- *  - target declared after origin
+ *  - target declared before origin
  *  - distance is negated before checking
- *  - target reached by using a global index, initialized, declared last
- *  - target accessed by using auxiliary variables
+ *  - target reached by using a index
+ *  - target accessed by using constants
  */
 
 #include <unistd.h> // _exit
@@ -35,23 +35,14 @@ const char content[8] = "ZZZZZZZ";
 
 // globals
 
-volatile ssize_t i = 0;
-volatile size_t step_distance = 0;
+__attribute__((section(".data.index"))) volatile ssize_t i = 0;
+__attribute__((section(".data.index"))) volatile size_t step_distance;
 
 int f()
 {
   // locals
 
 
-  char *origin = (char *)malloc( 8 );
-  origin[0] = 0xAA;
-  origin[1] = 0xAA;
-  origin[2] = 0xAA;
-  origin[3] = 0xAA;
-  origin[4] = 0xAA;
-  origin[5] = 0xAA;
-  origin[6] = 0xAA;
-  origin[7] = 0xAA;
   char *target = (char *)malloc( 8 );
   target[0] = 0xAA;
   target[1] = 0xAA;
@@ -61,6 +52,15 @@ int f()
   target[5] = 0xAA;
   target[6] = 0xAA;
   target[7] = 0xAA;
+  char *origin = (char *)malloc( 8 );
+  origin[0] = 0xAA;
+  origin[1] = 0xAA;
+  origin[2] = 0xAA;
+  origin[3] = 0xAA;
+  origin[4] = 0xAA;
+  origin[5] = 0xAA;
+  origin[6] = 0xAA;
+  origin[7] = 0xAA;
   _use(target);
   _use(origin);
   if ( !(-(ssize_t)(GET_ADDR_BITS(origin) - GET_ADDR_BITS(target)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
@@ -75,13 +75,12 @@ int f()
     _use(&origin[i]);
   }
   _use(origin);
-  volatile size_t size = 8;
-  memset( (void *)&origin[i], 0xFF, size);
+  memset( (void *)&origin[i], 0xFF, 8);
   _use(&origin[i]);
   _exit(TEST_CASE_SUCCESSFUL_VALUE);
 
-  free(origin);
   free(target);
+  free(origin);
   return 0;
 }
 

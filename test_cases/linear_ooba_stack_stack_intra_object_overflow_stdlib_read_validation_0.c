@@ -38,7 +38,7 @@ struct T
 
 // globals
 
-volatile ssize_t i = 0;
+__attribute__((section(".data.index"))) volatile ssize_t i = 0;
 
 int f()
 {

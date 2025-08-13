@@ -11,8 +11,8 @@
  * Bug type: intra-object, linear OOBA, underflow
  * Access type: direct, write
  * Variant:
- *  - target declared after origin
- *  - target reached using stack index, declared last
+ *  - target declared before origin
+ *  - target reached using global index
  */
 
 #include <unistd.h> // _exit
@@ -32,36 +32,36 @@ const char content[8] = "ZZZZZZZ";
 // types
 struct T
 {
-  char origin[8];
   char target[8];
+  char origin[8];
 };
 
 // globals
 
+__attribute__((section(".data.index"))) ssize_t reach_index = 0;
 
 int f()
 {
   // locals
 
-  ssize_t reach_index = 0;
 
   struct T *s = (struct T *)malloc( sizeof(struct T) );
-  s->origin[0] = 0xAA;
-  s->origin[1] = 0xAA;
-  s->origin[2] = 0xAA;
-  s->origin[3] = 0xAA;
-  s->origin[4] = 0xAA;
-  s->origin[5] = 0xAA;
-  s->origin[6] = 0xAA;
-  s->origin[7] = 0xAA;
-  s->target[0] = 0xBB;
-  s->target[1] = 0xBB;
-  s->target[2] = 0xBB;
-  s->target[3] = 0xBB;
-  s->target[4] = 0xBB;
-  s->target[5] = 0xBB;
-  s->target[6] = 0xBB;
-  s->target[7] = 0xBB;
+  s->target[0] = 0xAA;
+  s->target[1] = 0xAA;
+  s->target[2] = 0xAA;
+  s->target[3] = 0xAA;
+  s->target[4] = 0xAA;
+  s->target[5] = 0xAA;
+  s->target[6] = 0xAA;
+  s->target[7] = 0xAA;
+  s->origin[0] = 0xBB;
+  s->origin[1] = 0xBB;
+  s->origin[2] = 0xBB;
+  s->origin[3] = 0xBB;
+  s->origin[4] = 0xBB;
+  s->origin[5] = 0xBB;
+  s->origin[6] = 0xBB;
+  s->origin[7] = 0xBB;
   _use(s->target);
   _use(s->origin);
   while( GET_ADDR_BITS(&s->target[reach_index]) != GET_ADDR_BITS(s->target) )

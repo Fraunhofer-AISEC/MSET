@@ -13,7 +13,7 @@
  * Variant:
  *  - target declared after origin
  *  - distance is checked as is
- *  - target reached by using a global index, declared last
+ *  - target reached by using a auxiliary pointer
  *  - target accessed by using constants
  */
 
@@ -40,8 +40,8 @@ struct T
 
 // globals
 
-volatile ssize_t i = 0;
-volatile size_t step_distance;
+__attribute__((section(".data.index"))) volatile char * aux_ptr;
+__attribute__((section(".data.index"))) volatile size_t step_distance;
 
 int f()
 {
@@ -67,20 +67,20 @@ int f()
   s->target[7] = 0xBB;
   _use(s->target);
   _use(s->origin);
-  if ( !((ssize_t)(GET_ADDR_BITS(s->target) - GET_ADDR_BITS(s->origin)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
-  if ( GET_ADDR_BITS(&i) < GET_ADDR_BITS(s->target) && GET_ADDR_BITS(&i) > GET_ADDR_BITS(s->origin) ) _exit(PRECONDITIONS_FAILED_VALUE);
+  if ( GET_ADDR_BITS(&aux_ptr) < GET_ADDR_BITS(s->target) && GET_ADDR_BITS(&aux_ptr) > GET_ADDR_BITS(s->origin) ) _exit(PRECONDITIONS_FAILED_VALUE);
   if ( GET_ADDR_BITS(&step_distance) < GET_ADDR_BITS(s->target) && GET_ADDR_BITS(&step_distance) > GET_ADDR_BITS(s->origin) ) _exit(PRECONDITIONS_FAILED_VALUE);
-  i = 0;
-  while( GET_ADDR_BITS(&s->origin[i]) < GET_ADDR_BITS(s->target) )
+  if ( !((ssize_t)(GET_ADDR_BITS(s->target) - GET_ADDR_BITS(s->origin)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
+  aux_ptr = s->origin;
+  while( GET_ADDR_BITS(aux_ptr) < GET_ADDR_BITS(s->target) )
   {
-    step_distance = (GET_ADDR_BITS(s->target) > (1024 + GET_ADDR_BITS(&s->origin[i]))) ? 1024 : GET_ADDR_BITS(s->target) - GET_ADDR_BITS(&s->origin[i]);
-    memset((void *)&s->origin[i], 0xFF, step_distance);
-    i += step_distance;
-    _use(&s->origin[i]);
+    step_distance = (GET_ADDR_BITS(s->target) > (1024 + GET_ADDR_BITS(aux_ptr))) ? 1024 : GET_ADDR_BITS(s->target) - GET_ADDR_BITS(aux_ptr);
+    memset((void *)aux_ptr, 0xFF, step_distance);
+    aux_ptr += step_distance;
+    _use(aux_ptr);
   }
   _use(s->origin);
-  memset( (void *)&s->origin[i], 0xFF, 8);
-  _use(&s->origin[i]);
+  memset( (void *)aux_ptr, 0xFF, 8);
+  _use(aux_ptr);
   _exit(TEST_CASE_SUCCESSFUL_VALUE);
 
   free(s);

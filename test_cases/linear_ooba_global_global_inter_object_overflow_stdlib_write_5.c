@@ -12,8 +12,8 @@
  * Access type: stdlib, write
  * Variant:
  *  - target declared after origin
- *  - distance is checked as is
- *  - target reached by using a global index, declared last
+ *  - distance is negated before checking
+ *  - target reached by using a index
  *  - target accessed by using constants
  */
 
@@ -37,8 +37,8 @@ const char content[8] = "ZZZZZZZ";
 
 char origin[8] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
 char target[8] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
-volatile ssize_t i = 0;
-volatile size_t step_distance;
+__attribute__((section(".data.index"))) volatile ssize_t i = 0;
+__attribute__((section(".data.index"))) volatile size_t step_distance;
 
 int f()
 {
@@ -47,7 +47,7 @@ int f()
 
   _use(target);
   _use(origin);
-  if ( !((ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
+  if ( !(-(ssize_t)(GET_ADDR_BITS(origin) - GET_ADDR_BITS(target)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
   if ( GET_ADDR_BITS(&i) < GET_ADDR_BITS(target) && GET_ADDR_BITS(&i) > GET_ADDR_BITS(origin) ) _exit(PRECONDITIONS_FAILED_VALUE);
   if ( GET_ADDR_BITS(&step_distance) < GET_ADDR_BITS(target) && GET_ADDR_BITS(&step_distance) > GET_ADDR_BITS(origin) ) _exit(PRECONDITIONS_FAILED_VALUE);
   i = 0;

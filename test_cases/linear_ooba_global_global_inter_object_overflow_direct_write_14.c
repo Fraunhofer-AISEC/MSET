@@ -11,10 +11,10 @@
  * Bug type: inter-object, linear OOBA, overflow
  * Access type: direct, write
  * Variant:
- *  - target declared after origin
- *  - distance is checked as is
- *  - target reached by using a global auxiliary pointer, initialized, declared first
- *  - target accessed by using constants
+ *  - target declared before origin
+ *  - distance is negated before checking
+ *  - target reached by using a auxiliary pointer
+ *  - target accessed by using auxiliary variables
  */
 
 #include <unistd.h> // _exit
@@ -34,10 +34,10 @@ const char content[8] = "ZZZZZZZ";
 // types
 
 // globals
-volatile char * aux_ptr = 0;
 
-char origin[8] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
 char target[8] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
+char origin[8] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
+__attribute__((section(".data.index"))) volatile char * aux_ptr;
 
 int f()
 {
@@ -46,7 +46,7 @@ int f()
 
   _use(target);
   _use(origin);
-  if ( !((ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
+  if ( !(-(ssize_t)(GET_ADDR_BITS(origin) - GET_ADDR_BITS(target)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
   if ( GET_ADDR_BITS(&aux_ptr) < GET_ADDR_BITS(target) && GET_ADDR_BITS(&aux_ptr) > GET_ADDR_BITS(origin) ) _exit(PRECONDITIONS_FAILED_VALUE);
   aux_ptr = origin;
   while( GET_ADDR_BITS(aux_ptr) != GET_ADDR_BITS(target) )
@@ -56,9 +56,10 @@ int f()
     _use(aux_ptr);
   }
   volatile size_t i;
-  for (i = 0; i < 8; i++)
+  volatile size_t size = 8;
+  for (i = 0; i < size; i++)
   {
-    aux_ptr[i] = 0xFF;
+    aux_ptr[i] = content[i];
   }
   _use(aux_ptr);
   _exit(TEST_CASE_SUCCESSFUL_VALUE);
