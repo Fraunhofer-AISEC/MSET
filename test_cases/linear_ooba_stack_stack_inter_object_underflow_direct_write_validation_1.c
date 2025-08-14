@@ -12,7 +12,7 @@
  * Access type: direct, write
  * Variant:
  *  - target declared before origin
- *  - target reached using global index
+ *  - target reached using a index
  */
 
 #include <unistd.h> // _exit

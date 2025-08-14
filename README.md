@@ -24,6 +24,42 @@ For more information, please refer to the SP '25 conference paper (author's vers
 
 Please note that this is a prototype implementation.
 
+## Current results
+
+The current results, based on the latest version of MSET, are listed in the table below.
+If you want your own sanitizer to be listed, please open a PR and/or contact us.
+
+|              |   A       |         |   B       |         |
+| Item         | SubA1     | SubA2   | SubB1     | SubB2   |
+|--------------|-----------|---------|-----------|---------|
+| Item 1       | 10        | 20      | 30        | 40      |
+| Item 2       | 15        | 25      | 35        | 45      |
+
+
+TODO: sanitizers links
+TODO: See []
+
+### Number and percentage of test cases detected by each sanitizer, sorted by bug type
+| Sanitizer                                                                                 | Linear OOBA            | Non-linear OOBA        | Type confusion OOBA   | Use-after-*           | Double-free | Misuse-of-free |
+|:------------------------------------------------------------------------------------------|:-----------------------|:-----------------------|:----------------------|:----------------------|:------------|:---------------|
+| Baseline                                                                                  | 36 (40%)               | 18 (25%)               | 12 (40%)              | 0 (0%)                | 0 (0%)      | 0 (0%)         |
+| [ASan](https://clang.llvm.org/docs/AddressSanitizer.html)                                 | 70 (77.8%)             | 18 (25%)               | 18 (60%)              | 8 (50%)               | 4 (100%)    | 20 (100%)      |
+| [ASan--](www.github.com/junxzm1990/ASAN--)                                                | 70 (77.8%)             | 18 (25%)               | 18 (60%)              | 8 (50%)               | 4 (100%)    | 20 (100%)      |
+| [Delta Pointers](www.github.com/vusec/deltapointers)                                      | 60 (66.7%)             | 46 (63.9%)*            | 19 (63.3%)*           | 0 (0%)                | 0 (0%)      | 0 (0%)         |
+| [Dr. Memory](https://drmemory.org/)                                                       | 44 (48.9%)             | 18 (25%)               | 14 (46.7%)            | 4 (25%)               | 4 (100%)    | 20 (100%)      |
+| [EffectiveSan](https://www.github.com/GJDuck/EffectiveSan)                                | 77 (85.6%)*            | 72 (100%)              | 28 (93.3%)            | 1 (6.2%)              | 4 (100%)    | 12 (60%)       |
+| [Electric Fence](https://manpages.debian.org/unstable/electric-fence/libefence.3.en.html) | 46 (51.1%)             | 18 (25%)               | 16 (53.3%)            | 4 (25%)               | 4 (100%)    | 20 (100%)      |
+| [FreeGuard](www.github.com/UTSASRG/FreeGuard)*                                            | 38.3, σ = 1.6 (42.6%)  | 18.6, σ = 0.7 (25.8%)  | 13.6, σ = 0.5 (45.3%) | 0 (0%)                | 4 (100%)    | 8 (40%)        |
+| [HWASAN](https://clang.llvm.org/docs/HardwareAssistedAddressSanitizerDesign.html)*        | 71.8, σ = 0.4 (79.8%)  | 53.7, σ = 0.5 (74.6%)  | 24, σ = 0.0 (80%)     | 15.7, σ = 0.5 (98.1%) | 4 (100%)    | 12 (60%)       |
+| [LowFat](https://www.github.com/GJDuck/LowFat)                                            | 60 (66.7%)             | 54 (75%)               | 18 (60%)              | 0 (0%)                | 0 (0%)      | 12 (60%)       |
+| [Memcheck](https://valgrind.org/docs/manual/mc-manual.html)                               | 48 (53.3%)             | 18 (25%)               | 16 (53.3%)            | 4 (25%)               | 4 (100%)    | 20 (100%)      |
+| [QASan](https://github.com/andreafioraldi/qasan)                                          | 47 (52.2%)             | 18.4, σ = 0.8 (25.6%)* | 14 (46.7%)            | 4 (25%)               | 4 (100%)    | 20 (100%)      |
+| [RedFat](www.github.com/GJDuck/RedFat)                                                    | 48 (53.3%)             | 28 (38.9%)             | 16 (53.3%)            | 4 (25%)               | 4 (100%)    | 0 (0%)         |
+| [Scudo](https://llvm.org/docs/ScudoHardenedAllocator.html)*                               | 36, σ = 0.0 (40%)      | 19.5, σ = 0.9 (27.1%)  | 12.1, σ = 0.3 (40.3%) | 0 (0%)                | 4 (100%)    | 20 (100%)      |
+| [Softbound+CETS](https://www.github.com/santoshn/softboundcets-34)                        | 72 (80%)               | 54 (75%)               | 24 (80%)              | 16 (100%)             | 4 (100%)    | 20 (100%)      |
+| [Softbound+CETS (rev.)](https://www.github.com/Fraunhofer-AISEC/softboundcets)            | 84 (93.3%)             | 66 (91.7%)             | 28 (93.3%)            | 16 (100%)             | 4 (100%)    | 20 (100%)      |
+* results are different to those produced by v1.0. See details [here](https://github.com/Fraunhofer-AISEC/MSET/tree/main?tab=readme-ov-file#version-11-under-development).
+
 ## Building MSET on Ubuntu/Debian Linux
 
 Building MSET requires the following packages: `cmake`, `make`. To install them,
@@ -143,10 +179,18 @@ For  example, to compile a test case with ASan, a single `<compile_cmd>` tag is 
 its value specifies the command with the required flags. The special tokens
 `$SOURCE_FILE` and `$GENERATED_BINARY` are mandatory and will be replaced by
 MSET when running the test case.
+A dedicated section is used for allocating the auxiliary variables that are required by the test cases,
+to avoid having them unintentionally overwritten.
+Our default linker script fragment `sanitizers/after_text.ld` is passed via `-Wl,-T,../../sanitizers/after_text.ld` and
+should work for most sanitizers.
+In our set of tested sanitizers, only RedFat requires a different linker fragment script `before_bss.ld` because placing
+a section after text does not work for it.
+If needed, provide your own section to ensure that the auxiliary variables are not overwritten and can be 
+accessed for reading and writing.
 
 ```xml
 <setup>
-  <compile_cmd>clang -fsanitize=address $SOURCE_FILE -o $GENERATED_BINARY</compile_cmd>
+  <compile_cmd>clang -fsanitize=address -Wl,-T,../../sanitizers/after_text.ld $SOURCE_FILE -o $GENERATED_BINARY</compile_cmd>
 </setup>
 ```
 
@@ -220,7 +264,7 @@ Please note that MSET has the following implementation-specific limitations:
 For more details and additional limitations that are not
 implementation-specific, please refer to the paper.
 
-## Version 1.1 (Under Development)
+## Version 1.1
 
 v1.1 introduces several improvements and new features:
 
@@ -232,9 +276,39 @@ v1.1 introduces several improvements and new features:
 
 - Introduced additional test case variants.
 
+- Replaced the linear OOBA variants that differed in the way the auxiliary
+variables were allocated with a single variant that uses a dedicated
+memory section for them.
+
 - General code improvements and refactoring.
 
 To reproduce the results from the paper, please use version [v1.0](https://github.com/Fraunhofer-AISEC/MSET/releases/tag/v1.0).
+
+In some cases MSET v1.1 produces results that differ from those in the paper (produced with version v1.0).
+These are explained as follows:
+
+- Delta Pointers
+
+  - Non-linear OOBA: the results are the same as those in the paper (Figure 5 and Section 5),
+    but there is a typo in Table 3 from the appendix
+
+  - Type confusion OOBA: one additional test case is detected because the code generation has
+    been improved to further avoid optimizations. In this particular case, the `origin` is used after the bug.
+
+- EffectiveSan
+
+  - Linear OOBA: 3 additional test cases are not detected because they use `memset`, which is known to cause problems
+    for EffectiveSan. This is described in the paper.
+
+- QASan
+
+  - Non-linear OOBA: The detection of such bugs is probabilistic for QASan, when used with MSET. This is because of its
+    modified memory layout that can reorder `regions` across runs, making some test cases behave differently.
+    For example, overflowing between 2 `regions` can only be attempted if the target is above the origin in memory.
+
+- FreeGuard, Scudo, HWASAN
+
+  - Sanitizers that rely on randomization give different detection rates for each run.
 
 ## License
 

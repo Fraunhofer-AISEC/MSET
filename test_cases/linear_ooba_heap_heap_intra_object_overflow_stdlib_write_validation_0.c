@@ -12,7 +12,7 @@
  * Access type: stdlib, write
  * Variant:
  *  - target declared after origin
- *  - target reached using global index
+ *  - target reached using a index
  */
 
 #include <unistd.h> // _exit

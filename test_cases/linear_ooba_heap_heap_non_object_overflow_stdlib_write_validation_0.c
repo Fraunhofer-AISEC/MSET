@@ -11,7 +11,7 @@
  * Bug type: non-object, linear OOBA, overflow
  * Access type: stdlib, write
  * Variant:
- *  - target reached using global index
+ *  - target reached using a index
  */
 
 #include <unistd.h> // _exit
