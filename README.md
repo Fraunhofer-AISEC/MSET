@@ -29,16 +29,6 @@ Please note that this is a prototype implementation.
 The current results, based on the latest version of MSET, are listed in the table below.
 If you want your own sanitizer to be listed, please open a PR and/or contact us.
 
-|              |   A       |         |   B       |         |
-| Item         | SubA1     | SubA2   | SubB1     | SubB2   |
-|--------------|-----------|---------|-----------|---------|
-| Item 1       | 10        | 20      | 30        | 40      |
-| Item 2       | 15        | 25      | 35        | 45      |
-
-
-TODO: sanitizers links
-TODO: See []
-
 ### Number and percentage of test cases detected by each sanitizer, sorted by bug type
 | Sanitizer                                                                                 | Linear OOBA            | Non-linear OOBA        | Type confusion OOBA   | Use-after-*           | Double-free | Misuse-of-free |
 |:------------------------------------------------------------------------------------------|:-----------------------|:-----------------------|:----------------------|:----------------------|:------------|:---------------|
@@ -58,7 +48,7 @@ TODO: See []
 | [Scudo](https://llvm.org/docs/ScudoHardenedAllocator.html)*                               | 36, σ = 0.0 (40%)      | 19.5, σ = 0.9 (27.1%)  | 12.1, σ = 0.3 (40.3%) | 0 (0%)                | 4 (100%)    | 20 (100%)      |
 | [Softbound+CETS](https://www.github.com/santoshn/softboundcets-34)                        | 72 (80%)               | 54 (75%)               | 24 (80%)              | 16 (100%)             | 4 (100%)    | 20 (100%)      |
 | [Softbound+CETS (rev.)](https://www.github.com/Fraunhofer-AISEC/softboundcets)            | 84 (93.3%)             | 66 (91.7%)             | 28 (93.3%)            | 16 (100%)             | 4 (100%)    | 20 (100%)      |
-* results are different to those produced by v1.0. See details [here](https://github.com/Fraunhofer-AISEC/MSET/tree/main?tab=readme-ov-file#version-11-under-development).
+* results are different to those produced by v1.0. See details [here](https://github.com/Fraunhofer-AISEC/MSET/tree/main?tab=readme-ov-file#version-11).
 
 ## Building MSET on Ubuntu/Debian Linux
 
@@ -183,7 +173,7 @@ A dedicated section is used for allocating the auxiliary variables that are requ
 to avoid having them unintentionally overwritten.
 Our default linker script fragment `sanitizers/after_text.ld` is passed via `-Wl,-T,../../sanitizers/after_text.ld` and
 should work for most sanitizers.
-In our set of tested sanitizers, only RedFat requires a different linker fragment script `before_bss.ld` because placing
+In our set of tested sanitizers, only RedFat requires a different linker script fragment `before_bss.ld` because placing
 a section after text does not work for it.
 If needed, provide your own section to ensure that the auxiliary variables are not overwritten and can be 
 accessed for reading and writing.
