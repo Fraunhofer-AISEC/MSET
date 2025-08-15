@@ -32,7 +32,7 @@ const char content[8] = "ZZZZZZZ";
 // types
 struct BigType
 {
-  char buffer[(size_t)1 << 27];
+  char buffer[SIZE_MAX/8];
 };
 
 // globals
@@ -45,8 +45,8 @@ int f()
   ssize_t i;
 
 
-  if ( (8 > 0 && 8 > ((size_t)1 << 27))
-       || (8 < 0 && 8< -((size_t)1 << 27) ) )  _exit(PRECONDITIONS_FAILED_VALUE);
+  if ( (8 > 0 && 8 > (SIZE_MAX/8))
+       || (8 < 0 && 8< -(SIZE_MAX/8) ) )  _exit(PRECONDITIONS_FAILED_VALUE);
   if ( !(8 >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
   volatile char tmp;
   for (i = 0; i < 8; i++)
