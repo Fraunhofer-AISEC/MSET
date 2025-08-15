@@ -33,7 +33,7 @@ const char content[8] = "ZZZZZZZ";
 // types
 struct BigType
 {
-  char buffer[(size_t)1 << 27];
+  char buffer[SIZE_MAX/8];
 };
 
 // globals
@@ -47,8 +47,8 @@ int f()
   ssize_t i;
 
 
-  if ( ((ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) > 0 && (ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) > ((size_t)1 << 27))
-       || ((ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) < 0 && (ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin))< -((size_t)1 << 27) ) )  _exit(PRECONDITIONS_FAILED_VALUE);
+  if ( ((ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) > 0 && (ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) > (SIZE_MAX/8))
+       || ((ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) < 0 && (ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin))< -(SIZE_MAX/8) ) )  _exit(PRECONDITIONS_FAILED_VALUE);
   if ( !((ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
   if ( GET_ADDR_BITS(&i) < GET_ADDR_BITS(&((struct BigType *)origin)->buffer[(ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin))]) && GET_ADDR_BITS(&i) > GET_ADDR_BITS(&((struct BigType *)origin)->buffer[0]) ) _exit(PRECONDITIONS_FAILED_VALUE);
   for (i = 0; i < (ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)); i++)

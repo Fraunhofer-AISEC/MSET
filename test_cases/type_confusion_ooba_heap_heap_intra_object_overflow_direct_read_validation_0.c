@@ -37,7 +37,7 @@ struct T
 };
 struct BigType
 {
-  char buffer[(size_t)1 << 27];
+  char buffer[SIZE_MAX/8];
 };
 
 // globals

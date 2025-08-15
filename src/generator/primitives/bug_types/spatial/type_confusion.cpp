@@ -78,8 +78,8 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> TypeConfusion::generate(
       nullptr
     );
     variant_with_big_type->add_during_lifetime({
-      "if ( (" + variant_with_big_type->get_distance() + " > 0 && " + variant_with_big_type->get_distance() + " > ((size_t)1 << 27))",
-      "     || (" + variant_with_big_type->get_distance() + " < 0 && " + variant_with_big_type->get_distance() + "< -((size_t)1 << 27) ) )"\
+      "if ( (" + variant_with_big_type->get_distance() + " > 0 && " + variant_with_big_type->get_distance() + " > (SIZE_MAX/8))",
+      "     || (" + variant_with_big_type->get_distance() + " < 0 && " + variant_with_big_type->get_distance() + "< -(SIZE_MAX/8) ) )"\
       "  _exit(PRECONDITIONS_FAILED_VALUE);"
     });
     variant_with_big_type->add_during_lifetime(reach_target_code);
@@ -88,7 +88,7 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> TypeConfusion::generate(
     variant_with_big_type->add_type({
       "struct BigType",
       "{",
-      "  char buffer[(size_t)1 << 27];",
+      "  char buffer[SIZE_MAX/8];",
       "};"
     });
     variant_with_big_type->add_variant_description_line("using big structure cast");
@@ -181,7 +181,7 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> TypeConfusion::generate_val
     variant_with_big_type->add_type({
       "struct BigType",
       "{",
-      "  char buffer[(size_t)1 << 27];",
+      "  char buffer[SIZE_MAX/8];",
       "};"
     });
     variant_with_big_type->add_variant_description_line("using big structure cast");
