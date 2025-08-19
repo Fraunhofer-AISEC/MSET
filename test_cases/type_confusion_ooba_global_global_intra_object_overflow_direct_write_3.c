@@ -11,7 +11,7 @@
  * Bug type: intra-object, type confusion OOBA, overflow
  * Access type: direct, write
  * Variant:
- *  - target declared after origin
+ *  - target declared before origin
  *  - using load widening
  */
 
@@ -32,8 +32,8 @@ const char content[8] = "ZZZZZZZ";
 // types
 struct T
 {
-  char origin[8];
   char target[8];
+  char origin[8];
 };
 
 // globals

@@ -13,7 +13,7 @@
  * Variant:
  *  - target declared after origin
  *  - using big structure cast
- *  - using a global index, declared first
+ *  - using a global index
  */
 
 #include <unistd.h> // _exit
@@ -38,21 +38,21 @@ struct T
 };
 struct BigType
 {
-  char buffer[SIZE_MAX/8];
+  char buffer[(size_t)1 << 29];
 };
 
 // globals
-static ssize_t i;
 
 struct T s = { {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA}, {0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB} };
+__attribute__((section(".data.index"))) ssize_t i;
 
 int f()
 {
   // locals
 
 
-  if ( ((ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin)) > 0 && (ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin)) > (SIZE_MAX/8))
-       || ((ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin)) < 0 && (ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin))< -(SIZE_MAX/8) ) )  _exit(PRECONDITIONS_FAILED_VALUE);
+  if ( ((ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin)) > 0 && (ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin)) > ((size_t)1 << 29))
+       || ((ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin)) < 0 && (ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin))< -((size_t)1 << 29) ) )  _exit(PRECONDITIONS_FAILED_VALUE);
   if ( !((ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
   if ( GET_ADDR_BITS(&i) < GET_ADDR_BITS(&((struct BigType *)s.origin)->buffer[(ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin))]) && GET_ADDR_BITS(&i) > GET_ADDR_BITS(&((struct BigType *)s.origin)->buffer[0]) ) _exit(PRECONDITIONS_FAILED_VALUE);
   for (i = 0; i < (ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin)); i++)

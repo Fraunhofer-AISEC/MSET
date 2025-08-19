@@ -32,7 +32,7 @@ const char content[8] = "ZZZZZZZ";
 // types
 struct BigType
 {
-  char buffer[SIZE_MAX/8];
+  char buffer[(size_t)1 << 29];
 };
 
 // globals

@@ -13,7 +13,7 @@
  * Variant:
  *  - target declared after origin
  *  - using big structure cast
- *  - using a global index, declared first
+ *  - using a global index
  */
 
 #include <unistd.h> // _exit
@@ -33,13 +33,13 @@ const char content[8] = "ZZZZZZZ";
 // types
 struct BigType
 {
-  char buffer[SIZE_MAX/8];
+  char buffer[(size_t)1 << 29];
 };
 
 // globals
-static ssize_t i;
 
 char origin[8] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
+__attribute__((section(".data.index"))) ssize_t i;
 
 int f()
 {
@@ -55,8 +55,8 @@ int f()
   target[5] = 0xAA;
   target[6] = 0xAA;
   target[7] = 0xAA;
-  if ( ((ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) > 0 && (ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) > (SIZE_MAX/8))
-       || ((ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) < 0 && (ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin))< -(SIZE_MAX/8) ) )  _exit(PRECONDITIONS_FAILED_VALUE);
+  if ( ((ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) > 0 && (ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) > ((size_t)1 << 29))
+       || ((ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) < 0 && (ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin))< -((size_t)1 << 29) ) )  _exit(PRECONDITIONS_FAILED_VALUE);
   if ( !((ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
   volatile char tmp;
   for (i = 0; i < (ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)); i++)

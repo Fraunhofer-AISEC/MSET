@@ -78,8 +78,8 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> TypeConfusion::generate(
       nullptr
     );
     variant_with_big_type->add_during_lifetime({
-      "if ( (" + variant_with_big_type->get_distance() + " > 0 && " + variant_with_big_type->get_distance() + " > (SIZE_MAX/8))",
-      "     || (" + variant_with_big_type->get_distance() + " < 0 && " + variant_with_big_type->get_distance() + "< -(SIZE_MAX/8) ) )"\
+      "if ( (" + variant_with_big_type->get_distance() + " > 0 && " + variant_with_big_type->get_distance() + " > ((size_t)1 << 29))",
+      "     || (" + variant_with_big_type->get_distance() + " < 0 && " + variant_with_big_type->get_distance() + "< -((size_t)1 << 29) ) )"\
       "  _exit(PRECONDITIONS_FAILED_VALUE);"
     });
     variant_with_big_type->add_during_lifetime(reach_target_code);
@@ -88,26 +88,14 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> TypeConfusion::generate(
     variant_with_big_type->add_type({
       "struct BigType",
       "{",
-      "  char buffer[SIZE_MAX/8];",
+      "  char buffer[(size_t)1 << 29];",
       "};"
     });
     variant_with_big_type->add_variant_description_line("using big structure cast");
 
-    std::shared_ptr<OriginTargetCodeCanvas> variant_with_big_type_local = std::make_shared<OriginTargetCodeCanvas>(*variant_with_big_type);
-    if (variant_with_big_type->get_number_of_globals() > 0)
-    {
-      std::shared_ptr<OriginTargetCodeCanvas> variant_with_big_type_global_first = std::make_shared<OriginTargetCodeCanvas>(*variant_with_big_type);
-      variant_with_big_type_global_first->add_global_first("static ssize_t i;");
-      variant_with_big_type_global_first->add_variant_description_line("using a global index, declared first");
-      full_variants.push_back( variant_with_big_type_global_first );
-    }
-    variant_with_big_type->add_global("static ssize_t i;");
+    variant_with_big_type->add_to_custom_section({"ssize_t i;"});
     variant_with_big_type->add_variant_description_line("using a global index");
     full_variants.push_back( variant_with_big_type );
-
-    variant_with_big_type_local->add_local_first("ssize_t i;");
-    variant_with_big_type_local->add_variant_description_line("using a stack index");
-    full_variants.push_back( variant_with_big_type_local );
 
     // load widening variant
     std::shared_ptr<OriginTargetCodeCanvas> variant_with_load_widening = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas);
@@ -181,7 +169,7 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> TypeConfusion::generate_val
     variant_with_big_type->add_type({
       "struct BigType",
       "{",
-      "  char buffer[SIZE_MAX/8];",
+      "  char buffer[(size_t)1 << 29];",
       "};"
     });
     variant_with_big_type->add_variant_description_line("using big structure cast");

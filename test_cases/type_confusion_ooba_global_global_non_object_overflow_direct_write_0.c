@@ -12,7 +12,7 @@
  * Access type: direct, write
  * Variant:
  *  - using big structure cast
- *  - using a global index, declared first
+ *  - using a global index
  */
 
 #include <unistd.h> // _exit
@@ -32,21 +32,21 @@ const char content[8] = "ZZZZZZZ";
 // types
 struct BigType
 {
-  char buffer[SIZE_MAX/8];
+  char buffer[(size_t)1 << 29];
 };
 
 // globals
-static ssize_t i;
 
 char origin[8] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
+__attribute__((section(".data.index"))) ssize_t i;
 
 int f()
 {
   // locals
 
 
-  if ( (8 > 0 && 8 > (SIZE_MAX/8))
-       || (8 < 0 && 8< -(SIZE_MAX/8) ) )  _exit(PRECONDITIONS_FAILED_VALUE);
+  if ( (8 > 0 && 8 > ((size_t)1 << 29))
+       || (8 < 0 && 8< -((size_t)1 << 29) ) )  _exit(PRECONDITIONS_FAILED_VALUE);
   if ( !(8 >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
   if ( GET_ADDR_BITS(&i) < GET_ADDR_BITS(&((struct BigType *)origin)->buffer[8]) && GET_ADDR_BITS(&i) > GET_ADDR_BITS(&((struct BigType *)origin)->buffer[0]) ) _exit(PRECONDITIONS_FAILED_VALUE);
   for (i = 0; i < 8; i++)

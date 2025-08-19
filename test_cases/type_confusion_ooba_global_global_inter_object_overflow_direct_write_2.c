@@ -11,9 +11,9 @@
  * Bug type: inter-object, type confusion OOBA, overflow
  * Access type: direct, write
  * Variant:
- *  - target declared after origin
+ *  - target declared before origin
  *  - using big structure cast
- *  - using a stack index
+ *  - using a global index
  */
 
 #include <unistd.h> // _exit
@@ -33,22 +33,22 @@ const char content[8] = "ZZZZZZZ";
 // types
 struct BigType
 {
-  char buffer[SIZE_MAX/8];
+  char buffer[(size_t)1 << 29];
 };
 
 // globals
 
-char origin[8] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
 char target[8] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
+char origin[8] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
+__attribute__((section(".data.index"))) ssize_t i;
 
 int f()
 {
   // locals
-  ssize_t i;
 
 
-  if ( ((ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) > 0 && (ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) > (SIZE_MAX/8))
-       || ((ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) < 0 && (ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin))< -(SIZE_MAX/8) ) )  _exit(PRECONDITIONS_FAILED_VALUE);
+  if ( ((ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) > 0 && (ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) > ((size_t)1 << 29))
+       || ((ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) < 0 && (ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin))< -((size_t)1 << 29) ) )  _exit(PRECONDITIONS_FAILED_VALUE);
   if ( !((ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
   if ( GET_ADDR_BITS(&i) < GET_ADDR_BITS(&((struct BigType *)origin)->buffer[(ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin))]) && GET_ADDR_BITS(&i) > GET_ADDR_BITS(&((struct BigType *)origin)->buffer[0]) ) _exit(PRECONDITIONS_FAILED_VALUE);
   for (i = 0; i < (ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)); i++)
