@@ -38,12 +38,12 @@ struct T
 };
 struct BigType
 {
-  char buffer[SIZE_MAX/8];
+  char buffer[(size_t)1 << 29];
 };
 
 // globals
 
-static ssize_t i;
+__attribute__((section(".data.index"))) ssize_t i;
 
 int f()
 {
@@ -67,8 +67,8 @@ int f()
   s->target[5] = 0xBB;
   s->target[6] = 0xBB;
   s->target[7] = 0xBB;
-  if ( ((ssize_t)(GET_ADDR_BITS(s->target) - GET_ADDR_BITS(s->origin)) > 0 && (ssize_t)(GET_ADDR_BITS(s->target) - GET_ADDR_BITS(s->origin)) > (SIZE_MAX/8))
-       || ((ssize_t)(GET_ADDR_BITS(s->target) - GET_ADDR_BITS(s->origin)) < 0 && (ssize_t)(GET_ADDR_BITS(s->target) - GET_ADDR_BITS(s->origin))< -(SIZE_MAX/8) ) )  _exit(PRECONDITIONS_FAILED_VALUE);
+  if ( ((ssize_t)(GET_ADDR_BITS(s->target) - GET_ADDR_BITS(s->origin)) > 0 && (ssize_t)(GET_ADDR_BITS(s->target) - GET_ADDR_BITS(s->origin)) > ((size_t)1 << 29))
+       || ((ssize_t)(GET_ADDR_BITS(s->target) - GET_ADDR_BITS(s->origin)) < 0 && (ssize_t)(GET_ADDR_BITS(s->target) - GET_ADDR_BITS(s->origin))< -((size_t)1 << 29) ) )  _exit(PRECONDITIONS_FAILED_VALUE);
   if ( !((ssize_t)(GET_ADDR_BITS(s->target) - GET_ADDR_BITS(s->origin)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
   volatile char tmp;
   for (i = 0; i < (ssize_t)(GET_ADDR_BITS(s->target) - GET_ADDR_BITS(s->origin)); i++)

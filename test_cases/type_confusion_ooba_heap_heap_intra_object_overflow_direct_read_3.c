@@ -12,8 +12,7 @@
  * Access type: direct, read
  * Variant:
  *  - target declared before origin
- *  - using big structure cast
- *  - using a global index
+ *  - using load widening
  */
 
 #include <unistd.h> // _exit
@@ -36,14 +35,9 @@ struct T
   char target[8];
   char origin[8];
 };
-struct BigType
-{
-  char buffer[SIZE_MAX/8];
-};
 
 // globals
 
-static ssize_t i;
 
 int f()
 {
@@ -67,21 +61,11 @@ int f()
   s->origin[5] = 0xBB;
   s->origin[6] = 0xBB;
   s->origin[7] = 0xBB;
-  if ( ((ssize_t)(GET_ADDR_BITS(s->target) - GET_ADDR_BITS(s->origin)) > 0 && (ssize_t)(GET_ADDR_BITS(s->target) - GET_ADDR_BITS(s->origin)) > (SIZE_MAX/8))
-       || ((ssize_t)(GET_ADDR_BITS(s->target) - GET_ADDR_BITS(s->origin)) < 0 && (ssize_t)(GET_ADDR_BITS(s->target) - GET_ADDR_BITS(s->origin))< -(SIZE_MAX/8) ) )  _exit(PRECONDITIONS_FAILED_VALUE);
   if ( !((ssize_t)(GET_ADDR_BITS(s->target) - GET_ADDR_BITS(s->origin)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
-  volatile char tmp;
-  for (i = 0; i < (ssize_t)(GET_ADDR_BITS(s->target) - GET_ADDR_BITS(s->origin)); i++)
-  {
-    tmp = ((struct BigType *)s->origin)->buffer[i];
-  }
-  _use(&tmp);
-  volatile char read_value[8];
-  for (ssize_t access_index = 0; access_index < 8; access_index++)
-  {
-    read_value[access_index] = ((struct BigType *)s->origin)->buffer[access_index + (ssize_t)(GET_ADDR_BITS(s->target) - GET_ADDR_BITS(s->origin))];
-  }
-  _use(read_value);
+  if ( !((ssize_t)(GET_ADDR_BITS(s->target) - GET_ADDR_BITS(s->origin)) < (8 + 3) ) ) _exit(PRECONDITIONS_FAILED_VALUE);
+  volatile uint32_t read_value;
+  read_value = *((volatile uint32_t *)(s->origin + (8 - 3)));
+  _use(&read_value);
   _exit(TEST_CASE_SUCCESSFUL_VALUE);
 
   free(s);

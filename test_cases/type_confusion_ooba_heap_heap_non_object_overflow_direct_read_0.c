@@ -32,12 +32,12 @@ const char content[8] = "ZZZZZZZ";
 // types
 struct BigType
 {
-  char buffer[SIZE_MAX/8];
+  char buffer[(size_t)1 << 29];
 };
 
 // globals
 
-static ssize_t i;
+__attribute__((section(".data.index"))) ssize_t i;
 
 int f()
 {
@@ -53,8 +53,8 @@ int f()
   origin[5] = 0xAA;
   origin[6] = 0xAA;
   origin[7] = 0xAA;
-  if ( (8 > 0 && 8 > (SIZE_MAX/8))
-       || (8 < 0 && 8< -(SIZE_MAX/8) ) )  _exit(PRECONDITIONS_FAILED_VALUE);
+  if ( (8 > 0 && 8 > ((size_t)1 << 29))
+       || (8 < 0 && 8< -((size_t)1 << 29) ) )  _exit(PRECONDITIONS_FAILED_VALUE);
   if ( !(8 >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
   volatile char tmp;
   for (i = 0; i < 8; i++)

@@ -12,8 +12,7 @@
  * Access type: direct, write
  * Variant:
  *  - target declared after origin
- *  - using big structure cast
- *  - using a global index
+ *  - using load widening
  */
 
 #include <unistd.h> // _exit
@@ -36,35 +35,20 @@ struct T
   char origin[8];
   char target[8];
 };
-struct BigType
-{
-  char buffer[SIZE_MAX/8];
-};
 
 // globals
 
 struct T s = { {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA}, {0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB} };
-static ssize_t i;
 
 int f()
 {
   // locals
 
 
-  if ( ((ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin)) > 0 && (ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin)) > (SIZE_MAX/8))
-       || ((ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin)) < 0 && (ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin))< -(SIZE_MAX/8) ) )  _exit(PRECONDITIONS_FAILED_VALUE);
   if ( !((ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
-  if ( GET_ADDR_BITS(&i) < GET_ADDR_BITS(&((struct BigType *)s.origin)->buffer[(ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin))]) && GET_ADDR_BITS(&i) > GET_ADDR_BITS(&((struct BigType *)s.origin)->buffer[0]) ) _exit(PRECONDITIONS_FAILED_VALUE);
-  for (i = 0; i < (ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin)); i++)
-  {
-    ((struct BigType *)s.origin)->buffer[i] = 0xFF;
-  }
-  _use(((struct BigType *)s.origin)->buffer);
-  for (ssize_t i = 0; i < 8; i++)
-  {
-    ((struct BigType *)s.origin)->buffer[i + (ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin))] = 0xFF;
-  }
-  _use(((struct BigType *)s.origin)->buffer);
+  if ( !((ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin)) < (8 + 3) ) ) _exit(PRECONDITIONS_FAILED_VALUE);
+  *((volatile uint32_t *)(s.origin + (8 - 1))) = 0xFFFFFFFF;
+  _use(s.origin);
   _exit(TEST_CASE_SUCCESSFUL_VALUE);
 
   return 0;
