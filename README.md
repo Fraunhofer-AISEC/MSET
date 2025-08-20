@@ -34,21 +34,22 @@ If you want your own sanitizer to be listed, please open a PR and/or contact us.
 |:------------------------------------------------------------------------------------------|:-----------------------|:-----------------------|:----------------------|:----------------------|:------------|:---------------|
 | Baseline                                                                                  | 36 (40%)               | 18 (25%)               | 12 (40%)              | 0 (0%)                | 0 (0%)      | 0 (0%)         |
 | [ASan](https://clang.llvm.org/docs/AddressSanitizer.html)                                 | 70 (77.8%)             | 18 (25%)               | 18 (60%)              | 8 (50%)               | 4 (100%)    | 20 (100%)      |
-| [ASan--](www.github.com/junxzm1990/ASAN--)                                                | 70 (77.8%)             | 18 (25%)               | 18 (60%)              | 8 (50%)               | 4 (100%)    | 20 (100%)      |
-| [Delta Pointers](www.github.com/vusec/deltapointers)                                      | 60 (66.7%)             | 46 (63.9%)*            | 19 (63.3%)*           | 0 (0%)                | 0 (0%)      | 0 (0%)         |
+| [ASan--](https://www.github.com/junxzm1990/ASAN--)                                        | 70 (77.8%)             | 18 (25%)               | 18 (60%)              | 8 (50%)               | 4 (100%)    | 20 (100%)      |
+| [Delta Pointers](https://www.github.com/vusec/deltapointers)                              | 60 (66.7%)             | 46 (63.9%)*            | 19 (63.3%)*           | 0 (0%)                | 0 (0%)      | 0 (0%)         |
 | [Dr. Memory](https://drmemory.org/)                                                       | 44 (48.9%)             | 18 (25%)               | 14 (46.7%)            | 4 (25%)               | 4 (100%)    | 20 (100%)      |
 | [EffectiveSan](https://www.github.com/GJDuck/EffectiveSan)                                | 77 (85.6%)*            | 72 (100%)              | 28 (93.3%)            | 1 (6.2%)              | 4 (100%)    | 12 (60%)       |
 | [Electric Fence](https://manpages.debian.org/unstable/electric-fence/libefence.3.en.html) | 46 (51.1%)             | 18 (25%)               | 16 (53.3%)            | 4 (25%)               | 4 (100%)    | 20 (100%)      |
-| [FreeGuard](www.github.com/UTSASRG/FreeGuard)*                                            | 38.3, σ = 1.6 (42.6%)  | 18.6, σ = 0.7 (25.8%)  | 13.6, σ = 0.5 (45.3%) | 0 (0%)                | 4 (100%)    | 8 (40%)        |
+| [FreeGuard](https://hwww.github.com/UTSASRG/FreeGuard)*                                   | 38.3, σ = 1.6 (42.6%)  | 18.6, σ = 0.7 (25.8%)  | 13.6, σ = 0.5 (45.3%) | 0 (0%)                | 4 (100%)    | 8 (40%)        |
 | [HWASAN](https://clang.llvm.org/docs/HardwareAssistedAddressSanitizerDesign.html)*        | 71.8, σ = 0.4 (79.8%)  | 53.7, σ = 0.5 (74.6%)  | 24, σ = 0.0 (80%)     | 15.7, σ = 0.5 (98.1%) | 4 (100%)    | 12 (60%)       |
 | [LowFat](https://www.github.com/GJDuck/LowFat)                                            | 60 (66.7%)             | 54 (75%)               | 18 (60%)              | 0 (0%)                | 0 (0%)      | 12 (60%)       |
 | [Memcheck](https://valgrind.org/docs/manual/mc-manual.html)                               | 48 (53.3%)             | 18 (25%)               | 16 (53.3%)            | 4 (25%)               | 4 (100%)    | 20 (100%)      |
 | [QASan](https://github.com/andreafioraldi/qasan)                                          | 47 (52.2%)             | 18.4, σ = 0.8 (25.6%)* | 14 (46.7%)            | 4 (25%)               | 4 (100%)    | 20 (100%)      |
-| [RedFat](www.github.com/GJDuck/RedFat)                                                    | 48 (53.3%)             | 28 (38.9%)             | 16 (53.3%)            | 4 (25%)               | 4 (100%)    | 0 (0%)         |
+| [RedFat](https://www.github.com/GJDuck/RedFat)                                            | 48 (53.3%)             | 28 (38.9%)             | 16 (53.3%)            | 4 (25%)               | 4 (100%)    | 0 (0%)         |
 | [Scudo](https://llvm.org/docs/ScudoHardenedAllocator.html)*                               | 36, σ = 0.0 (40%)      | 19.5, σ = 0.9 (27.1%)  | 12.1, σ = 0.3 (40.3%) | 0 (0%)                | 4 (100%)    | 20 (100%)      |
 | [Softbound+CETS](https://www.github.com/santoshn/softboundcets-34)                        | 72 (80%)               | 54 (75%)               | 24 (80%)              | 16 (100%)             | 4 (100%)    | 20 (100%)      |
 | [Softbound+CETS (rev.)](https://www.github.com/Fraunhofer-AISEC/softboundcets)            | 84 (93.3%)             | 66 (91.7%)             | 28 (93.3%)            | 16 (100%)             | 4 (100%)    | 20 (100%)      |
-* results are different to those produced by v1.0. See details [here](https://github.com/Fraunhofer-AISEC/MSET/tree/main?tab=readme-ov-file#version-11).
+
+*results are different to those produced by v1.0. See details [here](https://github.com/Fraunhofer-AISEC/MSET/tree/main?tab=readme-ov-file#version-11).
 
 ## Building MSET on Ubuntu/Debian Linux
 
