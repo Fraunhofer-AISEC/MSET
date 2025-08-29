@@ -225,6 +225,18 @@ Sanitizer::Sanitizer(const std::string &config_path)
   defines = "-DTEST_CASE_SUCCESSFUL_VALUE=" + std::to_string(test_case_successful_exit_value) + " ";
   defines += "-DPRECONDITIONS_FAILED_VALUE=" + std::to_string(preconditions_not_met_exit_value);
 
+  std::string max_object_size;
+  elem = root->FirstChildElement("max_object_size");
+  if (elem) // optional
+  {
+    max_object_size = elem->GetText();
+    defines += " -DMAX_OBJECT_SIZE=" + max_object_size;
+  }
+  else
+  {
+    // not configured
+  }
+
 
   elem = root->FirstChildElement("address_mask");
   if (elem) // optional

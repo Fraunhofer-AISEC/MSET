@@ -25,48 +25,51 @@ CodeCanvas::CodeCanvas():
 {
   code_lines = {
     "#include <unistd.h> // _exit", // 0
-    "#include <stdint.h> // SIZE_MAX", // 1
+    "#include <stdint.h>", // 1
     "#include <stdlib.h>", // 2
     "#include <string.h>", // 3
     "",                    // 4
     "#ifdef ADDR_MASK",    // 5
-    "#define GET_ADDR_BITS(p) ((size_t)(p) & ADDR_MASK)", // 6
-    "#else",                                            // 7
+    "#define GET_ADDR_BITS(p) ((size_t)(p) & ADDR_MASK)",   // 6
+    "#else",                                                // 7
     "#define GET_ADDR_BITS(p) ((size_t)(p) & (size_t)0xffffffffffffull)",             // 8
-    "#endif",                                           // 9
-    "", // 10
-    "volatile void *_use(volatile void *p) { return p; }", // 11
-    "const char content[8] = \"ZZZZZZZ\";", // 12
-    "", // 13
-    "// types",     // 14
-    "",             // 15
-    "// globals",   // 16
-    "",             // 17
+    "#endif",                                               // 9
+    "#ifndef MAX_OBJECT_SIZE",                              // 10
+    "#define MAX_OBJECT_SIZE ((size_t)1 << 29)",            // 11
+    "#endif",                                               // 12
+    "",             // 13
+    "volatile void *_use(volatile void *p) { return p; }",  // 14
+    "const char content[8] = \"ZZZZZZZ\";",                 // 15
+    "",             // 16
+    "// types",     // 17
     "",             // 18
-    "int f()",      // 19
-    "{",            // 20
-    "  // locals",  // 21
-    "",             // 22
-    "",             // 23
-    "",             // 24
-    "  return 0;",  // 25
-    "}",            // 26
+    "// globals",   // 19
+    "",             // 20
+    "",             // 21
+    "int f()",      // 22
+    "{",            // 23
+    "  // locals",  // 24
+    "",             // 25
+    "",             // 26
     "",             // 27
-    "int main()",   // 28
-    "{",            // 29
-    "  f();",       // 30
-    "",             // 31
-    "  return 0;",  // 32
-    "}"             // 33
+    "  return 0;",  // 28
+    "}",            // 29
+    "",             // 30
+    "int main()",   // 31
+    "{",            // 32
+    "  f();",       // 33
+    "",             // 34
+    "  return 0;",  // 35
+    "}"             // 36
   };
 
-  types_pos         = 15;
-  global_start_pos  = 17;
-  global_pos        = 18;
-  locals_start_pos  = 22;
-  locals_end_pos    = 23;
-  start_of_f_pos    = 21;
-  f_call_pos        = 30;
+  types_pos         = 18;
+  global_start_pos  = 20;
+  global_pos        = 21;
+  locals_start_pos  = 25;
+  locals_end_pos    = 26;
+  start_of_f_pos    = 24;
+  f_call_pos        = 33;
   current_pos_in_f  = locals_end_pos + 1;
   end_of_f_pos      = current_pos_in_f + 1;
   current_pos_in_main = f_call_pos + 1;

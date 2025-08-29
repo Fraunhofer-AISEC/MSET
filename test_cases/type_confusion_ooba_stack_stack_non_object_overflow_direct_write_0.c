@@ -16,7 +16,7 @@
  */
 
 #include <unistd.h> // _exit
-#include <stdint.h> // SIZE_MAX
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -25,6 +25,9 @@
 #else
 #define GET_ADDR_BITS(p) ((size_t)(p) & (size_t)0xffffffffffffull)
 #endif
+#ifndef MAX_OBJECT_SIZE
+#define MAX_OBJECT_SIZE ((size_t)1 << 29)
+#endif
 
 volatile void *_use(volatile void *p) { return p; }
 const char content[8] = "ZZZZZZZ";
@@ -32,7 +35,7 @@ const char content[8] = "ZZZZZZZ";
 // types
 struct BigType
 {
-  char buffer[(size_t)1 << 29];
+  char buffer[MAX_OBJECT_SIZE];
 };
 
 // globals
@@ -53,8 +56,8 @@ int f()
   origin[5] = 0xAA;
   origin[6] = 0xAA;
   origin[7] = 0xAA;
-  if ( (8 > 0 && 8 > ((size_t)1 << 29))
-       || (8 < 0 && 8< -((size_t)1 << 29) ) )  _exit(PRECONDITIONS_FAILED_VALUE);
+  if ( (8 > 0 && 8 > (MAX_OBJECT_SIZE))
+       || (8 < 0 && 8< -(MAX_OBJECT_SIZE) ) )  _exit(PRECONDITIONS_FAILED_VALUE);
   if ( !(8 >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
   if ( GET_ADDR_BITS(&i) < GET_ADDR_BITS(&((struct BigType *)origin)->buffer[8]) && GET_ADDR_BITS(&i) > GET_ADDR_BITS(&((struct BigType *)origin)->buffer[0]) ) _exit(PRECONDITIONS_FAILED_VALUE);
   for (i = 0; i < 8; i++)
