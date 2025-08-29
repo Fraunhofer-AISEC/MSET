@@ -11,12 +11,13 @@
  * Bug type: inter-object, type confusion OOBA, overflow
  * Access type: direct, read
  * Variant:
- *  - target declared after origin
- *  - using load widening
+ *  - target declared before origin
+ *  - using big structure cast
+ *  - using a global index
  */
 
 #include <unistd.h> // _exit
-#include <stdint.h> // SIZE_MAX
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -25,29 +26,28 @@
 #else
 #define GET_ADDR_BITS(p) ((size_t)(p) & (size_t)0xffffffffffffull)
 #endif
+#ifndef MAX_OBJECT_SIZE
+#define MAX_OBJECT_SIZE ((size_t)1 << 29)
+#endif
 
 volatile void *_use(volatile void *p) { return p; }
 const char content[8] = "ZZZZZZZ";
 
 // types
+struct BigType
+{
+  char buffer[MAX_OBJECT_SIZE];
+};
 
 // globals
 
+__attribute__((section(".data.index"))) ssize_t i;
 
 int f()
 {
   // locals
 
 
-  char *origin = (char *)malloc( 8 );
-  origin[0] = 0xAA;
-  origin[1] = 0xAA;
-  origin[2] = 0xAA;
-  origin[3] = 0xAA;
-  origin[4] = 0xAA;
-  origin[5] = 0xAA;
-  origin[6] = 0xAA;
-  origin[7] = 0xAA;
   char *target = (char *)malloc( 8 );
   target[0] = 0xAA;
   target[1] = 0xAA;
@@ -57,15 +57,34 @@ int f()
   target[5] = 0xAA;
   target[6] = 0xAA;
   target[7] = 0xAA;
+  char *origin = (char *)malloc( 8 );
+  origin[0] = 0xAA;
+  origin[1] = 0xAA;
+  origin[2] = 0xAA;
+  origin[3] = 0xAA;
+  origin[4] = 0xAA;
+  origin[5] = 0xAA;
+  origin[6] = 0xAA;
+  origin[7] = 0xAA;
+  if ( ((ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) > 0 && (ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) > (MAX_OBJECT_SIZE))
+       || ((ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) < 0 && (ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin))< -(MAX_OBJECT_SIZE) ) )  _exit(PRECONDITIONS_FAILED_VALUE);
   if ( !((ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
-  if ( !((ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) < (8 + 3) ) ) _exit(PRECONDITIONS_FAILED_VALUE);
-  volatile uint32_t read_value;
-  read_value = *((volatile uint32_t *)(origin + (8 - 3)));
-  _use(&read_value);
+  volatile char tmp;
+  for (i = 0; i < (ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)); i++)
+  {
+    tmp = ((struct BigType *)origin)->buffer[i];
+  }
+  _use(&tmp);
+  volatile char read_value[8];
+  for (ssize_t access_index = 0; access_index < 8; access_index++)
+  {
+    read_value[access_index] = ((struct BigType *)origin)->buffer[access_index + (ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin))];
+  }
+  _use(read_value);
   _exit(TEST_CASE_SUCCESSFUL_VALUE);
 
-  free(origin);
   free(target);
+  free(origin);
   return 0;
 }
 

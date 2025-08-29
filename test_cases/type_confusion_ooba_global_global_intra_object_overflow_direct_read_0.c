@@ -13,11 +13,11 @@
  * Variant:
  *  - target declared after origin
  *  - using big structure cast
- *  - using a global index, declared first
+ *  - using a global index
  */
 
 #include <unistd.h> // _exit
-#include <stdint.h> // SIZE_MAX
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -25,6 +25,9 @@
 #define GET_ADDR_BITS(p) ((size_t)(p) & ADDR_MASK)
 #else
 #define GET_ADDR_BITS(p) ((size_t)(p) & (size_t)0xffffffffffffull)
+#endif
+#ifndef MAX_OBJECT_SIZE
+#define MAX_OBJECT_SIZE ((size_t)1 << 29)
 #endif
 
 volatile void *_use(volatile void *p) { return p; }
@@ -38,21 +41,21 @@ struct T
 };
 struct BigType
 {
-  char buffer[(size_t)1 << 27];
+  char buffer[MAX_OBJECT_SIZE];
 };
 
 // globals
-static ssize_t i;
 
 struct T s = { {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA}, {0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB} };
+__attribute__((section(".data.index"))) ssize_t i;
 
 int f()
 {
   // locals
 
 
-  if ( ((ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin)) > 0 && (ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin)) > ((size_t)1 << 27))
-       || ((ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin)) < 0 && (ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin))< -((size_t)1 << 27) ) )  _exit(PRECONDITIONS_FAILED_VALUE);
+  if ( ((ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin)) > 0 && (ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin)) > (MAX_OBJECT_SIZE))
+       || ((ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin)) < 0 && (ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin))< -(MAX_OBJECT_SIZE) ) )  _exit(PRECONDITIONS_FAILED_VALUE);
   if ( !((ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
   volatile char tmp;
   for (i = 0; i < (ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin)); i++)

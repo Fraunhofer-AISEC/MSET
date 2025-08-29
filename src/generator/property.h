@@ -8,13 +8,14 @@
 #pragma once
 #include <algorithm>
 #include <string>
+#include <utility>
 
 
 class Property
 {
 public:
   explicit Property(std::string name):
-    name(name)
+    name(std::move(name))
   {}
 
   std::string get_name() const { return name; }

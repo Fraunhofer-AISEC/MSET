@@ -12,12 +12,11 @@
  * Access type: direct, write
  * Variant:
  *  - target declared after origin
- *  - using big structure cast
- *  - using a global index
+ *  - using load widening
  */
 
 #include <unistd.h> // _exit
-#include <stdint.h> // SIZE_MAX
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -26,41 +25,29 @@
 #else
 #define GET_ADDR_BITS(p) ((size_t)(p) & (size_t)0xffffffffffffull)
 #endif
+#ifndef MAX_OBJECT_SIZE
+#define MAX_OBJECT_SIZE ((size_t)1 << 29)
+#endif
 
 volatile void *_use(volatile void *p) { return p; }
 const char content[8] = "ZZZZZZZ";
 
 // types
-struct BigType
-{
-  char buffer[(size_t)1 << 27];
-};
 
 // globals
 
 char origin[8] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
 char target[8] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
-static ssize_t i;
 
 int f()
 {
   // locals
 
 
-  if ( ((ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) > 0 && (ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) > ((size_t)1 << 27))
-       || ((ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) < 0 && (ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin))< -((size_t)1 << 27) ) )  _exit(PRECONDITIONS_FAILED_VALUE);
   if ( !((ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
-  if ( GET_ADDR_BITS(&i) < GET_ADDR_BITS(&((struct BigType *)origin)->buffer[(ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin))]) && GET_ADDR_BITS(&i) > GET_ADDR_BITS(&((struct BigType *)origin)->buffer[0]) ) _exit(PRECONDITIONS_FAILED_VALUE);
-  for (i = 0; i < (ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)); i++)
-  {
-    ((struct BigType *)origin)->buffer[i] = 0xFF;
-  }
-  _use(((struct BigType *)origin)->buffer);
-  for (ssize_t i = 0; i < 8; i++)
-  {
-    ((struct BigType *)origin)->buffer[i + (ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin))] = 0xFF;
-  }
-  _use(((struct BigType *)origin)->buffer);
+  if ( !((ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) < (8 + 3) ) ) _exit(PRECONDITIONS_FAILED_VALUE);
+  *((volatile uint32_t *)(origin + (8 - 1))) = 0xFFFFFFFF;
+  _use(origin);
   _exit(TEST_CASE_SUCCESSFUL_VALUE);
 
   return 0;

@@ -11,12 +11,11 @@
  * Bug type: non-object, type confusion OOBA, overflow
  * Access type: direct, write
  * Variant:
- *  - using big structure cast
- *  - using a stack index
+ *  - using load widening
  */
 
 #include <unistd.h> // _exit
-#include <stdint.h> // SIZE_MAX
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -25,15 +24,14 @@
 #else
 #define GET_ADDR_BITS(p) ((size_t)(p) & (size_t)0xffffffffffffull)
 #endif
+#ifndef MAX_OBJECT_SIZE
+#define MAX_OBJECT_SIZE ((size_t)1 << 29)
+#endif
 
 volatile void *_use(volatile void *p) { return p; }
 const char content[8] = "ZZZZZZZ";
 
 // types
-struct BigType
-{
-  char buffer[(size_t)1 << 27];
-};
 
 // globals
 
@@ -41,7 +39,6 @@ struct BigType
 int f()
 {
   // locals
-  ssize_t i;
 
 
   char *origin = (char *)malloc( 8 );
@@ -53,20 +50,10 @@ int f()
   origin[5] = 0xAA;
   origin[6] = 0xAA;
   origin[7] = 0xAA;
-  if ( (8 > 0 && 8 > ((size_t)1 << 27))
-       || (8 < 0 && 8< -((size_t)1 << 27) ) )  _exit(PRECONDITIONS_FAILED_VALUE);
   if ( !(8 >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
-  if ( GET_ADDR_BITS(&i) < GET_ADDR_BITS(&((struct BigType *)origin)->buffer[8]) && GET_ADDR_BITS(&i) > GET_ADDR_BITS(&((struct BigType *)origin)->buffer[0]) ) _exit(PRECONDITIONS_FAILED_VALUE);
-  for (i = 0; i < 8; i++)
-  {
-    ((struct BigType *)origin)->buffer[i] = 0xFF;
-  }
-  _use(((struct BigType *)origin)->buffer);
-  for (ssize_t i = 0; i < 1; i++)
-  {
-    ((struct BigType *)origin)->buffer[i + 8] = 0xFF;
-  }
-  _use(((struct BigType *)origin)->buffer);
+  if ( !(8 < (8 + 3) ) ) _exit(PRECONDITIONS_FAILED_VALUE);
+  *((volatile uint32_t *)(origin + (8 - 1))) = 0xFFFFFFFF;
+  _use(origin);
   _exit(TEST_CASE_SUCCESSFUL_VALUE);
 
   free(origin);

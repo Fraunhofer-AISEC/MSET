@@ -223,6 +223,11 @@ If running the binary requires environment variables, specify them using
 
 For sanitizers that use pointer tagging (e.g., HWASAN), use the `address_mask`
 tag to allow test cases to ignore tags when comparing pointer values.
+For type confusion OOBA, a cast to a large type is used for reaching the intended
+target.
+If the origin is in a different region, it is possible that the type is not large
+enough to reach the target, resulting in a precondition failure.
+If this happens, increase the size of the type using the `max_object_size` tag.
 
 To override the default values for how the results of the test cases are interpreted,
 the following tags can be used:
