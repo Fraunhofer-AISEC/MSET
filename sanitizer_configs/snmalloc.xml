@@ -14,5 +14,7 @@
     <bug_detected_exit_values>
         <value>1</value>
         <value>6</value>
+        <value>4</value>
+        <value>132</value>
     </bug_detected_exit_values>
 </sanitizer>
