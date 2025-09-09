@@ -44,7 +44,7 @@ int f()
   char *target = (char *)malloc( 160 );
   
   #ifndef __GLIBC__
-  exit(PRECONDITIONS_FAILED_VALUE); // not using glibc
+  _exit(PRECONDITIONS_FAILED_VALUE); // not using glibc
   #endif
   for (size_t i = 0; i < 16; i++) target[i] = 0;
   target[8] = 0x60; // magic value
@@ -62,7 +62,7 @@ int f()
   }
   memset( (void *)heap_obj, 0xFF, 8);
   _use(heap_obj);
-  _exit(TEST_CASE_SUCCESSFUL_VALUE);
+  exit(TEST_CASE_SUCCESSFUL_VALUE);
   return 0;
 }
 

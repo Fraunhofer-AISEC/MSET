@@ -41,7 +41,7 @@ int f()
 
 
   #ifndef __GLIBC__
-  exit(PRECONDITIONS_FAILED_VALUE); // not using glibc
+  _exit(PRECONDITIONS_FAILED_VALUE); // not using glibc
   #endif
   char *pointer_to_double_free; // pointer to be double-freed
   char *pointer_to_use; // pointer to illegally use
@@ -63,7 +63,7 @@ int f()
     pointer_to_use[i] = 0xFF;
   }
   _use(pointer_to_use);
-  _exit(TEST_CASE_SUCCESSFUL_VALUE);
+  exit(TEST_CASE_SUCCESSFUL_VALUE);
 
   free(target);
   return 0;

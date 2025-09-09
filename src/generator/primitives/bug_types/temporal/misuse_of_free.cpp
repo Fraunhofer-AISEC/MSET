@@ -44,7 +44,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >MisuseOfFree::generate(
     <target_name>[8] = 0x40; <- 0x20 for unused
     <target_name>[13*8] = 0x40;
     #ifndef __GLIBC__
-    exit(PRECONDITIONS_FAILED_VALUE); // not using glibc
+    _exit(PRECONDITIONS_FAILED_VALUE); // not using glibc
     #endif
     unsigned long *crafted_ptr;
     crafted_ptr = &(<target_name>[2*8]); // pointing at byte 0x10, content of chunk 0
@@ -56,7 +56,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >MisuseOfFree::generate(
     if ( &<target_name>[2*8] != heap_obj ) _exit(PRECONDITIONS_FAILED_VALUE); <- only for used
     <action>
 
-    _exit(42);
+    exit(TEST_CASE_SUCCESSFUL_VALUE);
     <target_deallocation>
   */
 
@@ -78,7 +78,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >MisuseOfFree::generate(
     region_canvas_with_magic_value->add_global("char* heap_obj;");
     region_canvas_with_magic_value->add_during_lifetime({
       "#ifndef __GLIBC__",
-      "exit(PRECONDITIONS_FAILED_VALUE); // not using glibc",
+      "_exit(PRECONDITIONS_FAILED_VALUE); // not using glibc",
       "#endif",
       "for (size_t i = 0; i < 16; i++) target[i] = 0;",
       "target[8] = " + magic_value + "; // magic value",
@@ -87,8 +87,8 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >MisuseOfFree::generate(
       "crafted_ptr = (unsigned long *)&(target[2*8]); // pointing at byte 0x10, content of chunk 0",
       "(void)malloc(8);",
       "free(crafted_ptr);",
-        "",
-        "heap_obj = (char *)malloc(8);"
+      "",
+      "heap_obj = (char *)malloc(8);"
     });
     std::vector<std::string> access_type_code = access_location->generate(
       access_action, "heap_obj", 8);
@@ -125,7 +125,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >MisuseOfFree::generate(
         index = region_canvas_with_magic_value->add_at(region_canvas_with_magic_value->get_deallocation_pos(), access_type_code, "  ");
       }
     }
-    region_canvas_with_magic_value->add_at(index, "_exit(TEST_CASE_SUCCESSFUL_VALUE);", "  ");
+    region_canvas_with_magic_value->add_at(index, "exit(TEST_CASE_SUCCESSFUL_VALUE);", "  ");
     full_variants.push_back( region_canvas_with_magic_value );
   }
 
@@ -146,7 +146,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >MisuseOfFree::generate_validatio
     <target_name>[8] = 0x40; <- 0x20 for unused
     <target_name>[13*8] = 0x40;
     #ifndef __GLIBC__
-    exit(PRECONDITIONS_FAILED_VALUE); // not using glibc
+    _exit(PRECONDITIONS_FAILED_VALUE); // not using glibc
     #endif
     unsigned long *crafted_ptr;
     crafted_ptr = &(<target_name>[2*8]); // pointing at byte 0x10, content of chunk 0
@@ -156,7 +156,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >MisuseOfFree::generate_validatio
 
     <action>
 
-    _exit(42);
+    exit(TEST_CASE_SUCCESSFUL_VALUE);
     <target_deallocation>
   */
 
@@ -178,7 +178,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >MisuseOfFree::generate_validatio
     region_canvas_with_magic_value->add_global("char* heap_obj;");
     region_canvas_with_magic_value->add_during_lifetime({
       "#ifndef __GLIBC__",
-      "exit(PRECONDITIONS_FAILED_VALUE); // not using glibc",
+      "_exit(PRECONDITIONS_FAILED_VALUE); // not using glibc",
       "#endif",
       "for (size_t i = 0; i < 16; i++) target[i] = 0;",
       "target[8] = " + magic_value + "; // magic value",
@@ -201,7 +201,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >MisuseOfFree::generate_validatio
     {
       index = region_canvas_with_magic_value->add_at(region_canvas_with_magic_value->get_deallocation_pos(), access_type_code, "  ");
     }
-    region_canvas_with_magic_value->add_at(index, "_exit(TEST_CASE_SUCCESSFUL_VALUE);", "  ");
+    region_canvas_with_magic_value->add_at(index, "exit(TEST_CASE_SUCCESSFUL_VALUE);", "  ");
     full_variants.push_back( region_canvas_with_magic_value );
   }
 

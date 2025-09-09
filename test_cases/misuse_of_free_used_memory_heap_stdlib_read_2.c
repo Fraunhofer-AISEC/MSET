@@ -44,7 +44,7 @@ int f()
   char *target = (char *)malloc( 160 );
   
   #ifndef __GLIBC__
-  exit(PRECONDITIONS_FAILED_VALUE); // not using glibc
+  _exit(PRECONDITIONS_FAILED_VALUE); // not using glibc
   #endif
   for (size_t i = 0; i < 16; i++) target[i] = 0;
   target[8] = 0x60; // magic value
@@ -58,7 +58,7 @@ int f()
   volatile char read_value[8];
   memcpy( (void *)read_value, (void *)heap_obj, 8);
   _use( read_value );
-  _exit(TEST_CASE_SUCCESSFUL_VALUE);
+  exit(TEST_CASE_SUCCESSFUL_VALUE);
 
   free(target);
   return 0;

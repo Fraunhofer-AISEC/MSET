@@ -41,7 +41,7 @@ int f()
 
 
   #ifndef __GLIBC__
-  exit(PRECONDITIONS_FAILED_VALUE); // not using glibc
+  _exit(PRECONDITIONS_FAILED_VALUE); // not using glibc
   #endif
   char *pointer_to_double_free; // pointer to be double-freed
   char *pointer_to_use; // pointer to illegally use
@@ -55,7 +55,7 @@ int f()
   volatile char read_value[8];
   memcpy( (void *)read_value, (void *)pointer_to_use, 8);
   _use( read_value );
-  _exit(TEST_CASE_SUCCESSFUL_VALUE);
+  exit(TEST_CASE_SUCCESSFUL_VALUE);
 
   free(target);
   return 0;

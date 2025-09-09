@@ -44,7 +44,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >DoubleFree::generate(
   std::vector< std::shared_ptr<RegionCodeCanvas> >full_variants;
   /*
     #ifndef __GLIBC__
-    exit(PRECONDITIONS_FAILED_VALUE); // not using glibc
+    _exit(PRECONDITIONS_FAILED_VALUE); // not using glibc
     #endif
     char *pointer_to_double_free; // pointer to be double-freed
     char *pointer_to_use; // pointer to illegally use
@@ -55,7 +55,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >DoubleFree::generate(
     pointer_to_use = (char *)malloc(8); // allocate a new object
     <target_allocation>
     <action>
-    _exit(42);
+    exit(42);
     <target_deallocation>
   */
   CodeCanvas variant_with_use_after_free;
@@ -68,7 +68,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >DoubleFree::generate(
 
   variant_with_use_after_free.add_to_f_body({
     "#ifndef __GLIBC__",
-    "exit(PRECONDITIONS_FAILED_VALUE); // not using glibc",
+    "_exit(PRECONDITIONS_FAILED_VALUE); // not using glibc",
     "#endif",
     "char *pointer_to_double_free; // pointer to be double-freed",
     "char *pointer_to_use; // pointer to illegally use",
@@ -85,7 +85,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >DoubleFree::generate(
   std::vector<std::string> access_type_code = access_location->generate(
     access_action, "pointer_to_use",  region_canvas->get_static_var_size());
   auto index = region_canvas->add_at(region_canvas->get_lifetime_pos(), access_type_code, "  ");
-  region_canvas->add_at(index, "  _exit(TEST_CASE_SUCCESSFUL_VALUE);");
+  region_canvas->add_at(index, "  exit(TEST_CASE_SUCCESSFUL_VALUE);");
   full_variants.push_back( region_canvas );
 
   CodeCanvas variant_without_use_after_free;
@@ -96,7 +96,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >DoubleFree::generate(
   variant_without_use_after_free.add_variant_description_line("without use-after-free");
   variant_without_use_after_free.add_to_f_body({
     "#ifndef __GLIBC__",
-    "exit(PRECONDITIONS_FAILED_VALUE); // not using glibc",
+    "_exit(PRECONDITIONS_FAILED_VALUE); // not using glibc",
     "#endif",
     "char *pointer_to_double_free; // pointer to be double-freed",
     "char *pointer_to_use; // pointer to illegally use",
@@ -118,7 +118,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >DoubleFree::generate(
   access_type_code = access_location->generate(
     access_action, "pointer_to_use", region_canvas->get_static_var_size());
   index = region_canvas->add_at(region_canvas->get_lifetime_pos(), access_type_code, "  ");
-  region_canvas->add_at(index, "  _exit(TEST_CASE_SUCCESSFUL_VALUE);");
+  region_canvas->add_at(index, "  exit(TEST_CASE_SUCCESSFUL_VALUE);");
   full_variants.push_back( region_canvas );
 
   return full_variants;
@@ -135,7 +135,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >DoubleFree::generate_validation(
   std::vector< std::shared_ptr<RegionCodeCanvas> >full_variants;
   /*
     #ifndef __GLIBC__
-    exit(PRECONDITIONS_FAILED_VALUE); // not using glibc
+    _exit(PRECONDITIONS_FAILED_VALUE); // not using glibc
     #endif
     char *pointer_to_double_free; // pointer to be double-freed
     char *pointer_to_use; // pointer to illegally use
@@ -144,7 +144,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >DoubleFree::generate_validation(
     pointer_to_use = (char *)malloc(8); // allocate a new object
     <target_allocation>
     <action>
-    _exit(42);
+    exit(42);
     <target_deallocation>
   */
   CodeCanvas variant_with_use_after_free;
@@ -157,7 +157,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >DoubleFree::generate_validation(
 
   variant_with_use_after_free.add_to_f_body({
     "#ifndef __GLIBC__",
-    "exit(PRECONDITIONS_FAILED_VALUE); // not using glibc",
+    "_exit(PRECONDITIONS_FAILED_VALUE); // not using glibc",
     "#endif",
     "char *pointer_to_double_free; // pointer to be double-freed",
     "char *pointer_to_use; // pointer to illegally use",
@@ -171,7 +171,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >DoubleFree::generate_validation(
   std::vector<std::string> access_type_code = access_location->generate(
     access_action, "pointer_to_use",  region_canvas->get_static_var_size());
   auto index = region_canvas->add_at(region_canvas->get_lifetime_pos(), access_type_code, "  ");
-  region_canvas->add_at(index, "  _exit(TEST_CASE_SUCCESSFUL_VALUE);");
+  region_canvas->add_at(index, "  exit(TEST_CASE_SUCCESSFUL_VALUE);");
   full_variants.push_back( region_canvas );
 
   CodeCanvas variant_without_use_after_free;
@@ -184,7 +184,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >DoubleFree::generate_validation(
 
   variant_without_use_after_free.add_to_f_body({
     "#ifndef __GLIBC__",
-    "exit(PRECONDITIONS_FAILED_VALUE); // not using glibc",
+    "_exit(PRECONDITIONS_FAILED_VALUE); // not using glibc",
     "#endif",
     "char *pointer_to_double_free; // pointer to be double-freed",
     "char *pointer_to_use; // pointer to illegally use",
@@ -205,7 +205,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >DoubleFree::generate_validation(
   access_type_code = access_location->generate(
     access_action, "pointer_to_use", region_canvas->get_static_var_size());
   index = region_canvas->add_at(region_canvas->get_lifetime_pos(), access_type_code, "  ");
-  region_canvas->add_at(index, "  _exit(TEST_CASE_SUCCESSFUL_VALUE);");
+  region_canvas->add_at(index, "  exit(TEST_CASE_SUCCESSFUL_VALUE);");
   full_variants.push_back( region_canvas );
 
   return full_variants;
