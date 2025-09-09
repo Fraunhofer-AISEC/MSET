@@ -44,8 +44,7 @@ const std::vector<std::tuple< std::string, ArgParser::Argument>> accepted_argume
   std::make_tuple( "--evaluate-prebuilt-binaries",  ArgParser::Argument{true ,     "<SANITIZER_CONFIG>",    "",                         "\t\t\t\tEvaluate the sanitizer configured in <SANITIZER_CONFIG> using the pre-built binaries in <TEST_CASE_DIR>."} ),
   std::make_tuple( "--compile",                     ArgParser::Argument{true,      "<SANITIZER_CONFIG>",    "",                         "\t\t\tCompile all the test case files in <TEST_CASE_DIR> using the sanitizer configured in <SANITIZER_CONFIG>."} ),
   std::make_tuple( "--help",                        ArgParser::Argument{false,     "",                      "",                         "\t\t\t\t\tShow this help message and exit."} ),
-  // hidden options:
-  std::make_tuple( "--print-table-summary",         ArgParser::Argument{false ,    "",                      "",                         "", true } )
+  std::make_tuple( "--print-table-summary",         ArgParser::Argument{false ,    "",                      "",                         "\t\t\t\tPrint a summary in the form of a table line." } )
 };
 
 static void print_usage()
