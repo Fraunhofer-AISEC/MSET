@@ -46,10 +46,13 @@ If you want your own sanitizer to be listed, please open a PR and/or contact us.
 | [QASan](https://github.com/andreafioraldi/qasan)                                          | 47 (52.2%)             | 18.4, σ = 0.8 (25.6%)* | 14 (46.7%)            | 4 (25%)               | 4 (100%)    | 20 (100%)      |
 | [RedFat](https://www.github.com/GJDuck/RedFat)                                            | 48 (53.3%)             | 28 (38.9%)             | 16 (53.3%)            | 4 (25%)               | 4 (100%)    | 0 (0%)         |
 | [Scudo](https://llvm.org/docs/ScudoHardenedAllocator.html)*                               | 36, σ = 0.0 (40%)      | 19.5, σ = 0.9 (27.1%)  | 12.1, σ = 0.3 (40.3%) | 0 (0%)                | 4 (100%)    | 20 (100%)      |
+| [snmalloc](https://github.com/microsoft/snmalloc)**                                       | 36, σ = 0.0 (40%)      | 19.6, σ = 0.8 (27.2%)  | 12.7, σ = 0.7 (42.3%) | 0 (0%)                | 4 (100%)    | 20 (100%)      |
 | [Softbound+CETS](https://www.github.com/santoshn/softboundcets-34)                        | 72 (80%)               | 54 (75%)               | 24 (80%)              | 16 (100%)             | 4 (100%)    | 20 (100%)      |
 | [Softbound+CETS (rev.)](https://www.github.com/Fraunhofer-AISEC/softboundcets)            | 84 (93.3%)             | 66 (91.7%)             | 28 (93.3%)            | 16 (100%)             | 4 (100%)    | 20 (100%)      |
 
 *results are different to those produced by v1.0. See details [here](https://github.com/Fraunhofer-AISEC/MSET/tree/main?tab=readme-ov-file#version-11).
+
+**sanitizer not present in the initial evaluation produced by v1.0.
 
 ## Building MSET on Ubuntu/Debian Linux
 
