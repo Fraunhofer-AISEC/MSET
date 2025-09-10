@@ -490,10 +490,10 @@ exec_result_t Sanitizer::_execute(
   }
 
   if ( return_value == preconditions_not_met_exit_value) return PRECONDITIONS_FAILED;
-  if ( return_value == SIGSEGV) return FAILED_SIGSEGV;
-  if ( test_case_failed_exit_values.find(return_value) != test_case_failed_exit_values.end() ) return FAILED;
-  if ( return_value == test_case_successful_exit_value) return SUCCESSFUL;
-  if ( return_value == timeout_exit_value) return TIMEOUT;
+  if ( return_value == SIGSEGV) return DETECTED_SIGSEGV;
+  if ( test_case_failed_exit_values.find(return_value) != test_case_failed_exit_values.end() ) return DETECTED;
+  if ( return_value == test_case_successful_exit_value) return UNDETECTED;
+  if ( return_value == timeout_exit_value) return UNDETECTED_TIMEOUT;
   std::cerr << "WARNING: Execution return value " << return_value << " not configured. Assume bug detected\n";
-  return FAILED;
+  return DETECTED;
 }

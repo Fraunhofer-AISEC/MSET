@@ -139,17 +139,17 @@ static bool collect_result(const std::shared_ptr<TestCaseInformation> &test_case
     case PRECONDITIONS_FAILED:
       Logger(log_level_t::VERBOSE) << "PRECONDITIONS_FAILED\n";
       break;
-    case FAILED:
-      Logger(log_level_t::VERBOSE) << "FAILED\n";
+    case DETECTED:
+      Logger(log_level_t::VERBOSE) << "DETECTED\n";
       break;
-    case FAILED_SIGSEGV:
-      Logger(log_level_t::VERBOSE) << "FAILED_SIGSEGV\n";
+    case DETECTED_SIGSEGV:
+      Logger(log_level_t::VERBOSE) << "DETECTED_SIGSEGV\n";
       break;
-    case TIMEOUT:
-      Logger(log_level_t::VERBOSE) << "TIMEOUT\n";
+    case UNDETECTED_TIMEOUT:
+      Logger(log_level_t::VERBOSE) << "UNDETECTED_TIMEOUT\n";
       break;
-    case SUCCESSFUL:
-      Logger(log_level_t::VERBOSE) << "SUCCESSFUL\n";
+    case UNDETECTED:
+      Logger(log_level_t::VERBOSE) << "UNDETECTED\n";
       can_stop = true;
       break;
     default:
@@ -175,23 +175,23 @@ static bool collect_result(const std::shared_ptr<TestCaseInformation> &test_case
 static bool collect_validation_result(const std::shared_ptr<TestCaseInformation> &test_case_information, exec_result_t result, const std::string &file_name)
 {
   bool valid = false;
-  Logger(log_level_t::VERBOSE) << "Validation result for " << test_case_information->to_string() << " (" << file_name << "): ";
+  Logger(log_level_t::VERBOSE) << "Validation phase result for " << test_case_information->to_string() << " (" << file_name << "): ";
   switch (result)
   {
     case PRECONDITIONS_FAILED:
       Logger(log_level_t::VERBOSE) << "PRECONDITIONS_FAILED\n";
       break;
-    case FAILED:
-      Logger(log_level_t::VERBOSE) << "FAILED\n";
+    case DETECTED:
+      Logger(log_level_t::VERBOSE) << "DETECTED\n";
       break;
-    case FAILED_SIGSEGV:
-      Logger(log_level_t::VERBOSE) << "FAILED_SIGSEGV\n";
+    case DETECTED_SIGSEGV:
+      Logger(log_level_t::VERBOSE) << "DETECTED_SIGSEGV\n";
       break;
-    case TIMEOUT:
-      Logger(log_level_t::VERBOSE) << "TIMEOUT\n";
+    case UNDETECTED_TIMEOUT:
+      Logger(log_level_t::VERBOSE) << "UNDETECTED_TIMEOUT\n";
       break;
-    case SUCCESSFUL:
-      Logger(log_level_t::VERBOSE) << "SUCCESSFUL\n";
+    case UNDETECTED:
+      Logger(log_level_t::VERBOSE) << "UNDETECTED\n";
       valid = true;
       break;
     default:
@@ -222,28 +222,28 @@ static exec_result_t compute_overall_result( const std::vector<exec_result_t> &r
 {
   exec_result_t overall_result;
   size_t precond_failed = 0;
-  size_t failures = 0;
-  size_t successes = 0;
+  size_t detections = 0;
+  size_t undetected = 0;
   size_t validation_failures = 0;
   for ( const auto result: results )
   {
     if ( result == INVALID ) validation_failures++;
     else if ( result == PRECONDITIONS_FAILED ) precond_failed++;
-    else if ( result == SUCCESSFUL || result == TIMEOUT ) successes++;
-    else failures++;
+    else if ( result == UNDETECTED || result == UNDETECTED_TIMEOUT ) undetected++;
+    else detections++;
   }
   (void)precond_failed;
   if ( validation_failures > 0 )
   { // if any variant is invalid
     overall_result = INVALID;
   }
-  else if ( successes > 0 )
-  { // if any variant is successful
-    overall_result = SUCCESSFUL;
+  else if ( undetected > 0 )
+  { // if any variant is undetected
+    overall_result = UNDETECTED;
   }
-  else if ( failures > 0 )
+  else if ( detections > 0 )
   {
-    overall_result = FAILED;
+    overall_result = DETECTED;
   }
   else
   { // only if all variants have failing preconditions
@@ -255,12 +255,12 @@ static exec_result_t compute_overall_result( const std::vector<exec_result_t> &r
 
 static void print_overall_result(exec_result_t overall_result, const std::string& test_info_string)
 {
-  Logger(log_level_t::NORMAL) << "For " << test_info_string << ", the overall result is " << exec_result_to_string(overall_result) << ".\n";
+  Logger(log_level_t::NORMAL) << "For " << test_info_string << ", the overall result is " << overall_result_to_string(overall_result) << ".\n";
 }
 
 static void print_overall_result_with_baseline(exec_result_t overall_result, exec_result_t overall_baseline_result, const std::string& test_info_string)
 {
-  Logger(log_level_t::NORMAL) << "For " << test_info_string << ", the overall result is " << exec_result_to_string(overall_result) << " (Baseline: " << exec_result_to_string(overall_baseline_result) << ").\n";
+  Logger(log_level_t::NORMAL) << "For " << test_info_string << ", the overall result is " << overall_result_to_string(overall_result) << " (Baseline: " << overall_result_to_string(overall_baseline_result) << ").\n";
 }
 
 static void collapse_results(bool compute_baseline)
@@ -360,8 +360,8 @@ std::string score_to_str(const double value)
 struct counters_t
 {
   size_t precond_failed = 0;
-  size_t failures = 0;
-  size_t successes = 0;
+  size_t detections = 0;
+  size_t undetected = 0;
   size_t invalids = 0;
 };
 
@@ -372,8 +372,8 @@ counters_t compute_counters(const std::vector<exec_result_t> &raw_results)
   {
     if ( result == INVALID ) counters.invalids++;
     else if ( result == PRECONDITIONS_FAILED ) counters.precond_failed++;
-    else if ( result == SUCCESSFUL || result == TIMEOUT ) counters.successes++;
-    else counters.failures++;
+    else if ( result == UNDETECTED || result == UNDETECTED_TIMEOUT ) counters.undetected++;
+    else counters.detections++;
   }
   return counters;
 }
@@ -383,30 +383,30 @@ static void print_results(const std::vector<exec_result_t> &raw_results, const s
 {
   std::string overall_detection_rate;
   std::string precond_failed_percentage;
-  std::string failures_percentage;
-  std::string successes_percentage;
+  std::string detections_percentage;
+  std::string undetected_percentage;
   counters_t counters = compute_counters(raw_results);
   if ( raw_results.empty() )
   {
     overall_detection_rate = "N/A";
     precond_failed_percentage = "N/A";
-    failures_percentage = "N/A";
-    successes_percentage = "N/A";
+    detections_percentage = "N/A";
+    undetected_percentage = "N/A";
   }
   else
   {
-    overall_detection_rate = score_to_str( (static_cast<double>(counters.precond_failed + counters.failures) * 100) / static_cast<double>(raw_results.size()) );
+    overall_detection_rate = score_to_str( (static_cast<double>(counters.precond_failed + counters.detections) * 100) / static_cast<double>(raw_results.size()) );
     precond_failed_percentage = score_to_str( (static_cast<double>(counters.precond_failed) * 100) / static_cast<double>(raw_results.size()) );
-    failures_percentage = score_to_str( (static_cast<double>(counters.failures) * 100) / static_cast<double>(raw_results.size()) );
-    successes_percentage = score_to_str( (static_cast<double>(counters.successes + counters.invalids) * 100) / static_cast<double>(raw_results.size()) );
+    detections_percentage = score_to_str( (static_cast<double>(counters.detections) * 100) / static_cast<double>(raw_results.size()) );
+    undetected_percentage = score_to_str( (static_cast<double>(counters.undetected + counters.invalids) * 100) / static_cast<double>(raw_results.size()) );
   }
 
   bool with_baseline = !baseline_results.empty();
 
   std::string overall_baseline_detection_rate;
   std::string precond_failed_baseline_percentage;
-  std::string failures_baseline_percentage;
-  std::string successes_baseline_percentage;
+  std::string detections_baseline_percentage;
+  std::string undetected_baseline_percentage;
   counters_t baseline_counters;
 
   if (with_baseline)
@@ -416,19 +416,19 @@ static void print_results(const std::vector<exec_result_t> &raw_results, const s
     {
       overall_baseline_detection_rate = "N/A";
       precond_failed_baseline_percentage = "N/A";
-      failures_baseline_percentage = "N/A";
-      successes_baseline_percentage = "N/A";
+      detections_baseline_percentage = "N/A";
+      undetected_baseline_percentage = "N/A";
     }
     else
     {
-      overall_baseline_detection_rate = score_to_str( (static_cast<double>(baseline_counters.precond_failed + baseline_counters.failures) * 100) / static_cast<double>(baseline_results.size()) );
+      overall_baseline_detection_rate = score_to_str( (static_cast<double>(baseline_counters.precond_failed + baseline_counters.detections) * 100) / static_cast<double>(baseline_results.size()) );
       precond_failed_baseline_percentage = score_to_str( (static_cast<double>(baseline_counters.precond_failed) * 100) / static_cast<double>(baseline_results.size()) );
-      failures_baseline_percentage = score_to_str( (static_cast<double>(baseline_counters.failures) * 100) / static_cast<double>(baseline_results.size()) );
-      successes_baseline_percentage = score_to_str( (static_cast<double>(baseline_counters.successes + baseline_counters.invalids) * 100) / static_cast<double>(baseline_results.size()) );
+      detections_baseline_percentage = score_to_str( (static_cast<double>(baseline_counters.detections) * 100) / static_cast<double>(baseline_results.size()) );
+      undetected_baseline_percentage = score_to_str( (static_cast<double>(baseline_counters.undetected + baseline_counters.invalids) * 100) / static_cast<double>(baseline_results.size()) );
     }
   }
 
-  Logger(log_level) << "Detection rate: " << overall_detection_rate << " (" << counters.precond_failed + counters.failures << " out of " << raw_results.size() << " test cases)";
+  Logger(log_level) << "Detection rate: " << overall_detection_rate << " (" << counters.precond_failed + counters.detections << " out of " << raw_results.size() << " test cases)";
   if (with_baseline) Logger(log_level) << " / Baseline: " << overall_baseline_detection_rate;
   Logger(log_level) << "\n";
   Logger(log_level) << "Results for test cases:\n";
@@ -436,21 +436,21 @@ static void print_results(const std::vector<exec_result_t> &raw_results, const s
   if (with_baseline) Logger(log_level) << " / Baseline: " << precond_failed_baseline_percentage;
   Logger(log_level) << "\n";
 
-  Logger(log_level) << "- Failures: " << failures_percentage << " (" << counters.failures << ")";
-  if (with_baseline) Logger(log_level) << " / Baseline: " << failures_baseline_percentage;
+  Logger(log_level) << "- Detected: " << detections_percentage << " (" << counters.detections << ")";
+  if (with_baseline) Logger(log_level) << " / Baseline: " << detections_baseline_percentage;
   Logger(log_level) << "\n";
 
   assert(baseline_counters.invalids == 0);
   if ( counters.invalids == 0 )
   {
-    Logger(log_level) << "- Successes: " << successes_percentage << " (" << counters.successes << ")";
-    if (with_baseline) Logger(log_level) << " / Baseline: " << successes_baseline_percentage;
+    Logger(log_level) << "- Undetected: " << undetected_percentage << " (" << counters.undetected << ")";
+    if (with_baseline) Logger(log_level) << " / Baseline: " << undetected_baseline_percentage;
     Logger(log_level) << "\n";
   }
   else
   {
-    Logger(log_level) << "- Successes: " << successes_percentage << " (" << counters.successes << " successful attempts, " << counters.invalids << " didn't pass validation)";
-    if (with_baseline) Logger(log_level) << " / Baseline: " << successes_baseline_percentage;
+    Logger(log_level) << "- Undetected: " << undetected_percentage << " (" << counters.undetected << " undetected attempts, " << counters.invalids << " didn't pass validation)";
+    if (with_baseline) Logger(log_level) << " / Baseline: " << undetected_baseline_percentage;
     Logger(log_level) << "\n";
   }
 }
@@ -546,36 +546,36 @@ static void process_results(bool print_table_summary, bool with_baseline)
 
   if (print_table_summary)
   {
-    std::cout << "Prevented summary:\n";
+    std::cout << "Table summary:\n";
     std::cout << std::left << std::setw(12) << "Linear OOBA" << "| " << std::setw(16) << "Non-Linear OOBA " << "| " <<
       std::setw(20) << "Type Confusion OOBA" << "| " << std::setw(12) << "Use-after-*" << "| " <<
       std::setw(12) << "Double-free" << "| " << std::setw(14) << "Misuse-of-free\n";
     counters_t counters = compute_counters(raw_spatial_results["Linear OOBA"]);
-    std::cout << std::left << std::setw(12) << counters.precond_failed + counters.failures << "| ";
+    std::cout << std::left << std::setw(12) << counters.precond_failed + counters.detections << "| ";
     counters = compute_counters(raw_spatial_results["Non-Linear OOBA"]);
-    std::cout << std::setw(16) << counters.precond_failed + counters.failures << "| ";
+    std::cout << std::setw(16) << counters.precond_failed + counters.detections << "| ";
     counters = compute_counters(raw_spatial_results["Type Confusion OOBA"]);
-    std::cout << std::setw(20) << counters.precond_failed + counters.failures << "| ";
+    std::cout << std::setw(20) << counters.precond_failed + counters.detections << "| ";
     counters = compute_counters(raw_temporal_results["Use-after-*"]);
-    std::cout << std::setw(12) << counters.precond_failed + counters.failures << "| ";
+    std::cout << std::setw(12) << counters.precond_failed + counters.detections << "| ";
     counters = compute_counters(raw_temporal_results["Double-free"]);
-    std::cout << std::setw(12) << counters.precond_failed + counters.failures << "| ";
+    std::cout << std::setw(12) << counters.precond_failed + counters.detections << "| ";
     counters = compute_counters(raw_temporal_results["Misuse-of-free"]);
-    std::cout << std::setw(14) << counters.precond_failed + counters.failures << "\n";
+    std::cout << std::setw(14) << counters.precond_failed + counters.detections << "\n";
     if (with_baseline)
     {
       counters = compute_counters(raw_spatial_baseline_results["Linear OOBA"]);
-      std::cout << std::left << std::setw(12) << counters.precond_failed + counters.failures << "| ";
+      std::cout << std::left << std::setw(12) << counters.precond_failed + counters.detections << "| ";
       counters = compute_counters(raw_spatial_baseline_results["Non-Linear OOBA"]);
-      std::cout << std::setw(16) << counters.precond_failed + counters.failures << "| ";
+      std::cout << std::setw(16) << counters.precond_failed + counters.detections << "| ";
       counters = compute_counters(raw_spatial_baseline_results["Type Confusion OOBA"]);
-      std::cout << std::setw(20) << counters.precond_failed + counters.failures << "| ";
+      std::cout << std::setw(20) << counters.precond_failed + counters.detections << "| ";
       counters = compute_counters(raw_temporal_baseline_results["Use-after-*"]);
-      std::cout << std::setw(12) << counters.precond_failed + counters.failures << "| ";
+      std::cout << std::setw(12) << counters.precond_failed + counters.detections << "| ";
       counters = compute_counters(raw_temporal_baseline_results["Double-free"]);
-      std::cout << std::setw(12) << counters.precond_failed + counters.failures << "| ";
+      std::cout << std::setw(12) << counters.precond_failed + counters.detections << "| ";
       counters = compute_counters(raw_temporal_baseline_results["Misuse-of-free"]);
-      std::cout << std::setw(14) << counters.precond_failed + counters.failures << "  (baseline)\n";
+      std::cout << std::setw(14) << counters.precond_failed + counters.detections << "  (baseline)\n";
     }
   }
 }

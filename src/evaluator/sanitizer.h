@@ -15,27 +15,27 @@
 enum exec_result_t
 {
   PRECONDITIONS_FAILED,
-  FAILED,
-  FAILED_SIGSEGV,
-  TIMEOUT,
+  DETECTED,
+  DETECTED_SIGSEGV,
+  UNDETECTED_TIMEOUT,
   INVALID,
-  SUCCESSFUL
+  UNDETECTED
 };
 
-inline std::string exec_result_to_string(const exec_result_t result)
+inline std::string overall_result_to_string(const exec_result_t result)
 {
   switch( result )
   {
     case PRECONDITIONS_FAILED:
       return "PRECONDITIONS FAILED";
-    case FAILED:
-      return "FAILED";
+    case DETECTED:
+      return "DETECTED";
     case INVALID:
       return "INVALID";
-    case SUCCESSFUL:
-      return "SUCCESSFUL";
-    case FAILED_SIGSEGV:
-    case TIMEOUT:
+    case UNDETECTED:
+      return "UNDETECTED";
+    case DETECTED_SIGSEGV:
+    case UNDETECTED_TIMEOUT:
     default:
       std::cerr << "ERROR: UNKNOWN.\n";
       exit(EXIT_FAILURE);
