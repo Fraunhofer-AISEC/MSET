@@ -1,6 +1,7 @@
 # Build directory
 /build/
 test_case_binaries/
+.venv/
 
 # Compiled Object files
 *.o

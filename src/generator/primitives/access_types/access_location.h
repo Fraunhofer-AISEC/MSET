@@ -28,16 +28,12 @@ public:
 
     std::string to_string() const
     {
-      std::string str = type + " " + name;
-      if ( !number_of_elements.empty() )
-      {
-        str += "[" + number_of_elements + "]";
+      // MLIR: %name = arith.constant init_value : type
+      // For memref.alloca() and similar operations, don't wrap in arith.constant
+      if (init_value.find("memref.alloca()") != std::string::npos) {
+        return "%" + name + " = " + init_value;
       }
-      if ( !init_value.empty() )
-      {
-        str += " = " + init_value;
-      }
-      return str + ";";
+      return "%" + name + " = arith.constant " + init_value + " : " + type;
     }
 
     AuxiliaryVariable(const AuxiliaryVariable &other) = default;
@@ -106,14 +102,9 @@ public:
     std::vector<std::string> to_lines() const
     {
       std::vector<std::string> lines;
-      std::transform(aux_variables.begin(), aux_variables.end(), std::back_inserter(lines),
-        [](const AuxiliaryVariable& var)
-        {
-          return var.to_string() + ";";
-        }
-      );
-      std::transform(aux_variables.begin(), aux_variables.end(), lines.begin(),
-                   [](const AuxiliaryVariable& obj) { return obj.to_string(); });
+      for (const auto& var : aux_variables) {
+        lines.push_back(var.to_string());
+      }
       lines.insert(lines.end(), access_lines.begin(), access_lines.end());
       return lines;
     }
@@ -157,15 +148,15 @@ public:
 
   // size known at compile-time
   // simple generate
-  virtual std::vector<std::string> generate(std::shared_ptr<AccessAction> action, const std::string &access_var_name, size_t size) const = 0;
+  virtual std::vector<std::string> generate(std::shared_ptr<AccessAction> action, const std::string &access_var_name, size_t size, size_t array_size = 0, const std::string &index_var = "") const = 0;
 
 
   // simple split, all variants
   std::vector<SplitAccess> generate_split_all(std::shared_ptr<AccessAction> action, const std::string &access_var_name, size_t size) const;
   // simple split, using auxiliary size and content variables
-  virtual SplitAccess generate_split_aux_vars(std::shared_ptr<AccessAction> action, const std::string &access_var_name, size_t size) const = 0;
+  virtual SplitAccess generate_split_aux_vars(std::shared_ptr<AccessAction> action, const std::string &access_var_name, size_t size, size_t array_size = 0, const std::string &index_var = "") const = 0;
   // simple split, using const size and content variables
-  virtual SplitAccess generate_split_const_vars(std::shared_ptr<AccessAction> action, const std::string &access_var_name, size_t size) const = 0;
+  virtual SplitAccess generate_split_const_vars(std::shared_ptr<AccessAction> action, const std::string &access_var_name, size_t size, size_t array_size = 0, const std::string &index_var = "") const = 0;
 
   // generate from the given index to index + size
   virtual std::vector<std::string> generate_at_index(
@@ -173,7 +164,7 @@ public:
     const std::string &access_var_name,
     std::string index,
     size_t size,
-    std::function<std::string(const std::string&)>  generate_preconditions_check_distance
+    std::function<std::vector<std::string>(const std::string&)>  generate_preconditions_check_distance
   ) const = 0;
 
   // generate using the given index up to index + distance
@@ -182,8 +173,8 @@ public:
     const std::string &access_var_name,
     std::string index,
     std::string distance,
-    std::function<std::string(const std::string&)> generate_preconditions_check_distance,
-    std::function<std::string(const std::string&, const std::string&, const std::string&)> generate_preconditions_check_in_range
+    std::function<std::vector<std::string>(const std::string&)> generate_preconditions_check_distance,
+    std::function<std::vector<std::string>(const std::string&, const std::string&, const std::string&)> generate_preconditions_check_in_range
   ) const = 0;
 
   // simple split, all variants
@@ -192,9 +183,9 @@ public:
     std::string from,
     std::string to,
     std::string distance,
-    std::function<std::string(const std::string&)>  generate_preconditions_check_distance,
-    std::function<std::string(const std::string&, const std::string&, const std::string&)>  generate_preconditions_check_in_range,
-    std::function<std::string(const std::string&)>  generate_counter_update
+    std::function<std::vector<std::string>(const std::string&)>  generate_preconditions_check_distance,
+    std::function<std::vector<std::string>(const std::string&, const std::string&, const std::string&)>  generate_preconditions_check_in_range,
+    std::function<std::vector<std::string>(const std::string&)>  generate_counter_update
   ) const;
   // generate in bulks using an index
   virtual SplitAccess generate_bulk_split_using_index(
@@ -202,9 +193,9 @@ public:
     std::string from,
     std::string to,
     std::string distance,
-    std::function<std::string(const std::string&)>  generate_preconditions_check_distance,
-    std::function<std::string(const std::string&, const std::string&, const std::string&)>  generate_preconditions_check_in_range,
-    std::function<std::string(const std::string&)>  generate_counter_update
+    std::function<std::vector<std::string>(const std::string&)>  generate_preconditions_check_distance,
+    std::function<std::vector<std::string>(const std::string&, const std::string&, const std::string&)>  generate_preconditions_check_in_range,
+    std::function<std::vector<std::string>(const std::string&)>  generate_counter_update
     ) const = 0;
 
   // generate in bulks using an auxiliary pointer
@@ -213,9 +204,9 @@ public:
     std::string from,
     std::string to,
     std::string distance,
-    std::function<std::string(const std::string&)>  generate_preconditions_check_distance,
-    std::function<std::string(const std::string&, const std::string&, const std::string&)>  generate_preconditions_check_in_range,
-    std::function<std::string(const std::string&)>  generate_counter_update
+    std::function<std::vector<std::string>(const std::string&)>  generate_preconditions_check_distance,
+    std::function<std::vector<std::string>(const std::string&, const std::string&, const std::string&)>  generate_preconditions_check_in_range,
+    std::function<std::vector<std::string>(const std::string&)>  generate_counter_update
   ) const = 0;
 
   // generate using a load widening to uint32
@@ -225,7 +216,7 @@ public:
     std::string to,
     std::string distance,
     size_t size,
-    std::function<std::string(const std::string&)>  generate_preconditions_check_distance
+    std::function<std::vector<std::string>(const std::string&)>  generate_preconditions_check_distance
   ) const = 0;
 
   // generate after casting to uint8
@@ -235,6 +226,6 @@ public:
     std::string to,
     std::string distance,
     size_t size,
-    std::function<std::string(const std::string&)>  generate_preconditions_check_distance
+    std::function<std::vector<std::string>(const std::string&)>  generate_preconditions_check_distance
   ) const = 0;
 };

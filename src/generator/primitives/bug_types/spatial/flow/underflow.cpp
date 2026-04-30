@@ -20,17 +20,24 @@ bool Underflow::accepts_static_distance(ssize_t distance) const
   return distance <= 0;
 }
 
-std::string Underflow::generate_counter_update(const std::string &cnt) const
+std::vector<std::string> Underflow::generate_counter_update(const std::string &cnt) const
 {
-  return "--" + cnt;
+  return {"%" + cnt + "_next = arith.subi %" + cnt + ", %c1 : index"};
 }
 
-std::string Underflow::generate_preconditions_check_distance( const std::string &distance ) const
+std::vector<std::string> Underflow::generate_preconditions_check_distance( const std::string &distance ) const
 {
-  return distance + " <= 0";
+  return {
+    "%is_valid = arith.cmpi sle, %" + distance + ", %c0 : index",
+    "scf.if %is_valid {",
+    "  func.call @exit(%precond_fail) : (i32) -> ()",
+    "  scf.yield",
+    "}",
+  };
 }
 
-std::string Underflow::generate_preconditions_check_in_range( const std::string &x, const std::string &from, const std::string &to ) const
+std::vector<std::string> Underflow::generate_preconditions_check_in_range( const std::string &x, const std::string &from, const std::string &to ) const
 {
-  return "GET_ADDR_BITS(&" + x + ") < GET_ADDR_BITS(" + from + ") && GET_ADDR_BITS(&" + x + ") > GET_ADDR_BITS(" + to + ")";
+  (void)x; (void)from; (void)to;
+  return {"%in _check_in_range = arith.constant 0 : index"};
 }

@@ -22,7 +22,8 @@ public:
     const std::string &distance,
     const std::string &distance_negated,
     bool target_allocated = true,
-    bool forces_underflow = false
+    bool forces_underflow = false,
+    ssize_t distance_static_value = -1
     ):
       CodeCanvas(*code_canvas),
       target_var_size(target_var_size),
@@ -32,7 +33,8 @@ public:
       distance(distance),
       distance_negated(distance_negated),
       target_allocated(target_allocated),
-      forces_underflow(forces_underflow)
+      forces_underflow(forces_underflow),
+      distance_static_value(distance_static_value)
   {
   }
 
@@ -48,7 +50,8 @@ public:
     distance(std::move(other.distance)),
     distance_negated(std::move(other.distance_negated)),
     target_allocated(other.target_allocated),
-    forces_underflow(other.forces_underflow)
+    forces_underflow(other.forces_underflow),
+    distance_static_value(other.distance_static_value)
   {
   }
 
@@ -66,6 +69,7 @@ public:
     distance_negated = other.distance_negated;
     target_allocated = other.target_allocated;
     forces_underflow = other.forces_underflow;
+    distance_static_value = other.distance_static_value;
     return *this;
   }
 
@@ -83,6 +87,7 @@ public:
     distance_negated = other.distance_negated;
     target_allocated = other.target_allocated;
     forces_underflow = other.forces_underflow;
+    distance_static_value = other.distance_static_value;
     return *this;
   }
 
@@ -102,6 +107,7 @@ public:
   std::string get_origin_name() const { return origin_var_name; }
   std::string get_distance() const {return distance; }
   std::string get_distance_negated() const {return distance_negated; }
+  ssize_t get_distance_static_value() const { return distance_static_value; }
   bool get_forces_underflow() const { return forces_underflow; }
   bool is_target_allocated() const { return target_allocated; }
 
@@ -120,6 +126,7 @@ private:
 
   bool target_allocated;
   bool forces_underflow;
+  ssize_t distance_static_value;
 };
 
 class OriginTargetRelation: public Property

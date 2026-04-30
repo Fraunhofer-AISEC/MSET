@@ -6,14 +6,25 @@
  */
 
 #include "inter_object.h"
+#include <random>
 
 #include "misc.h"
 
+#ifndef MAX_DISTANCE
+#define MAX_DISTANCE 1024
+#endif
 
 bool InterObject::accepts(std::shared_ptr<Region> origin, std::shared_ptr<Region> target) const
 {
   // accept any combinations
   return true;
+}
+
+static int generate_rand_distance()
+{
+  static std::mt19937 gen(std::random_device{}());
+  std::uniform_int_distribution<> dist(0, MAX_DISTANCE);
+  return dist(gen);
 }
 
 std::vector< std::shared_ptr<OriginTargetCodeCanvas> > InterObject::generate(
@@ -26,25 +37,47 @@ std::vector< std::shared_ptr<OriginTargetCodeCanvas> > InterObject::generate(
 {
   std::vector< std::shared_ptr<OriginTargetCodeCanvas> > variants;
   std::shared_ptr<CodeCanvas> canvas_ptr = std::make_shared<CodeCanvas>(canvas);
-  std::shared_ptr<RegionCodeCanvas> origin_canvas;
-  std::shared_ptr<RegionCodeCanvas> target_canvas;
+  int rand_distance = generate_rand_distance();
 
-  origin_canvas = origin->generate(canvas_ptr, "origin", origin_size, true);
-  std::string distance = "(ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin))";
-  std::string distance_negated = "-(ssize_t)(GET_ADDR_BITS(origin) - GET_ADDR_BITS(target))";
-  target_canvas = target->generate(origin_canvas->get_lifetime_pos(), origin_canvas, "target", target_size, true);
+  // variant 1: origin first, target second (distance positive)
+  std::shared_ptr<RegionCodeCanvas> region_canvas = origin->generate(
+    canvas_ptr, "parent", "origin", origin_size, "target", target_size, true, rand_distance
+  );
+  ssize_t distance_value = static_cast<ssize_t>(origin_size) + rand_distance;
+  region_canvas->add_to_f_body(
+    "%distance = arith.constant " + std::to_string(distance_value) + " : index"
+  );
+  region_canvas->add_to_f_body(
+    "%distance_negated = arith.subi %c0, %distance : index"
+  );
 
-  std::shared_ptr<OriginTargetCodeCanvas> variant = std::make_shared<OriginTargetCodeCanvas>( target_canvas, target_size, origin_size, "target", "origin", distance, distance_negated );
-  variant->set_lifetime_pos( target_canvas->get_lifetime_pos() );
+  auto variant = std::make_shared<OriginTargetCodeCanvas>(
+    region_canvas, target_size, origin_size, "parent_target", "parent_origin",
+    "distance", "distance_negated", true, false, distance_value
+  );
+  variant->set_lifetime_pos(region_canvas->get_lifetime_pos());
   variant->add_variant_description_line("target declared after origin");
   variants.push_back(variant);
 
   if ( are_the_same_type(origin, target) )
   {
-    target_canvas = target->generate(canvas_ptr, "target", target_size, true);
-    origin_canvas = origin->generate(target_canvas->get_lifetime_pos(), target_canvas, "origin", origin_size, true);
-    variant = std::make_shared<OriginTargetCodeCanvas>( origin_canvas, target_size, origin_size, "target", "origin", distance, distance_negated );
-    variant->set_lifetime_pos( origin_canvas->get_lifetime_pos() );
+    // variant 2: target first, origin second (distance negative)
+    region_canvas = origin->generate(
+      canvas_ptr, "parent", "target", target_size, "origin", origin_size, true, rand_distance
+    );
+    distance_value = -(static_cast<ssize_t>(target_size) + rand_distance);
+    region_canvas->add_to_f_body(
+      "%distance = arith.constant " + std::to_string(std::abs(distance_value)) + " : index"
+    );
+    region_canvas->add_to_f_body(
+      "%distance_negated = arith.subi %c0, %distance : index"
+    );
+
+    variant = std::make_shared<OriginTargetCodeCanvas>(
+      region_canvas, target_size, origin_size, "parent_target", "parent_origin",
+      "distance", "distance_negated", true, true, distance_value
+    );
+    variant->set_lifetime_pos(region_canvas->get_lifetime_pos());
     variant->add_variant_description_line("target declared before origin");
     variants.push_back(variant);
   }

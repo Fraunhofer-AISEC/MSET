@@ -37,18 +37,14 @@ const char content[8] = "ZZZZZZZ";
 // types
 
 // globals
-
 char origin[8] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
 char target[8] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
 __attribute__((section(".data.index"))) volatile char tmp;
 __attribute__((section(".data.index"))) volatile char * aux_ptr;
 __attribute__((section(".data.index"))) volatile ssize_t reach_index = 0;
-
 int f()
 {
   // locals
-
-
   _use(target);
   _use(origin);
   if ( !((ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);

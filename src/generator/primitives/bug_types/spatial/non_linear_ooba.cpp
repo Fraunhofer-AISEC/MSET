@@ -41,9 +41,10 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> NonLinearOOBA::generate(
   /*
     <target, origin>
     <action>(origin[distance(target,origin)], target_size) // access the target
-    _exit(TEST_CASE_SUCCESSFUL_VALUE);
+    return 42;
   */
   CodeCanvas variant;
+  variant.add_global("func.func private @exit(%arg0: i32) -> ()");
 
   variant.add_test_case_description_line("Origin: " + origin->get_name());
   variant.add_test_case_description_line("Target: " + target->get_name());
@@ -70,7 +71,7 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> NonLinearOOBA::generate(
       generate_preconditions_check_distance
     );
     origin_target_canvas_copy->add_during_lifetime(access_target_code);
-    origin_target_canvas_copy->add_during_lifetime("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
+    origin_target_canvas_copy->add_during_lifetime("func.call @exit(%test_success) : (i32) -> ()");
     full_variants.push_back( origin_target_canvas_copy );
 
   }
@@ -92,9 +93,11 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> NonLinearOOBA::generate_val
   /*
     <target, origin>
     <action>(target, target_size) // access the target
-    _exit(TEST_CASE_SUCCESSFUL_VALUE);
+    return 42;
   */
   CodeCanvas variant;
+  variant.add_global("func.func private @exit(%arg0: i32) -> ()");
+
   variant.add_test_case_description_line("Origin: " + origin->get_name());
   variant.add_test_case_description_line("Target: " + target->get_name());
   variant.add_test_case_description_line("Bug type: " + origin_target_relation->get_printable_name() + ", non-linear OOBA, " + flow->get_name());
@@ -111,15 +114,24 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> NonLinearOOBA::generate_val
 
     if ( distance == "N/A" ) continue;
     auto origin_target_canvas_copy = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas);
+    std::string var_name_to_access;
+    if ( origin_target_canvas_copy->is_target_allocated() )
+    {
+      var_name_to_access = origin_target_canvas_copy->get_target_name();
+    }
+    else
+    {
+      var_name_to_access = origin_target_canvas_copy->get_origin_name();
+    }
     std::vector<std::string> access_target_code = access_location->generate_at_index(
       access_action,
-      origin_target_canvas_copy->get_target_name(),
+      var_name_to_access,
       distance,
       origin_target_canvas_copy->get_target_size(),
       nullptr
     );
     origin_target_canvas_copy->add_during_lifetime(access_target_code);
-    origin_target_canvas_copy->add_during_lifetime("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
+    origin_target_canvas_copy->add_during_lifetime("func.call @exit(%test_success) : (i32) -> ()");
     full_variants.push_back( origin_target_canvas_copy );
 
   }

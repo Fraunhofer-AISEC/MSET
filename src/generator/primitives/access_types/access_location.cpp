@@ -28,9 +28,9 @@ std::vector<AccessLocation::SplitAccess> AccessLocation::generate_bulk_split_all
   std::string from,
   std::string to,
   std::string distance,
-  std::function<std::string(const std::string&)>  generate_preconditions_check_distance,
-  std::function<std::string(const std::string&, const std::string&, const std::string&)>  generate_preconditions_check_in_range,
-  std::function<std::string(const std::string&)>  generate_counter_update
+  std::function<std::vector<std::string>(const std::string&)>  generate_preconditions_check_distance,
+  std::function<std::vector<std::string>(const std::string&, const std::string&, const std::string&)>  generate_preconditions_check_in_range,
+  std::function<std::vector<std::string>(const std::string&)>  generate_counter_update
 ) const
 {
   return {

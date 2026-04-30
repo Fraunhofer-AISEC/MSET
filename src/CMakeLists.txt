@@ -50,14 +50,6 @@ add_executable(mset main.cpp
         arg_parser.h
         misc.h
         misc.cpp
-        evaluator/evaluator.h
-        evaluator/evaluator.cpp
-        evaluator/sanitizer.cpp
-        evaluator/sanitizer.h
-        evaluator/tinyxml2.cpp
-        evaluator/tinyxml2.h
-        evaluator/test_case_information.h
-        evaluator/test_case_information.cpp
         generator/primitives/bug_types/spatial/flow/flow.h
         generator/primitives/bug_types/spatial/origin_target_relation/origin_target_relation.cpp
         generator/primitives/bug_types/spatial/origin_target_relation/origin_target_relation.h
@@ -77,5 +69,4 @@ add_executable(mset main.cpp
         generator/primitives/bug_types/spatial/linear_ooba.h
         generator/primitives/bug_types/spatial/non_linear_ooba.cpp
         generator/primitives/bug_types/spatial/non_linear_ooba.h
-        evaluator/logger.h
 )

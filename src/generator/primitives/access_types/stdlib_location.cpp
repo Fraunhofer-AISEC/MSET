@@ -13,63 +13,106 @@
 #include "generator/primitives/access_types/read_action.h"
 
 std::vector<std::string> StdlibLocation::generate(
-  std::shared_ptr<AccessAction> action, const std::string &access_var_name, size_t size) const
+  std::shared_ptr<AccessAction> action, const std::string &access_var_name, size_t size, size_t array_size, const std::string &index_var) const
 {
-  return generate_split_const_vars(action, access_var_name, size).to_lines();
+  return generate_split_const_vars(action, access_var_name, size, array_size, index_var).to_lines();
 }
 
 AccessLocation::SplitAccess StdlibLocation::generate_split_aux_vars(
-  std::shared_ptr<AccessAction> action, const std::string &access_var_name, size_t size) const
+  std::shared_ptr<AccessAction> action, const std::string &access_var_name, size_t size, size_t array_size, const std::string &index_var) const
 {
   SplitAccess split_access;
-  std::vector<std::string> code;
+  std::string size_str = std::to_string(size);
   if (is_a<ReadAction>(action))
   {
-    // READ
-    split_access.aux_variables = {
-      {"read_value", "volatile char", std::to_string(size)},
-    };
-
-    split_access.access_lines.push_back( "memcpy( (void *)read_value, (void *)" + access_var_name + ", " + std::to_string(size) + ");" );
-    split_access.access_lines.emplace_back("_use( read_value );" );
-    split_access.result = "&" + access_var_name + "[" + std::to_string(size) + "]";
+    // READ: memref.copy
+    if (array_size > 0) {
+      std::string array_size_str = std::to_string(array_size);
+      split_access.aux_variables = {
+        {"read_value", "memref<1x" + size_str + "xi8>", "", "memref.alloca() : memref<1x" + size_str + "xi8>"},
+      };
+      split_access.access_lines = {
+        "%subview_tmp = memref.subview %" + access_var_name + "[%" + index_var + ", 0][1, " + size_str + "][1, 1] : memref<" + array_size_str + "x" + size_str + "xi8> to memref<1x" + size_str + "xi8>",
+        "memref.copy %subview_tmp, %read_value : memref<1x" + size_str + "xi8> to memref<1x" + size_str + "xi8>"
+      };
+    } else {
+      split_access.aux_variables = {
+        {"read_value", "memref<" + size_str + "xi8>", "", "memref.alloca() : memref<" + size_str + "xi8>"},
+      };
+      split_access.access_lines.push_back( "memref.copy %" + access_var_name + ", %read_value : memref<" + size_str + "xi8> to memref<" + size_str + "xi8>" );
+    }
+    split_access.result = access_var_name;
   }
   else
   {
-    // WRITE
+    // WRITE: scf.for + store
     split_access.aux_variables = {
-      {"size", "volatile size_t", "", std::to_string(size)},
+      {"c0", "index", "", "0"},
+      {"c1", "index", "", "1"},
+      {"c" + size_str, "index", "", size_str},
+      {"c0xFF", "i8", "", "255"},
     };
-    split_access.access_lines.push_back( "memset( (void *)" + access_var_name + ", 0xFF, size);" );
-    split_access.access_lines.emplace_back("_use(" + access_var_name + ");" );
-    split_access.result = "&" + access_var_name + "[var_size]";
+    if (array_size > 0) {
+      std::string array_size_str = std::to_string(array_size);
+      split_access.access_lines.emplace_back("scf.for %i = %c0 to %c" + size_str + " step %c1 {");
+        split_access.access_lines.emplace_back("  memref.store %c0xFF, %" + access_var_name + "[%" + index_var + ", %i] : memref<" + array_size_str + "x" + size_str + "xi8>");
+      split_access.access_lines.emplace_back("}");
+    } else {
+      split_access.access_lines.emplace_back("scf.for %i = %c0 to %c" + size_str + " step %c1 {");
+        split_access.access_lines.emplace_back("  memref.store %c0xFF, %" + access_var_name + "[%i] : memref<" + size_str + "xi8>");
+      split_access.access_lines.emplace_back("}");
+    }
+    split_access.result = access_var_name;
   }
   split_access.description = "auxiliary variables";
   return split_access;
 }
 
 AccessLocation::SplitAccess StdlibLocation::generate_split_const_vars(
-  std::shared_ptr<AccessAction> action, const std::string &access_var_name, size_t size) const
+  std::shared_ptr<AccessAction> action, const std::string &access_var_name, size_t size, size_t array_size, const std::string &index_var) const
 {
   SplitAccess split_access;
-  std::vector<std::string> code;
+  std::string size_str = std::to_string(size);
   if (is_a<ReadAction>(action))
   {
-    // READ
-    split_access.aux_variables = {
-      {"read_value", "volatile char", std::to_string(size)},
-    };
-
-    split_access.access_lines.push_back( "memcpy( (void *)read_value, (void *)" + access_var_name + ", " + std::to_string(size) + ");" );
-    split_access.access_lines.emplace_back("_use( read_value );" );
-    split_access.result = "&" + access_var_name + "[" + std::to_string(size) + "]";
+    // READ: memref.copy
+    if (array_size > 0) {
+      std::string array_size_str = std::to_string(array_size);
+      split_access.aux_variables = {
+        {"read_value", "memref<1x" + size_str + "xi8>", "", "memref.alloca() : memref<1x" + size_str + "xi8>"},
+      };
+      split_access.access_lines = {
+        "%subview_tmp = memref.subview %" + access_var_name + "[%" + index_var + ", 0][1, " + size_str + "][1, 1] : memref<" + array_size_str + "x" + size_str + "xi8> to memref<1x" + size_str + "xi8>",
+        "memref.copy %subview_tmp, %read_value : memref<1x" + size_str + "xi8> to memref<1x" + size_str + "xi8>"
+      };
+    } else {
+      split_access.aux_variables = {
+        {"read_value", "memref<" + size_str + "xi8>", "", "memref.alloca() : memref<" + size_str + "xi8>"},
+      };
+      split_access.access_lines.push_back( "memref.copy %" + access_var_name + ", %read_value : memref<" + size_str + "xi8> to memref<" + size_str + "xi8>" );
+    }
+    split_access.result = access_var_name;
   }
   else
   {
-    // WRITE
-    split_access.access_lines.push_back( "memset( (void *)" + access_var_name + ", 0xFF, " + std::to_string(size) + ");" );
-    split_access.access_lines.emplace_back("_use(" + access_var_name + ");" );
-    split_access.result = "&" + access_var_name + "[8]";
+    // WRITE: scf.for + store
+    split_access.aux_variables = {
+      {"c0", "index", "", "0"},
+      {"c1", "index", "", "1"},
+      {"c" + size_str, "index", "", size_str},
+      {"c0xFF", "i8", "", "255"},
+    };
+    if (array_size > 0) {
+      std::string array_size_str = std::to_string(array_size);
+      split_access.access_lines.emplace_back("scf.for %i = %c0 to %c" + size_str + " step %c1 {");
+        split_access.access_lines.emplace_back("  memref.store %c0xFF, %" + access_var_name + "[%" + index_var + ", %i] : memref<" + array_size_str + "x" + size_str + "xi8>");
+      split_access.access_lines.emplace_back("}");
+    } else {
+      split_access.access_lines.emplace_back("scf.for %i = %c0 to %c" + size_str + " step %c1 {");
+        split_access.access_lines.emplace_back("  memref.store %c0xFF, %" + access_var_name + "[%i] : memref<" + size_str + "xi8>");
+      split_access.access_lines.emplace_back("}");
+    }
+    split_access.result = access_var_name;
   }
   split_access.description = "constants";
   return split_access;
@@ -80,67 +123,52 @@ AccessLocation::SplitAccess StdlibLocation::generate_bulk_split_using_index(
   std::string from,
   std::string to,
   std::string distance,
-  std::function<std::string(const std::string&)> generate_preconditions_check_distance,
-  std::function<std::string(const std::string&, const std::string&, const std::string&)> generate_preconditions_check_in_range,
-  std::function<std::string(const std::string&)> generate_counter_update
+  std::function<std::vector<std::string>(const std::string&)> generate_preconditions_check_distance,
+  std::function<std::vector<std::string>(const std::string&, const std::string&, const std::string&)> generate_preconditions_check_in_range,
+  std::function<std::vector<std::string>(const std::string&)> generate_counter_update
 ) const
 {
   SplitAccess split_access;
   if ( distance.empty() )
   {
-    distance = "(" + to + " - " + from + ")"; // can never underflow
+    distance = "distance"; // placeholder; caller provides actual distance SSA
   }
   if (is_a<ReadAction>(action))
   {
-    // READ
+    // READ: dynamic chunk copy using memref.copy + subview
     split_access.aux_variables = {
-      {"i", "volatile ssize_t", "", "0"},
+      {"c0", "index", "", "0"},
+      {"c1", "index", "", "1"},
+      {"c1024", "index", "", "1024"},
+      {"read_value", "memref<1024xi8>", "", "memref.alloca() : memref<1024xi8>"},
     };
 
-    if (generate_preconditions_check_distance)
-    {
-      split_access.access_lines = { "if ( !(" + generate_preconditions_check_distance(distance) + ") ) _exit(PRECONDITIONS_FAILED_VALUE);" };
-    }
-    split_access.access_lines.insert( split_access.access_lines.end(), {
-      "while( i < " + distance + " )",
-      "{",
-      "  volatile char read_value[1024];",
-      "  size_t step_distance = (" + distance + " > (1024 + i)) ? 1024 : " + distance + " - i;",
-      "  memcpy((void *)read_value, (void *)&" + from + "[i], step_distance);",
-      "  i += step_distance;",
-      "  _use(&read_value);",
+    split_access.access_lines = {
+      "scf.for %i = %c0 to %" + distance + " step %c1024 {",
+      "  %remaining = arith.subi %" + distance + ", %i : index",
+      "  %is_full = arith.cmpi sgt, %remaining, %c1024 : index",
+      "  %step = arith.select %is_full, %c1024, %remaining : index",
+      "  %src_slice = memref.subview %" + from + "[%i][%step][1] : memref<8xi8> to memref<?xi8>",
+      "  %dst_slice = memref.subview %read_value[%c0][%step][1] : memref<1024xi8> to memref<?xi8>",
+      "  memref.copy %src_slice, %dst_slice : memref<?xi8> to memref<?xi8>",
       "}",
-    } );
-    split_access.result = "&" + from + "[i]";
+    };
+    split_access.result = from;
   }
   else
   {
-    // WRITE
+    // WRITE: scf.for + store per byte
     split_access.aux_variables = {
-      {"i", "volatile ssize_t", "", "0"}, // volatile ssize_t i = 0;
-      {"step_distance", "volatile size_t"}, // volatile size_t step_distance;
+      {"c0", "index", "", "0"},
+      {"c1", "index", "", "1"},
+      {"c0xFF", "i8", "", "255"},
     };
-    if (generate_preconditions_check_distance)
-    {
-      split_access.access_lines = { "if ( !(" + generate_preconditions_check_distance(distance) + ") ) _exit(PRECONDITIONS_FAILED_VALUE);" };
-    }
-    if (generate_preconditions_check_in_range)
-    {
-      split_access.access_lines.insert( split_access.access_lines.end(), {"if ( " + generate_preconditions_check_in_range("i", from, to) + " ) _exit(PRECONDITIONS_FAILED_VALUE);"});
-      split_access.access_lines.insert( split_access.access_lines.end(), {"if ( " + generate_preconditions_check_in_range("step_distance", from, to) + " ) _exit(PRECONDITIONS_FAILED_VALUE);"});
-    }
-    split_access.access_lines.insert( split_access.access_lines.end(), {
-      "i = 0;",
-      "while( GET_ADDR_BITS(&" + from + "[i]) < GET_ADDR_BITS(" + to + ") )",
-      "{",
-      "  step_distance = (GET_ADDR_BITS(" + to + ") > (1024 + GET_ADDR_BITS(&" + from + "[i]))) ? 1024 : GET_ADDR_BITS(" + to + ") - GET_ADDR_BITS(&" + from + "[i]);",
-      "  memset((void *)&" + from + "[i], 0xFF, step_distance);",
-      "  i += step_distance;",
-      "  _use(&" + from + "[i]);",
+    split_access.access_lines = {
+      "scf.for %i = %c0 to %" + distance + " step %c1 {",
+      "  memref.store %c0xFF, %" + from + "[%i] : memref<8xi8>",
       "}",
-      "_use(" + from + ");"
-    } );
-    split_access.result = "&" + from + "[i]";
+    };
+    split_access.result = from;
   }
   split_access.description = "index";
   return split_access;
@@ -151,70 +179,48 @@ AccessLocation::SplitAccess StdlibLocation::generate_bulk_split_using_aux_ptr(
   std::string from,
   std::string to,
   std::string distance,
-  std::function<std::string(const std::string&)>  generate_preconditions_check_distance,
-  std::function<std::string(const std::string&, const std::string&, const std::string&)> generate_preconditions_check_in_range,
-  std::function<std::string(const std::string&)> generate_counter_update
+  std::function<std::vector<std::string>(const std::string&)>  generate_preconditions_check_distance,
+  std::function<std::vector<std::string>(const std::string&, const std::string&, const std::string&)> generate_preconditions_check_in_range,
+  std::function<std::vector<std::string>(const std::string&)> generate_counter_update
 ) const
 {
   SplitAccess split_access;
 
   if (is_a<ReadAction>(action))
   {
-    // READ
+    // READ: dynamic chunk copy using memref.copy + subview
     split_access.aux_variables = {
-      {"aux_ptr", "volatile char *", ""},
-      {"i", "volatile size_t", "", "0"},
+      {"c0", "index", "", "0"},
+      {"c1", "index", "", "1"},
+      {"c1024", "index", "", "1024"},
+      {"read_value", "memref<1024xi8>", "", "memref.alloca() : memref<1024xi8>"},
     };
-    split_access.access_lines = {};
-    if (generate_preconditions_check_distance)
-    {
-      split_access.access_lines.push_back( "if ( !(" + generate_preconditions_check_distance(distance) + ") ) _exit(PRECONDITIONS_FAILED_VALUE);" );
-    }
-    split_access.access_lines.insert(split_access.access_lines.end(), {
-      "aux_ptr = " + from + ";",
-      "while( i < " + distance + " )",
-      "{",
-      "  volatile char read_value[1024];",
-      "  size_t step_distance = (" + distance + " > (1024 + i)) ? 1024 : " + distance + " - i;",
-      "  memcpy((void *)read_value, (void *)aux_ptr, step_distance);",
-      "  aux_ptr += step_distance;",
-      "  i += step_distance;",
-      "  _use(&read_value);",
+    split_access.access_lines = {
+      "scf.for %i = %c0 to %" + distance + " step %c1024 {",
+      "  %remaining = arith.subi %" + distance + ", %i : index",
+      "  %is_full = arith.cmpi sgt, %remaining, %c1024 : index",
+      "  %step = arith.select %is_full, %c1024, %remaining : index",
+      "  %src_slice = memref.subview %" + from + "[%i][%step][1] : memref<8xi8> to memref<?xi8>",
+      "  %dst_slice = memref.subview %read_value[%c0][%step][1] : memref<1024xi8> to memref<?xi8>",
+      "  memref.copy %src_slice, %dst_slice : memref<?xi8> to memref<?xi8>",
       "}",
-    });
-    split_access.result = "aux_ptr";
+    };
+    split_access.result = from;
   }
   else
   {
-    // WRITE
+    // WRITE: scf.for + store per byte
     split_access.aux_variables = {
-      {"aux_ptr", "volatile char *"},
-      {"step_distance", "volatile size_t"},
+      {"c0", "index", "", "0"},
+      {"c1", "index", "", "1"},
+      {"c0xFF", "i8", "", "255"},
     };
-    split_access.access_lines = {};
-    if (generate_preconditions_check_in_range)
-    {
-      split_access.access_lines.push_back( "if ( " + generate_preconditions_check_in_range("aux_ptr", from, to) + " ) _exit(PRECONDITIONS_FAILED_VALUE);" );
-      split_access.access_lines.push_back( "if ( " + generate_preconditions_check_in_range("step_distance", from, to) + " ) _exit(PRECONDITIONS_FAILED_VALUE);" );
-    }
-
-    if (generate_preconditions_check_distance)
-    {
-      split_access.access_lines.push_back( "if ( !(" + generate_preconditions_check_distance(distance) + ") ) _exit(PRECONDITIONS_FAILED_VALUE);" );
-    }
-
-    split_access.access_lines.insert( split_access.access_lines.end(), {
-      "aux_ptr = " + from + ";",
-      "while( GET_ADDR_BITS(aux_ptr) < GET_ADDR_BITS(" + to + ") )",
-      "{",
-      "  step_distance = (GET_ADDR_BITS(" + to + ") > (1024 + GET_ADDR_BITS(aux_ptr))) ? 1024 : GET_ADDR_BITS(" + to + ") - GET_ADDR_BITS(aux_ptr);",
-      "  memset((void *)aux_ptr, 0xFF, step_distance);",
-      "  aux_ptr += step_distance;",
-      "  _use(aux_ptr);",
+    split_access.access_lines = {
+      "scf.for %i = %c0 to %" + distance + " step %c1 {",
+      "  memref.store %c0xFF, %" + from + "[%i] : memref<8xi8>",
       "}",
-      "_use(" + from + ");"
-    } );
-    split_access.result = "aux_ptr";
+    };
+    split_access.result = from;
   }
 
   split_access.description = "auxiliary pointer";
@@ -227,41 +233,33 @@ std::vector<std::string> StdlibLocation::generate_at_index(
   const std::string &access_var_name,
   std::string index,
   size_t size,
-  std::function<std::string(const std::string&)> generate_preconditions_check_distance
+  std::function<std::vector<std::string>(const std::string&)> generate_preconditions_check_distance
 ) const
 {
   std::vector<std::string> lines;
+  std::string size_str = std::to_string(size);
   if (is_a<ReadAction>(action))
   {
-    // READ
+    // READ: memref.copy via subview
     lines = {
-      "char read_value[" + std::to_string(size) + "];",
+      "%read_value = memref.alloca() : memref<" + size_str + "xi8>",
+      "%src_slice = memref.subview %" + access_var_name + "[" + index + "][" + size_str + "][1] : memref<" + size_str + "xi8> to memref<" + size_str + "xi8>",
+      "memref.copy %src_slice, %read_value : memref<" + size_str + "xi8> to memref<" + size_str + "xi8>",
     };
-    if (generate_preconditions_check_distance)
-    {
-      lines.push_back( "if ( !(" + generate_preconditions_check_distance(index) + ") ) _exit(PRECONDITIONS_FAILED_VALUE);" );
-    }
-    lines.insert( lines.end(), {
-      "memcpy(read_value, (void *)&" + access_var_name + "[" + index + "], " + std::to_string(size) + ");",
-      "_use(read_value);"
-    } );
   }
   else
   {
-    // WRITE
-    for (size_t i = 0; i < size; i++)
-    {
-      assert(size > 0);
-      lines = {};
-      if (generate_preconditions_check_distance)
-      {
-        lines.push_back( "if ( !(" + generate_preconditions_check_distance(index) + ") ) _exit(PRECONDITIONS_FAILED_VALUE);" );
-      }
-      lines.insert( lines.end(), {
-        "memset((void *)&" + access_var_name + "[" + index + "], 0xFF, " + std::to_string(size) + ");",
-        "_use(" + access_var_name + ");"
-      });
-    }
+    // WRITE: scf.for + store
+    lines = {
+      "%c0 = arith.constant 0 : index",
+      "%c1 = arith.constant 1 : index",
+      "%c" + size_str + " = arith.constant " + size_str + " : index",
+      "%c0xFF = arith.constant 255 : i8",
+      "scf.for %j = %c0 to %c" + size_str + " step %c1 {",
+      "  %idx = arith.addi %j, %" + index + " : index",
+      "  memref.store %c0xFF, %" + access_var_name + "[%idx] : memref<" + size_str + "xi8>",
+      "}",
+    };
   }
   return lines;
 }
@@ -272,8 +270,8 @@ std::vector<std::string> StdlibLocation::generate_using_runtime_index(
   const std::string &access_var_name,
   std::string index,
   std::string distance,
-  std::function<std::string(const std::string&)> generate_preconditions_check_distance,
-  std::function<std::string(const std::string&, const std::string&, const std::string&)> generate_preconditions_check_in_range
+  std::function<std::vector<std::string>(const std::string&)> generate_preconditions_check_distance,
+  std::function<std::vector<std::string>(const std::string&, const std::string&, const std::string&)> generate_preconditions_check_in_range
 ) const
 {
   assert(0 && "generate_using_runtime_index not used for StdlibLocation");
@@ -286,7 +284,7 @@ std::vector<std::string> StdlibLocation::generate_uint32(
   std::string to,
   std::string distance,
   size_t size,
-  std::function<std::string(const std::string&)>  generate_preconditions_check_distance
+  std::function<std::vector<std::string>(const std::string&)>  generate_preconditions_check_distance
 ) const
 {
   assert(0 && "generate_uint32 not used for StdlibLocation");
@@ -299,7 +297,7 @@ std::vector<std::string> StdlibLocation::generate_uint8(
   std::string to,
   std::string distance,
   size_t size,
-  std::function<std::string(const std::string&)>  generate_preconditions_check_distance
+  std::function<std::vector<std::string>(const std::string&)>  generate_preconditions_check_distance
 ) const
 {
   assert(0 && "generate_uint8 not used for StdlibLocation");

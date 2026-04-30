@@ -19,9 +19,20 @@ public:
     std::string name,
     std::string name_field_1, size_t size_field_1,
     std::string name_field_2, size_t size_field_2,
-    bool initialize
+    bool initialize,
+    size_t gap = 0
   ) const override;
 
   std::vector<std::string> generate_reallocation(std::string name, size_t size, bool initialize, std::string indent) const;
-  std::vector<std::string> generate_deallocation(std::string name, std::string indent) const;
+  std::vector<std::string> generate_deallocation(std::string name, size_t size, std::string indent) const;
+
+private:
+  CodeCanvas::code_pos_t _generate_init_loop(
+    std::shared_ptr<RegionCodeCanvas> canvas,
+    CodeCanvas::code_pos_t where,
+    const std::string &name,
+    size_t size,
+    const std::string &value,
+    const std::string &indent
+  ) const;
 };

@@ -20,7 +20,6 @@ public:
 
   CodeCanvas(CodeCanvas &&other) noexcept
     : code_lines(std::move(other.code_lines)),
-      types_pos(other.types_pos),
       global_start_pos(other.global_start_pos),
       global_pos(other.global_pos),
       f_call_pos(other.f_call_pos),
@@ -44,7 +43,6 @@ public:
     if (this == &other)
       return *this;
     code_lines = other.code_lines;
-    types_pos = other.types_pos;
     global_start_pos = other.global_start_pos;
     global_pos = other.global_pos;
     f_call_pos = other.f_call_pos;
@@ -68,7 +66,6 @@ public:
     if (this == &other)
       return *this;
     code_lines = std::move(other.code_lines);
-    types_pos = other.types_pos;
     global_start_pos = other.global_start_pos;
     global_pos = other.global_pos;
     f_call_pos = other.f_call_pos;
@@ -141,7 +138,6 @@ protected:
   void _generate_other_f_and_call();
   virtual void _update_indexes(code_pos_t from, size_t amount);
   std::vector<std::string> code_lines;
-  code_pos_t types_pos;
   code_pos_t global_start_pos;
   code_pos_t global_pos;
   code_pos_t f_call_pos;

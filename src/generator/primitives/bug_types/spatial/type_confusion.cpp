@@ -40,9 +40,10 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> TypeConfusion::generate(
     <target, origin, aux_ptr allocations> // aux_ptr points to origin
     <action>(aux_ptr, target) // aux_ptr reaches the target
     <action>(aux_ptr, target_size) // access the target
-    _exit(TEST_CASE_SUCCESSFUL_VALUE);
+    return 42;
   */
   CodeCanvas variant;
+  variant.add_global("func.func private @exit(%arg0: i32) -> ()");
   variant.add_test_case_description_line("Origin: " + origin->get_name());
   variant.add_test_case_description_line("Target: " + target->get_name());
   variant.add_test_case_description_line("Bug type: " + origin_target_relation->get_printable_name() + ", type confusion OOBA, " + flow->get_name());
@@ -60,11 +61,14 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> TypeConfusion::generate(
   {
     if ( origin_target_canvas->get_forces_underflow() ) continue; // skip underflows as they are incompatible with type confusions
 
-    // simple variant with BigType
+    // simple variant with reinterpret_cast to large memref
     std::shared_ptr<OriginTargetCodeCanvas> variant_with_big_type = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas);
+    variant_with_big_type->add_during_lifetime(
+      "%big_origin = memref.reinterpret_cast %" + variant_with_big_type->get_origin_name() + " to offset: [0], sizes: [1024], strides: [1] : memref<8xi8> to memref<1024xi8>"
+    );
     std::vector<std::string> reach_target_code = access_location->generate_using_runtime_index(
       access_action,
-      "((struct BigType *)" + variant_with_big_type->get_origin_name() + ")->buffer",
+      "big_origin",
       "i",
       variant_with_big_type->get_distance(),
       generate_preconditions_check_distance,
@@ -72,28 +76,16 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> TypeConfusion::generate(
     );
     std::vector<std::string> access_target_code = access_location->generate_at_index(
       access_action,
-      "((struct BigType *)" + variant_with_big_type->get_origin_name() + ")->buffer",
+      "big_origin",
       variant_with_big_type->get_distance(),
       variant_with_big_type->get_target_size(),
       nullptr
     );
-    variant_with_big_type->add_during_lifetime({
-      "if ( (" + variant_with_big_type->get_distance() + " > 0 && " + variant_with_big_type->get_distance() + " > (MAX_OBJECT_SIZE))",
-      "     || (" + variant_with_big_type->get_distance() + " < 0 && " + variant_with_big_type->get_distance() + "< -(MAX_OBJECT_SIZE) ) )"\
-      "  _exit(PRECONDITIONS_FAILED_VALUE);"
-    });
     variant_with_big_type->add_during_lifetime(reach_target_code);
     variant_with_big_type->add_during_lifetime(access_target_code);
-    variant_with_big_type->add_during_lifetime("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
-    variant_with_big_type->add_type({
-      "struct BigType",
-      "{",
-      "  char buffer[MAX_OBJECT_SIZE];",
-      "};"
-    });
-    variant_with_big_type->add_variant_description_line("using big structure cast");
+    variant_with_big_type->add_during_lifetime("func.call @exit(%test_success) : (i32) -> ()");
+    variant_with_big_type->add_variant_description_line("using reinterpret_cast to large memref");
 
-    variant_with_big_type->add_to_custom_section({"ssize_t i;"});
     variant_with_big_type->add_variant_description_line("using a global index");
     full_variants.push_back( variant_with_big_type );
 
@@ -108,7 +100,7 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> TypeConfusion::generate(
       generate_preconditions_check_distance
     );
     variant_with_load_widening->add_during_lifetime(access_target_code);
-    variant_with_load_widening->add_during_lifetime("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
+    variant_with_load_widening->add_during_lifetime("func.call @exit(%test_success) : (i32) -> ()");
     variant_with_load_widening->add_variant_description_line("using load widening");
     full_variants.push_back( variant_with_load_widening );
   }
@@ -130,9 +122,10 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> TypeConfusion::generate_val
   /*
     <target, origin, aux_ptr allocations> // aux_ptr points to origin
     <action>(aux_ptr, target_size) // access the target
-    _exit(TEST_CASE_SUCCESSFUL_VALUE);
+    return 42;
   */
   CodeCanvas variant;
+  variant.add_global("func.func private @exit(%arg0: i32)");
   variant.add_test_case_description_line("Origin: " + origin->get_name());
   variant.add_test_case_description_line("Target: " + target->get_name());
   variant.add_test_case_description_line("Bug type: " + origin_target_relation->get_printable_name() + ", type confusion OOBA, " + flow->get_name());
@@ -144,7 +137,7 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> TypeConfusion::generate_val
   for ( auto &origin_target_canvas : origin_target_canvases )
   {
     if ( origin_target_canvas->get_forces_underflow() ) continue; // skip underflows
-    // simple variant with BigType
+    // simple variant with reinterpret_cast to large memref
     std::shared_ptr<OriginTargetCodeCanvas> variant_with_big_type = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas);
 
     std::string var_name_to_access;
@@ -165,14 +158,8 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> TypeConfusion::generate_val
       nullptr
     );
     variant_with_big_type->add_during_lifetime(access_target_code);
-    variant_with_big_type->add_during_lifetime("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
-    variant_with_big_type->add_type({
-      "struct BigType",
-      "{",
-      "  char buffer[MAX_OBJECT_SIZE];",
-      "};"
-    });
-    variant_with_big_type->add_variant_description_line("using big structure cast");
+    variant_with_big_type->add_during_lifetime("func.call @exit(%test_success) : (i32) -> ()");
+    variant_with_big_type->add_variant_description_line("using reinterpret_cast to large memref");
     full_variants.push_back( variant_with_big_type );
 
     // load widening variant
@@ -186,7 +173,7 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> TypeConfusion::generate_val
       nullptr
     );
     variant_with_load_widening->add_during_lifetime(access_target_code);
-    variant_with_load_widening->add_during_lifetime("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
+    variant_with_load_widening->add_during_lifetime("func.call @exit(%test_success) : (i32) -> ()");
     variant_with_load_widening->add_variant_description_line("using load widening");
     full_variants.push_back( variant_with_load_widening );
   }

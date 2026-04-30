@@ -19,7 +19,7 @@ public:
 
   bool accepts(std::shared_ptr<AccessLocation> access_location) const override;
   bool accepts_static_distance(ssize_t distance) const override;
-  std::string generate_counter_update( const std::string &cnt ) const override;
-  std::string generate_preconditions_check_distance( const std::string &distance ) const override;
-  std::string generate_preconditions_check_in_range( const std::string &x, const std::string &from, const std::string &to ) const override;
+  std::vector<std::string> generate_counter_update( const std::string &cnt ) const override;
+  std::vector<std::string> generate_preconditions_check_distance( const std::string &distance ) const override;
+  std::vector<std::string> generate_preconditions_check_in_range( const std::string &x, const std::string &from, const std::string &to ) const override;
 };

@@ -15,5 +15,3 @@ const int DEFAULT_TEST_CASE_FAILED_EXIT_VALUE = 44;
 
 // how many seconds to wait before a timeout
 const int DEFAULT_TIMEOUT_IN_SECS = 60;
-
-const char TEST_CASE_BINARIES_DIR_NAME[] = "test_case_binaries";

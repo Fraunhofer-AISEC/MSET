@@ -12,6 +12,7 @@
 #include "misc.h"
 #include "generator/primitives/access_types/read_action.h"
 #include "generator/primitives/bug_types/spatial/flow/underflow.h"
+#include "generator/primitives/bug_types/spatial/flow/overflow.h"
 #include "generator/primitives/bug_types/spatial/origin_target_relation/intra_object.h"
 
 bool LinearOOBA::accepts(std::shared_ptr<Flow> flow) const
@@ -43,9 +44,12 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> LinearOOBA::generate(
     <target, origin, aux_ptr allocations> // aux_ptr points to origin
     <action>(aux_ptr, target) // aux_ptr reaches the target
     <action>(aux_ptr, target_size) // access the target
-    _exit(TEST_CASE_SUCCESSFUL_VALUE);
+    return 42;
   */
   CodeCanvas variant;
+  variant.add_global("func.func private @exit(%arg0: i32) -> ()");
+  variant.add_global("func.func @use(%arg0: memref<8xi8>) -> memref<8xi8> { return %arg0 : memref<8xi8> }");
+
   variant.add_test_case_description_line("Origin: " + origin->get_name());
   variant.add_test_case_description_line("Target: " + target->get_name());
   variant.add_test_case_description_line("Bug type: " + origin_target_relation->get_printable_name() + ", linear OOBA, " + flow->get_name());
@@ -61,12 +65,22 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> LinearOOBA::generate(
 
   for ( auto &origin_target_canvas : origin_target_canvases )
   {
-    if ( origin_target_canvas->get_forces_underflow() && !is_a<Underflow>(flow) ) continue; // the origin-target requires an underflow, but the flow is not an underflow -> skip
+    if (( origin_target_canvas->get_forces_underflow() && !is_a<Underflow>(flow)) ||
+        (!origin_target_canvas->get_forces_underflow() && is_a<Underflow>(flow)))
+         continue; // the origin-target requires an underflow, but the flow is not an underflow -> skip
 
-    std::vector< std::tuple< std::string, std::string > > distance_variants = {
-      std::tuple< std::string, std::string >{ origin_target_canvas->get_distance(), "distance is checked as is" },
-      std::tuple< std::string, std::string >{ origin_target_canvas->get_distance_negated(), "distance is negated before checking" }
-    };
+    // For intra-object linear OOBA, the relative position should be determined by flow:
+    // Overflow -> target after origin (positive distance)
+    // Underflow -> target before origin (negative distance)
+    ssize_t static_dist = origin_target_canvas->get_distance_static_value();
+    if ( is_a<Overflow>(flow) && static_dist < 0 ) continue;
+    if ( is_a<Underflow>(flow) && static_dist > 0 ) continue;
+
+    std::vector< std::tuple< std::string, std::string > > distance_variants;
+    if ( flow->accepts_static_distance(static_dist) )
+      distance_variants.push_back({ origin_target_canvas->get_distance(), "distance is checked as is" });
+    if ( origin_target_canvas->get_distance_negated() != "N/A" && flow->accepts_static_distance(-static_dist) )
+      distance_variants.push_back({ origin_target_canvas->get_distance_negated(), "distance is negated before checking" });
     for ( auto &distance_variant : distance_variants )
     {
       std::string distance = std::get<0>(distance_variant);
@@ -100,14 +114,14 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> LinearOOBA::generate(
           origin_target_canvas_copy->add_variant_description_line("no space in between origin and target");
           std::vector<AccessLocation::SplitAccess> access_target_codes = access_location->generate_split_all(
             access_action,
-            "(" + origin_target_canvas_copy->get_origin_name() + " + " + std::to_string(origin_target_canvas_copy->get_target_size()) + ")",
-            distance_as_static_number);
+            origin_target_canvas_copy->get_target_name(),
+            origin_target_canvas_copy->get_target_size());
           for ( auto &access_target_code : access_target_codes )
           {
             auto origin_target_canvas_with_access = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas_copy);
             origin_target_canvas_with_access->add_during_lifetime(access_target_code.to_lines());
-            origin_target_canvas_with_access->add_during_lifetime("_use(" + origin_target_canvas_copy->get_origin_name() + ");");
-            origin_target_canvas_with_access->add_during_lifetime("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
+            origin_target_canvas_with_access->add_during_lifetime("func.call @use(%" + origin_target_canvas_copy->get_origin_name() + ") : (memref<8xi8>) -> ()");
+            origin_target_canvas_with_access->add_during_lifetime("func.call @exit(%test_success) : (i32) -> ()");
             origin_target_canvas_with_access->add_variant_description_line("target accessed by using " + access_target_code.description);
             full_variants.push_back(origin_target_canvas_with_access);
           }
@@ -131,11 +145,11 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> LinearOOBA::generate(
         for ( auto &access_target_code : access_target_codes )
         {
           auto origin_target_canvas_with_access = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas_copy);
-          origin_target_canvas_with_access->add_during_lifetime("_use(" + origin_target_canvas_copy->get_target_name() + ");");
-          origin_target_canvas_with_access->add_during_lifetime("_use(" + origin_target_canvas_copy->get_origin_name() + ");");
+          origin_target_canvas_with_access->add_during_lifetime("func.call @use(%" + origin_target_canvas_copy->get_target_name() + ") : (memref<8xi8>) -> ()");
+          origin_target_canvas_with_access->add_during_lifetime("func.call @use(%" + origin_target_canvas_copy->get_origin_name() + ") : (memref<8xi8>) -> ()");
           origin_target_canvas_with_access->add_during_lifetime(reach_target_code.access_lines);
           origin_target_canvas_with_access->add_during_lifetime(access_target_code.to_lines());
-          origin_target_canvas_with_access->add_during_lifetime("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
+          origin_target_canvas_with_access->add_during_lifetime("func.call @exit(%test_success) : (i32) -> ()");
 
           origin_target_canvas_with_access->add_to_custom_section( AccessLocation::AuxiliaryVariable::to_string_vector( reach_target_code.aux_variables ) );
 
@@ -165,9 +179,12 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> LinearOOBA::generate_valida
   /*
     <target, origin, aux_ptr allocations> // aux_ptr points to origin
     <action>(aux_ptr, target_size) // access the target
-    _exit(TEST_CASE_SUCCESSFUL_VALUE);
+    return 42;
   */
   CodeCanvas variant;
+  variant.add_global("func.func private @exit(%arg0: i32) -> ()");
+  variant.add_global("func.func @use(%arg0: memref<8xi8>) -> memref<8xi8> { return %arg0 : memref<8xi8> }");
+
   auto generate_counter_update = std::bind(&Flow::generate_counter_update, flow.get(), std::placeholders::_1);
 
   variant.add_test_case_description_line("Origin: " + origin->get_name());
@@ -182,6 +199,13 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> LinearOOBA::generate_valida
   {
     if ( origin_target_canvas->get_forces_underflow() && !is_a<Underflow>(flow) ) continue; // the origin-target requires an underflow, but the flow is not an underflow -> skip
 
+    // For intra-object linear OOBA, the relative position should be determined by flow:
+    // Overflow -> target after origin (positive distance)
+    // Underflow -> target before origin (negative distance)
+    ssize_t static_dist = origin_target_canvas->get_distance_static_value();
+    if ( is_a<Overflow>(flow) && static_dist < 0 ) continue;
+    if ( is_a<Underflow>(flow) && static_dist > 0 ) continue;
+
     std::string var_name_to_access;
     if ( origin_target_canvas->is_target_allocated() )
     {
@@ -195,9 +219,9 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> LinearOOBA::generate_valida
     std::vector< std::string > distance_variants = { "0" };
     for ( auto &distance_variant : distance_variants )
     {
+      if ( distance_variant == "N/A" ) continue;
       ssize_t distance_as_static_number;
       bool distance_statically_known = false;
-      if ( distance_variant == "N/A" ) continue;
       if ( is_number(distance_variant) )
       {
         distance_as_static_number = std::stoll(distance_variant);
@@ -212,11 +236,11 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> LinearOOBA::generate_valida
         // special case for when there is no space in between the origin and the target.
         std::vector<std::string> access_target_code = access_location->generate(
           access_action,
-          "(" + var_name_to_access + " + " + std::to_string(origin_target_canvas_copy->get_target_size()) + ")",
-          distance_as_static_number);
+          var_name_to_access,
+          origin_target_canvas_copy->get_target_size());
         origin_target_canvas_copy->add_during_lifetime(access_target_code);
-        origin_target_canvas_copy->add_during_lifetime("_use(" + origin_target_canvas_copy->get_origin_name() + ");");
-        origin_target_canvas_copy->add_during_lifetime("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
+        origin_target_canvas_copy->add_during_lifetime("func.call @use(%" + origin_target_canvas_copy->get_origin_name() + ") : (memref<8xi8>) -> ()");
+        origin_target_canvas_copy->add_during_lifetime("func.call @exit(%test_success) : (i32) -> ()");
         origin_target_canvas_copy->add_variant_description_line("no space between origin and target");
         full_variants.push_back(origin_target_canvas_copy);
       }
@@ -234,11 +258,11 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> LinearOOBA::generate_valida
           origin_target_canvas_copy->get_target_size()
         );
 
-        if ( origin_target_canvas_copy->is_target_allocated() ) origin_target_canvas_copy->add_during_lifetime("_use(" + origin_target_canvas_copy->get_target_name() + ");");
-        origin_target_canvas_copy->add_during_lifetime("_use(" + origin_target_canvas_copy->get_origin_name() + ");");
+        if ( origin_target_canvas_copy->is_target_allocated() ) origin_target_canvas_copy->add_during_lifetime("func.call @use(%" + origin_target_canvas_copy->get_target_name() + ") : (memref<8xi8>) -> ()");
+        origin_target_canvas_copy->add_during_lifetime("func.call @use(%" + origin_target_canvas_copy->get_origin_name() + ") : (memref<8xi8>) -> ()");
         origin_target_canvas_copy->add_during_lifetime(reach_target_code.access_lines);
         origin_target_canvas_copy->add_during_lifetime(access_target_code);
-        origin_target_canvas_copy->add_during_lifetime("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
+        origin_target_canvas_copy->add_during_lifetime("func.call @exit(%test_success) : (i32) -> ()");
 
         origin_target_canvas_copy->add_to_custom_section( AccessLocation::AuxiliaryVariable::to_string_vector( reach_target_code.aux_variables ) );
         origin_target_canvas_copy->add_variant_description_line("target reached using a " + reach_target_code.description);

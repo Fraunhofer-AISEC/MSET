@@ -22,21 +22,27 @@ public:
   std::vector<std::string> generate(
     std::shared_ptr<AccessAction> action,
     const std::string &access_var_name,
-    size_t size
+    size_t size,
+    size_t array_size = 0,
+    const std::string &index_var = ""
   ) const override;
 
   // simple split, using const size and content variables
   SplitAccess generate_split_aux_vars(
     std::shared_ptr<AccessAction> action,
     const std::string &access_var_name,
-    size_t size
+    size_t size,
+    size_t array_size = 0,
+    const std::string &index_var = ""
     ) const override;
 
   // simple split, using auxiliary size and content variables
   SplitAccess generate_split_const_vars(
     std::shared_ptr<AccessAction> action,
     const std::string &access_var_name,
-    size_t size
+    size_t size,
+    size_t array_size = 0,
+    const std::string &index_var = ""
   ) const override;
 
   // generate from the given index to index + size
@@ -45,7 +51,7 @@ public:
     const std::string &access_var_name,
     std::string index,
     size_t size,
-    std::function<std::string(const std::string&)>  generate_preconditions_check_distance
+    std::function<std::vector<std::string>(const std::string&)>  generate_preconditions_check_distance
   ) const override;
 
   // generate using the given index up to index + distance
@@ -54,8 +60,8 @@ public:
     const std::string &access_var_name,
     std::string index,
     std::string distance,
-    std::function<std::string(const std::string&)> generate_preconditions_check_distance,
-    std::function<std::string(const std::string&, const std::string&, const std::string&)> generate_preconditions_check_in_range
+    std::function<std::vector<std::string>(const std::string&)> generate_preconditions_check_distance,
+    std::function<std::vector<std::string>(const std::string&, const std::string&, const std::string&)> generate_preconditions_check_in_range
   ) const override;
 
   // generate in bulks
@@ -64,9 +70,9 @@ public:
     std::string from,
     std::string to,
     std::string distance,
-    std::function<std::string(const std::string&)>  generate_preconditions_check_distance,
-    std::function<std::string(const std::string&, const std::string&, const std::string&)>  generate_preconditions_check_in_range,
-    std::function<std::string(const std::string&)>  generate_counter_update
+    std::function<std::vector<std::string>(const std::string&)>  generate_preconditions_check_distance,
+    std::function<std::vector<std::string>(const std::string&, const std::string&, const std::string&)>  generate_preconditions_check_in_range,
+    std::function<std::vector<std::string>(const std::string&)>  generate_counter_update
     ) const override;
 
   // generate in bulks using an auxiliary pointer
@@ -75,9 +81,9 @@ public:
     std::string from,
     std::string to,
     std::string distance,
-    std::function<std::string(const std::string&)>  generate_preconditions_check_distance,
-    std::function<std::string(const std::string&, const std::string&, const std::string&)>  generate_preconditions_check_in_range,
-    std::function<std::string(const std::string&)>  generate_counter_update
+    std::function<std::vector<std::string>(const std::string&)>  generate_preconditions_check_distance,
+    std::function<std::vector<std::string>(const std::string&, const std::string&, const std::string&)>  generate_preconditions_check_in_range,
+    std::function<std::vector<std::string>(const std::string&)>  generate_counter_update
   ) const override;
 
   // generate using a load widening to uint32
@@ -87,7 +93,7 @@ public:
     std::string to,
     std::string distance,
     size_t size,
-    std::function<std::string(const std::string&)>  generate_preconditions_check_distance
+    std::function<std::vector<std::string>(const std::string&)>  generate_preconditions_check_distance
     ) const override;
 
   // generate after casting to uint8
@@ -97,6 +103,6 @@ public:
     std::string to,
     std::string distance,
     size_t size,
-    std::function<std::string(const std::string&)>  generate_preconditions_check_distance
+    std::function<std::vector<std::string>(const std::string&)>  generate_preconditions_check_distance
   ) const override;
 };

@@ -12,7 +12,7 @@
 CodeCanvas::code_pos_t OriginTargetCodeCanvas::add_during_lifetime(const std::vector<std::string> &lines)
 {
   // code_canvas.code_lines.insert(code_canvas.code_lines.begin() + lifetime_pos, lines.begin(), lines.end());
-  add_at( lifetime_pos, lines, "  " );
+  add_at( lifetime_pos, lines, "    " );
   return lifetime_pos;
 }
 

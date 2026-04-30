@@ -19,6 +19,7 @@ public:
     std::string name,
     std::string name_field_1, size_t size_field_1,
     std::string name_field_2, size_t size_field_2,
-    bool initialize
+    bool initialize,
+    size_t gap = 0
   ) const override;
 };

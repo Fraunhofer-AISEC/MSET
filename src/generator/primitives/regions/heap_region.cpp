@@ -22,25 +22,23 @@ std::shared_ptr<RegionCodeCanvas> HeapRegion::generate(CodeCanvas::code_pos_t wh
 
   where = populated_code_canvas->add_at(
     where,
-    "char *" + name + " = (char *)malloc( " + std::to_string(size) + " );",
-    "  "
+    "%" + name + " = memref.alloc() : memref<" + std::to_string(size) + "xi8>",
+    "    "
   );
   CodeCanvas::code_pos_t allocation_pos = where;
 
   CodeCanvas::code_pos_t lifetime_pos;
   if (initialize)
   {
-    for (size_t i = 0; i < size; i++)
-    {
-      where = populated_code_canvas->add_at(where, name + "[" + std::to_string(i) + "] = 0xAA;", "  ");
-    }
-    lifetime_pos = where;
+    lifetime_pos = _generate_init_loop(populated_code_canvas, where, name, size, "0xAA", "    ");
   }
   else
   {
     lifetime_pos = populated_code_canvas->add_at(where, "");
   }
-  CodeCanvas::code_pos_t deallocation_pos = populated_code_canvas->add_to_f_body_end("free(" + name + ");");
+  CodeCanvas::code_pos_t deallocation_pos = populated_code_canvas->add_to_f_body_end(
+    "memref.dealloc %" + name + " : memref<" + std::to_string(size) + "xi8>"
+  );
   populated_code_canvas->set_allocation_pos(allocation_pos);
   populated_code_canvas->set_deallocation_pos(deallocation_pos);
   populated_code_canvas->set_lifetime_pos(lifetime_pos);
@@ -52,22 +50,21 @@ std::shared_ptr<RegionCodeCanvas> HeapRegion::generate(std::shared_ptr<CodeCanva
   std::shared_ptr<RegionCodeCanvas> populated_code_canvas = std::make_shared<RegionCodeCanvas>(*canvas, size);
 
   CodeCanvas::code_pos_t allocation_pos = populated_code_canvas->add_to_f_body(
-    "char *" + name + " = (char *)malloc( " + std::to_string(size) + " );"
+    "%" + name + " = memref.alloc() : memref<" + std::to_string(size) + "xi8>"
   );
 
-  CodeCanvas::code_pos_t lifetime_pos = populated_code_canvas->get_lifetime_pos();
+  CodeCanvas::code_pos_t lifetime_pos = allocation_pos;
   if (initialize)
   {
-    for (size_t i = 0; i < size; i++)
-    {
-      lifetime_pos = populated_code_canvas->add_to_f_body(name + "[" + std::to_string(i) + "] = 0xAA;");
-    }
+    lifetime_pos = _generate_init_loop(populated_code_canvas, lifetime_pos, name, size, "0xAA", "    ");
   }
   else
   {
     lifetime_pos = populated_code_canvas->add_to_f_body("");
   }
-  CodeCanvas::code_pos_t deallocation_pos = populated_code_canvas->add_to_f_body_end("free(" + name + ");");
+  CodeCanvas::code_pos_t deallocation_pos = populated_code_canvas->add_to_f_body_end(
+    "memref.dealloc %" + name + " : memref<" + std::to_string(size) + "xi8>"
+  );
   populated_code_canvas->set_allocation_pos(allocation_pos);
   populated_code_canvas->set_deallocation_pos(deallocation_pos);
   populated_code_canvas->set_lifetime_pos(lifetime_pos);
@@ -80,39 +77,40 @@ std::shared_ptr<RegionCodeCanvas> HeapRegion::generate(
   std::string name,
   std::string name_field_1, size_t size_field_1,
   std::string name_field_2, size_t size_field_2,
-  bool initialize
+  bool initialize,
+  size_t gap
 ) const
 {
   assert(size_field_1); assert(size_field_2);
-  std::shared_ptr<RegionCodeCanvas> populated_code_canvas = std::make_shared<RegionCodeCanvas>(*canvas, "sizeof(struct T)");
-  populated_code_canvas->add_type({
-    "struct T",
-    "{",
-    "  char " + name_field_1 + "[" + std::to_string(size_field_1) + "];",
-    "  char " + name_field_2 + "[" + std::to_string(size_field_2) + "];",
-    "};"
-  });
+  size_t total_size = size_field_1 + gap + size_field_2;
+  std::shared_ptr<RegionCodeCanvas> populated_code_canvas = std::make_shared<RegionCodeCanvas>(*canvas, total_size);
+
+  // Allocate parent memref
   CodeCanvas::code_pos_t allocation_pos = populated_code_canvas->add_to_f_body(
-    "struct T *" + name + " = (struct T *)malloc( sizeof(struct T) );"
+    "%" + name + " = memref.alloc() : memref<" + std::to_string(total_size) + "xi8>"
   );
 
-  CodeCanvas::code_pos_t lifetime_pos = populated_code_canvas->get_lifetime_pos();
+  // Create subviews for fields
+  CodeCanvas::code_pos_t current = populated_code_canvas->add_to_f_body(
+    "%" + name + "_" + name_field_1 + " = memref.subview %" + name + "[0][" + std::to_string(size_field_1) + "][1] : memref<" + std::to_string(total_size) + "xi8> to memref<" + std::to_string(size_field_1) + "xi8>"
+  );
+  current = populated_code_canvas->add_to_f_body(
+    "%" + name + "_" + name_field_2 + " = memref.subview %" + name + "[" + std::to_string(size_field_1 + gap) + "][" + std::to_string(size_field_2) + "][1] : memref<" + std::to_string(total_size) + "xi8> to memref<" + std::to_string(size_field_2) + "xi8>"
+  );
+
+  CodeCanvas::code_pos_t lifetime_pos = current;
   if (initialize)
   {
-    for (size_t i = 0; i < size_field_1; i++)
-    {
-      lifetime_pos = populated_code_canvas->add_to_f_body(name + "->" + name_field_1 + "[" + std::to_string(i) + "] = 0xAA;");
-    }
-    for (size_t i = 0; i < size_field_2; i++)
-    {
-      lifetime_pos = populated_code_canvas->add_to_f_body(name + "->" + name_field_2 + "[" + std::to_string(i) + "] = 0xBB;");
-    }
+    lifetime_pos = _generate_init_loop(populated_code_canvas, current, name + "_" + name_field_1, size_field_1, "0xAA", "    ");
+    lifetime_pos = _generate_init_loop(populated_code_canvas, lifetime_pos, name + "_" + name_field_2, size_field_2, "0xBB", "    ");
   }
   else
   {
     lifetime_pos = populated_code_canvas->add_to_f_body("");
   }
-  CodeCanvas::code_pos_t deallocation_pos = populated_code_canvas->add_to_f_body_end("free(" + name + ");");
+  CodeCanvas::code_pos_t deallocation_pos = populated_code_canvas->add_to_f_body_end(
+    "memref.dealloc %" + name + " : memref<" + std::to_string(total_size) + "xi8>"
+  );
   populated_code_canvas->set_allocation_pos(allocation_pos);
   populated_code_canvas->set_deallocation_pos(deallocation_pos);
   populated_code_canvas->set_lifetime_pos(lifetime_pos);
@@ -120,21 +118,46 @@ std::shared_ptr<RegionCodeCanvas> HeapRegion::generate(
 }
 
 
+CodeCanvas::code_pos_t HeapRegion::_generate_init_loop(
+  std::shared_ptr<RegionCodeCanvas> canvas,
+  CodeCanvas::code_pos_t where,
+  const std::string &name,
+  size_t size,
+  const std::string &value,
+  const std::string &indent
+) const
+{
+  // Generate scf.for loop for initialization
+  std::vector<std::string> loop = {
+    "%c0 = arith.constant 0 : index",
+    "%c1 = arith.constant 1 : index",
+    "%c" + std::to_string(size) + " = arith.constant " + std::to_string(size) + " : index",
+    "%c" + value + " = arith.constant " + std::to_string(std::stoi(value, nullptr, 16)) + " : i8",
+    "scf.for %i = %c0 to %c" + std::to_string(size) + " step %c1 {",
+    "  memref.store %c" + value + ", %" + name + "[%i] : memref<" + std::to_string(size) + "xi8>",
+    "}"
+  };
+  return canvas->add_at(where, loop, indent);
+}
+
 std::vector<std::string> HeapRegion::generate_reallocation(std::string name, size_t size, bool initialize, std::string indent) const
 {
-  std::vector<std::string> reallocation = {indent + name + " = (char *)malloc( " + std::to_string(size) + " );"};
+  std::vector<std::string> reallocation = {indent + "%" + name + " = memref.alloc() : memref<" + std::to_string(size) + "xi8>"};
 
   if (initialize)
   {
-    for (size_t i = 0; i < size; i++)
-    {
-      reallocation.push_back(indent + name + "[" + std::to_string(i) + "] = 0xAA;");
-    }
+    reallocation.push_back(indent + "%c0 = arith.constant 0 : index");
+    reallocation.push_back(indent + "%c1 = arith.constant 1 : index");
+    reallocation.push_back(indent + "%c" + std::to_string(size) + " = arith.constant " + std::to_string(size) + " : index");
+    reallocation.push_back(indent + "%c0xAA = arith.constant 170 : i8");
+    reallocation.push_back(indent + "scf.for %i = %c0 to %c" + std::to_string(size) + " step %c1 {");
+    reallocation.push_back(indent + "  memref.store %c0xAA, %" + name + "[%i] : memref<" + std::to_string(size) + "xi8>");
+    reallocation.push_back(indent + "}");
   }
   return reallocation;
 }
 
-std::vector<std::string> HeapRegion::generate_deallocation(std::string name, std::string indent) const
+std::vector<std::string> HeapRegion::generate_deallocation(std::string name, size_t size, std::string indent) const
 {
-  return {indent + "free(" + name + ");"};
+  return {indent + "memref.dealloc %" + name + " : memref<" + std::to_string(size) + "xi8>"};
 }
