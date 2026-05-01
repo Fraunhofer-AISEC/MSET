@@ -12,18 +12,20 @@ module {
 
   memref.global @target_address : memref<1xindex>
   memref.global @target_ptr : memref<1xmemref<8xi8>>
+  func.func private @exit(%arg0: i32) -> ()
 
   func.func @f() -> i32 {
-    // locals
-
-
     %precond_fail = arith.constant 43 : i32
     %test_success = arith.constant 42 : i32
-    %target = memref.alloc() : memref<8xi8>
     %c0 = arith.constant 0 : index
     %c1 = arith.constant 1 : index
     %c8 = arith.constant 8 : index
     %c0xAA = arith.constant 170 : i8
+    %c0_i32 = arith.constant 0 : i32
+    // locals
+
+
+    %target = memref.alloc() : memref<8xi8>
     scf.for %i = %c0 to %c8 step %c1 {
       memref.store %c0xAA, %target[%i] : memref<8xi8>
     }
@@ -34,24 +36,22 @@ module {
   memref.store %target, %global_ptr[%c0] : memref<1xmemref<8xi8>>
 
     memref.dealloc %target : memref<8xi8>
-    %reallocated = memref.alloc() : memref<8xi8>
+    %reallocated_out = memref.alloc() : memref<8xi8>
 
-  %realloc_addr = memref.extract_aligned_pointer_as_index %reallocated : memref<8xi8> -> index
+  %realloc_addr = memref.extract_aligned_pointer_as_index %reallocated_out : memref<8xi8> -> index
   %eq = arith.cmpi eq, %target_addr, %realloc_addr : index
-  scf.if %eq {
+  %result = scf.if %eq -> i32 {
     %global_ptr_access = memref.get_global @target_ptr : memref<1xmemref<8xi8>>
     %saved_ptr = memref.load %global_ptr_access[%c0] : memref<1xmemref<8xi8>>
-  %c0 = arith.constant 0 : index
-  %c1 = arith.constant 1 : index
-  %c8 = arith.constant 8 : index
   scf.for %i = %c0 to %c8 step %c1 {
     %val = memref.load %saved_ptr[%i] : memref<8xi8>
   }
-    func.return %test_success : i32
+    scf.yield %test_success : i32
+  } else {
+    scf.yield %precond_fail : i32
   }
-  func.return %precond_fail : i32
-    memref.dealloc %reallocated : memref<8xi8>
-    %c0_i32 = arith.constant 0 : i32
+  func.call @exit(%result) : (i32) -> ()
+    memref.dealloc %reallocated_out : memref<8xi8>
     return %c0_i32 : i32
   }
 

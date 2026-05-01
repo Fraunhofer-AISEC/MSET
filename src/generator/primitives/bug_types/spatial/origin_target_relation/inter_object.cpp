@@ -59,28 +59,25 @@ std::vector< std::shared_ptr<OriginTargetCodeCanvas> > InterObject::generate(
   variant->add_variant_description_line("target declared after origin");
   variants.push_back(variant);
 
-  if ( are_the_same_type(origin, target) )
-  {
-    // variant 2: target first, origin second (distance negative)
-    region_canvas = origin->generate(
-      canvas_ptr, "parent", "target", target_size, "origin", origin_size, true, rand_distance
-    );
-    distance_value = -(static_cast<ssize_t>(target_size) + rand_distance);
-    region_canvas->add_to_f_body(
-      "%distance = arith.constant " + std::to_string(std::abs(distance_value)) + " : index"
-    );
-    region_canvas->add_to_f_body(
-      "%distance_negated = arith.subi %c0, %distance : index"
-    );
+  // variant 2: target first, origin second (distance negative)
+  region_canvas = origin->generate(
+    canvas_ptr, "parent", "target", target_size, "origin", origin_size, true, rand_distance
+  );
+  distance_value = -(static_cast<ssize_t>(target_size) + rand_distance);
+  region_canvas->add_to_f_body(
+    "%distance = arith.constant " + std::to_string(std::abs(distance_value)) + " : index"
+  );
+  region_canvas->add_to_f_body(
+    "%distance_negated = arith.subi %c0, %distance : index"
+  );
 
-    variant = std::make_shared<OriginTargetCodeCanvas>(
-      region_canvas, target_size, origin_size, "parent_target", "parent_origin",
-      "distance", "distance_negated", true, true, distance_value
-    );
-    variant->set_lifetime_pos(region_canvas->get_lifetime_pos());
-    variant->add_variant_description_line("target declared before origin");
-    variants.push_back(variant);
-  }
+  variant = std::make_shared<OriginTargetCodeCanvas>(
+    region_canvas, target_size, origin_size, "parent_target", "parent_origin",
+    "distance", "distance_negated", true, true, distance_value
+  );
+  variant->set_lifetime_pos(region_canvas->get_lifetime_pos());
+  variant->add_variant_description_line("target declared before origin");
+  variants.push_back(variant);
 
   return variants;
 }

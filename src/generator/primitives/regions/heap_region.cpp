@@ -92,17 +92,17 @@ std::shared_ptr<RegionCodeCanvas> HeapRegion::generate(
 
   // Create subviews for fields
   CodeCanvas::code_pos_t current = populated_code_canvas->add_to_f_body(
-    "%" + name + "_" + name_field_1 + " = memref.subview %" + name + "[0][" + std::to_string(size_field_1) + "][1] : memref<" + std::to_string(total_size) + "xi8> to memref<" + std::to_string(size_field_1) + "xi8>"
+    "%" + name + "_" + name_field_1 + " = memref.subview %" + name + "[0][" + std::to_string(size_field_1) + "][1] : memref<" + std::to_string(total_size) + "xi8> to memref<" + std::to_string(size_field_1) + "xi8, strided<[1], offset: 0>>"
   );
   current = populated_code_canvas->add_to_f_body(
-    "%" + name + "_" + name_field_2 + " = memref.subview %" + name + "[" + std::to_string(size_field_1 + gap) + "][" + std::to_string(size_field_2) + "][1] : memref<" + std::to_string(total_size) + "xi8> to memref<" + std::to_string(size_field_2) + "xi8>"
+    "%" + name + "_" + name_field_2 + " = memref.subview %" + name + "[" + std::to_string(size_field_1 + gap) + "][" + std::to_string(size_field_2) + "][1] : memref<" + std::to_string(total_size) + "xi8> to memref<" + std::to_string(size_field_2) + "xi8, strided<[1], offset: " + std::to_string(size_field_1 + gap) + ">>"
   );
 
   CodeCanvas::code_pos_t lifetime_pos = current;
   if (initialize)
   {
-    lifetime_pos = _generate_init_loop(populated_code_canvas, current, name + "_" + name_field_1, size_field_1, "0xAA", "    ");
-    lifetime_pos = _generate_init_loop(populated_code_canvas, lifetime_pos, name + "_" + name_field_2, size_field_2, "0xBB", "    ");
+    lifetime_pos = _generate_init_loop(populated_code_canvas, current, name + "_" + name_field_1, size_field_1, "0xAA", "    ", true, "0");
+    lifetime_pos = _generate_init_loop(populated_code_canvas, lifetime_pos, name + "_" + name_field_2, size_field_2, "0xBB", "    ", true, std::to_string(size_field_1 + gap));
   }
   else
   {
@@ -124,9 +124,14 @@ CodeCanvas::code_pos_t HeapRegion::_generate_init_loop(
   const std::string &name,
   size_t size,
   const std::string &value,
-  const std::string &indent
+  const std::string &indent,
+  bool needs_strided,
+  const std::string &offset
 ) const
 {
+  std::string type_suffix = needs_strided
+    ? ", strided<[1], offset: " + offset + ">>"
+    : ">";
   // Generate scf.for loop for initialization
   std::vector<std::string> loop = {
     "%c0 = arith.constant 0 : index",
@@ -134,7 +139,7 @@ CodeCanvas::code_pos_t HeapRegion::_generate_init_loop(
     "%c" + std::to_string(size) + " = arith.constant " + std::to_string(size) + " : index",
     "%c" + value + " = arith.constant " + std::to_string(std::stoi(value, nullptr, 16)) + " : i8",
     "scf.for %i = %c0 to %c" + std::to_string(size) + " step %c1 {",
-    "  memref.store %c" + value + ", %" + name + "[%i] : memref<" + std::to_string(size) + "xi8>",
+    "  memref.store %c" + value + ", %" + name + "[%i] : memref<" + std::to_string(size) + "xi8" + type_suffix,
     "}"
   };
   return canvas->add_at(where, loop, indent);

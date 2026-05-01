@@ -18,11 +18,12 @@ module {
   func.func @use(%arg0: memref<8xi8>) -> memref<8xi8> { return %arg0 : memref<8xi8> }
 
   func.func @f() -> i32 {
+    %precond_fail = arith.constant 43 : i32
+    %test_success = arith.constant 42 : i32
+    %c0_i32 = arith.constant 0 : i32
     // locals
 
 
-    %precond_fail = arith.constant 43 : i32
-    %test_success = arith.constant 42 : i32
     %tmp = memref.alloc() : memref<8xi8>
     %tmp2 = memref.alloc() : memref<8xi8>
     %pointer_to_double_free = memref.alloc() : memref<8xi8> // pointer to be double-freed
@@ -31,16 +32,13 @@ module {
     memref.dealloc %pointer_to_double_free : memref<8xi8> // double free
     %pointer_to_use = memref.alloc() : memref<8xi8> // allocate a new object
     %tmp3 = memref.alloc() : memref<8xi8>
-    func.call @use(%tmp2) : (memref<8xi8>) -> ()
-    func.call @use(%tmp3) : (memref<8xi8>) -> ()
     %target = memref.alloc() : memref<8xi8>
     
-  %read_value = memref.alloca() : memref<8xi8>
-  memref.copy %pointer_to_use, %read_value : memref<8xi8> to memref<8xi8>
+  %read_value_1 = memref.alloca() : memref<8xi8>
+  memref.copy %pointer_to_use, %read_value_1 : memref<8xi8> to memref<8xi8>
   func.call @exit(%test_success) : (i32) -> ()
 
     memref.dealloc %target : memref<8xi8>
-    %c0_i32 = arith.constant 0 : i32
     return %c0_i32 : i32
   }
 

@@ -98,9 +98,9 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >DoubleFree::generate(
     "memref.dealloc %tmp : memref<8xi8> // no use after free required",
     "memref.dealloc %pointer_to_double_free : memref<8xi8> // double free",
     "%pointer_to_use = memref.alloc() : memref<8xi8> // allocate a new object",
-    "%tmp3 = memref.alloc() : memref<8xi8>",
-    "func.call @use(%tmp2) : (memref<8xi8>) -> ()",
-    "func.call @use(%tmp3) : (memref<8xi8>) -> ()"
+    "%tmp3 = memref.alloc() : memref<8xi8>"
+    // "func.call @use(%tmp2) : (memref<8xi8>) -> ()",
+    // "func.call @use(%tmp3) : (memref<8xi8>) -> ()"
   });
 
   region_canvas = memory_region->generate(std::make_shared<CodeCanvas>(variant_without_use_after_free), "target", 8, false);
@@ -172,11 +172,10 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >DoubleFree::generate_validation(
     "%pointer_to_double_free = memref.alloc() : memref<8xi8> // pointer to be double-freed",
     "memref.dealloc %pointer_to_double_free : memref<8xi8>",
     "memref.dealloc %tmp : memref<8xi8> // no use after free required",
-    "memref.dealloc %pointer_to_double_free : memref<8xi8> // double free",
     "%pointer_to_use = memref.alloc() : memref<8xi8> // allocate a new object",
-    "%tmp3 = memref.alloc() : memref<8xi8>",
-    "func.call @use(%tmp2) : (memref<8xi8>) -> ()",
-    "func.call @use(%tmp3) : (memref<8xi8>) -> ()"
+    "%tmp3 = memref.alloc() : memref<8xi8>"
+    // "func.call @use(%tmp2) : (memref<8xi8>) -> ()",
+    // "func.call @use(%tmp3) : (memref<8xi8>) -> ()"
   });
 
   region_canvas = memory_region->generate(std::make_shared<CodeCanvas>(variant_without_use_after_free), "target", 8, false);

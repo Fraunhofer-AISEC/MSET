@@ -11,7 +11,7 @@
 // Access type: direct, read
 // Variant:
 //  - target declared after origin
-//  - using reinterpret_cast to large memref
+//  - manual i32 assembly from 4 bytes
 //  - using a global index
 
 module {
@@ -20,46 +20,55 @@ module {
   func.func private @exit(%arg0: i32) -> ()
 
   func.func @f() -> i32 {
-    // locals
-
-    %parent = memref.alloca() : memref<939xi8>
-
     %precond_fail = arith.constant 43 : i32
     %test_success = arith.constant 42 : i32
-    %parent_origin = memref.subview %parent[0][8][1] : memref<939xi8> to memref<8xi8>
-    %parent_target = memref.subview %parent[931][8][1] : memref<939xi8> to memref<8xi8>
     %c0 = arith.constant 0 : index
     %c1 = arith.constant 1 : index
     %c8 = arith.constant 8 : index
     %c0xAA = arith.constant 170 : i8
-    scf.for %i = %c0 to %c8 step %c1 {
-      memref.store %c0xAA, %parent_origin[%i] : memref<8xi8>
-    }
-    %c0 = arith.constant 0 : index
-    %c1 = arith.constant 1 : index
-    %c8 = arith.constant 8 : index
     %c0xBB = arith.constant 187 : i8
+    %distance = arith.constant 626 : index
+    %c2 = arith.constant 2 : index
+    %c3 = arith.constant 3 : index
+    %c8_i32 = arith.constant 8 : i32
+    %c16_i32 = arith.constant 16 : i32
+    %c24_i32 = arith.constant 24 : i32
+    %c0_i32 = arith.constant 0 : i32
+    // locals
+
+    %parent = memref.alloca() : memref<634xi8>
+
+    %parent_origin = memref.subview %parent[0][8][1] : memref<634xi8> to memref<8xi8, strided<[1], offset: 0>>
+    %parent_target = memref.subview %parent[626][8][1] : memref<634xi8> to memref<8xi8, strided<[1], offset: 626>>
     scf.for %i = %c0 to %c8 step %c1 {
-      memref.store %c0xBB, %parent_target[%i] : memref<8xi8>
+      memref.store %c0xAA, %parent_origin[%i] : memref<8xi8, strided<[1], offset: 0>>
     }
-    %distance = arith.constant 931 : index
+    scf.for %i = %c0 to %c8 step %c1 {
+      memref.store %c0xBB, %parent_target[%i] : memref<8xi8, strided<[1], offset: 626>>
+    }
     %distance_negated = arith.subi %c0, %distance : index
-    %big_origin = memref.reinterpret_cast %parent_origin to offset: [0], sizes: [1024], strides: [1] : memref<8xi8> to memref<1024xi8>
-    %c0 = arith.constant 0 : index
-    %c1 = arith.constant 1 : index
     scf.for %i = %c0 to %distance step %c1 {
-      %val = memref.load %big_origin[%i] : memref<8xi8>
+      %val = memref.load %parent_origin[%i] : memref<8xi8, strided<[1], offset: 0>>
     }
-    %c0 = arith.constant 0 : index
-    %c1 = arith.constant 1 : index
-    %c8 = arith.constant 8 : index
-    scf.for %j = %c0 to %c8 step %c1 {
-      %idx = arith.addi %j, %distance : index
-      %val = memref.load %big_origin[%idx] : memref<8xi8>
-    }
+    %b0 = memref.load %parent_origin[%distance] : memref<8xi8, strided<[1], offset: 0>>
+    %idx1 = arith.addi %distance, %c1 : index
+    %b1 = memref.load %parent_origin[%idx1] : memref<8xi8, strided<[1], offset: 0>>
+    %idx2 = arith.addi %distance, %c2 : index
+    %b2 = memref.load %parent_origin[%idx2] : memref<8xi8, strided<[1], offset: 0>>
+    %idx3 = arith.addi %distance, %c3 : index
+    %b3 = memref.load %parent_origin[%idx3] : memref<8xi8, strided<[1], offset: 0>>
+    %b0_i32 = arith.extui %b0 : i8 to i32
+    %b1_i32 = arith.extui %b1 : i8 to i32
+    %b2_i32 = arith.extui %b2 : i8 to i32
+    %b3_i32 = arith.extui %b3 : i8 to i32
+    %b1_sh = arith.shli %b1_i32, %c8_i32  : i32
+    %b2_sh = arith.shli %b2_i32, %c16_i32 : i32
+    %b3_sh = arith.shli %b3_i32, %c24_i32 : i32
+    %acc0 = arith.ori %b0_i32, %b1_sh : i32
+    %acc1 = arith.ori %b2_sh, %b3_sh : i32
+    %assembled = arith.ori %acc0, %acc1 : i32
     func.call @exit(%test_success) : (i32) -> ()
 
-    %c0_i32 = arith.constant 0 : i32
     return %c0_i32 : i32
   }
 

@@ -20,20 +20,21 @@ module {
   memref.global @origin : memref<8xi8> = dense<170>
 
   func.func @f() -> i32 {
+    %precond_fail = arith.constant 43 : i32
+    %test_success = arith.constant 42 : i32
+    %c0 = arith.constant 0 : index
+    %distance = arith.constant 8 : index
+    %idx = arith.constant 7 : index
+    %c0xFF = arith.constant 255 : i8
+    %c0_i32 = arith.constant 0 : i32
     // locals
 
 
-    %precond_fail = arith.constant 43 : i32
-    %test_success = arith.constant 42 : i32
     %origin = memref.get_global @origin : memref<8xi8>
-    %distance = arith.constant 8 : index
     %distance_negated = arith.subi %c0, %distance : index
-    %idx = arith.constant 3 : index
-    %c0xFF = arith.constant 255 : i8
-    memref.store %c0xFF, %origin[%idx] : memref<4xi8>
+    memref.store %c0xFF, %origin[%idx] : memref<8xi8>
     func.call @exit(%test_success) : (i32) -> ()
 
-    %c0_i32 = arith.constant 0 : i32
     return %c0_i32 : i32
   }
 

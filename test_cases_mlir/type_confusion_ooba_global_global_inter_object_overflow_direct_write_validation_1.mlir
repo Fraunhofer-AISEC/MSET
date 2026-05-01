@@ -17,25 +17,26 @@ module {
   // globals
 
   func.func private @exit(%arg0: i32)
-  memref.global @parent : memref<659xi8> = dense<170>
+  memref.global @parent : memref<526xi8> = dense<170>
 
   func.func @f() -> i32 {
+    %precond_fail = arith.constant 43 : i32
+    %test_success = arith.constant 42 : i32
+    %c0 = arith.constant 0 : index
+    %distance = arith.constant 518 : index
+    %idx = arith.constant 7 : index
+    %c0xFF = arith.constant 255 : i8
+    %c0_i32 = arith.constant 0 : i32
     // locals
 
 
-    %precond_fail = arith.constant 43 : i32
-    %test_success = arith.constant 42 : i32
-    %parent = memref.get_global @parent : memref<659xi8>
-    %parent_origin = memref.subview %parent[0][8][1] : memref<659xi8> to memref<8xi8>
-    %parent_target = memref.subview %parent[651][8][1] : memref<659xi8> to memref<8xi8>
-    %distance = arith.constant 651 : index
+    %parent = memref.get_global @parent : memref<526xi8>
+    %parent_origin = memref.subview %parent[0][8][1] : memref<526xi8> to memref<8xi8, strided<[1], offset: 0>>
+    %parent_target = memref.subview %parent[518][8][1] : memref<526xi8> to memref<8xi8, strided<[1], offset: 518>>
     %distance_negated = arith.subi %c0, %distance : index
-    %idx = arith.constant 3 : index
-    %c0xFF = arith.constant 255 : i8
-    memref.store %c0xFF, %parent_origin[%idx] : memref<4xi8>
+    memref.store %c0xFF, %parent_origin[%idx] : memref<8xi8, strided<[1], offset: 0>>
     func.call @exit(%test_success) : (i32) -> ()
 
-    %c0_i32 = arith.constant 0 : i32
     return %c0_i32 : i32
   }
 

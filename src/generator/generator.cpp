@@ -11,9 +11,123 @@
 #include <iostream>
 #include <cstring>
 #include <unistd.h>
+#include <regex>
+#include <set>
+#include <sstream>
+#include <vector>
 
 #include "misc.h"
 #include "generator/primitives/primitive_pool.h"
+
+static std::string post_process_arith_constants(const std::string& content)
+{
+  std::vector<std::string> lines;
+  std::istringstream iss(content);
+  std::string line;
+  while (std::getline(iss, line))
+  {
+    lines.push_back(line);
+  }
+
+  std::ostringstream oss;
+  size_t i = 0;
+  const std::regex arith_re(R"(^([ \t]*)(%\w+)\s*=\s*arith\.constant\s+(.+)$)");
+
+  while (i < lines.size())
+  {
+    if (lines[i].find("func.func") != std::string::npos)
+    {
+      // Find the full function body range
+      size_t func_start = i;
+      int brace_depth = 0;
+      size_t func_end = i;
+      for (size_t j = i; j < lines.size(); ++j)
+      {
+        for (char c : lines[j])
+        {
+          if (c == '{') brace_depth++;
+          if (c == '}') brace_depth--;
+        }
+        if (j > i && brace_depth == 0)
+        {
+          func_end = j;
+          break;
+        }
+      }
+
+      // Collect unique arith.constant definitions inside the function
+      std::vector<std::string> constants;
+      std::set<std::string> seen_names;
+      for (size_t j = func_start; j <= func_end; ++j)
+      {
+        std::smatch m;
+        if (std::regex_match(lines[j], m, arith_re))
+        {
+          std::string name = m[2];
+          if (seen_names.insert(name).second)
+          {
+            constants.push_back(m[1].str() + name + " = arith.constant " + m[3].str());
+          }
+        }
+      }
+
+      // Emit the function, skipping all arith.constant definitions,
+      // and insert the collected constants right after // locals
+      bool inserted = false;
+      for (size_t j = func_start; j <= func_end; ++j)
+      {
+        if (!inserted && lines[j].find("// locals") != std::string::npos)
+        {
+          oss << lines[j] << "\n";
+          // Preserve any blank lines that follow // locals
+          size_t k = j + 1;
+          while (k <= func_end && lines[k].empty())
+          {
+            oss << lines[k] << "\n";
+            k++;
+          }
+          // Insert collected constants
+          for (const auto& c : constants)
+          {
+            oss << c << "\n";
+          }
+          inserted = true;
+          j = k - 1; // skip the blank lines we already emitted
+          continue;
+        }
+
+        std::smatch m;
+        if (std::regex_match(lines[j], m, arith_re))
+        {
+          // Skip this duplicate / moved constant definition
+          continue;
+        }
+
+        oss << lines[j] << "\n";
+
+        // Fallback: if the function header itself contains '{' and there is no // locals,
+        // insert constants immediately after the header line.
+        if (!inserted && j == func_start && lines[j].find("{") != std::string::npos && !constants.empty())
+        {
+          for (const auto& c : constants)
+          {
+            oss << c << "\n";
+          }
+          inserted = true;
+        }
+      }
+
+      i = func_end + 1;
+    }
+    else
+    {
+      oss << lines[i] << "\n";
+      ++i;
+    }
+  }
+
+  return oss.str();
+}
 
 static void generate_file(const std::string& dir_path, const std::string& file_name, const std::shared_ptr<CodeCanvas>& code)
 {
@@ -26,7 +140,8 @@ static void generate_file(const std::string& dir_path, const std::string& file_n
     exit(EXIT_FAILURE);
   }
 
-  file << code->to_string();
+  std::string processed = post_process_arith_constants(code->to_string());
+  file << processed;
 }
 
 std::string build_file_name(

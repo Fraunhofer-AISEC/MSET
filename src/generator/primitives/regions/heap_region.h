@@ -33,6 +33,8 @@ private:
     const std::string &name,
     size_t size,
     const std::string &value,
-    const std::string &indent
+    const std::string &indent,
+    bool needs_strided = false,
+    const std::string &offset = "0"
   ) const;
 };

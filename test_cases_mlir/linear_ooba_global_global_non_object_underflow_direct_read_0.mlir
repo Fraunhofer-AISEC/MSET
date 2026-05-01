@@ -21,34 +21,33 @@ module {
   func.func private @exit(%arg0: i32) -> ()
   func.func @use(%arg0: memref<8xi8>) -> memref<8xi8> { return %arg0 : memref<8xi8> }
   memref.global @origin : memref<8xi8> = dense<170>
-  %c0 = arith.constant 0 : index
-  %c1 = arith.constant 1 : index
 
   func.func @f() -> i32 {
+    %precond_fail = arith.constant 43 : i32
+    %test_success = arith.constant 42 : i32
+    %c0 = arith.constant 0 : index
+    %distance = arith.constant 8 : index
+    %underflow_dist = arith.constant 8 : index
+    %c1 = arith.constant 1 : index
+      %__base = arith.constant -8 : index
+    %c8 = arith.constant 8 : index
+    %c0_i32 = arith.constant 0 : i32
     // locals
 
 
-    %precond_fail = arith.constant 43 : i32
-    %test_success = arith.constant 42 : i32
     %origin = memref.get_global @origin : memref<8xi8>
-    %distance = arith.constant 8 : index
     %distance_negated = arith.subi %c0, %distance : index
-    %underflow_dist = arith.constant 8 : index
-    func.call @use(%origin) : (memref<8xi8>) -> ()
-    func.call @use(%origin) : (memref<8xi8>) -> ()
     scf.for %reach_index = %c0 to %underflow_dist step %c1 {
       %index = arith.subi %c0, %reach_index : index
-      %val = memref.load %origin[%index] : memref<8xi8>
+      %__idx = arith.addi %index, %__base : index
+      %val = memref.load %origin[%__idx] : memref<8xi8>
     }
-    %c0 = arith.constant 0 : index
-    %c1 = arith.constant 1 : index
-    %c1 = arith.constant 1 : index
-    scf.for %i = %c0 to %c1 step %c1 {
-      %val = memref.load %origin[%i] : memref<1xi8>
+    scf.for %i = %c0 to %c8 step %c1 {
+      %__idx = arith.addi %i, %__base : index
+      %val = memref.load %origin[%__idx] : memref<8xi8>
     }
     func.call @exit(%test_success) : (i32) -> ()
 
-    %c0_i32 = arith.constant 0 : i32
     return %c0_i32 : i32
   }
 

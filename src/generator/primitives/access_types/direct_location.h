@@ -24,7 +24,9 @@ public:
     const std::string &access_var_name,
     size_t size,
     size_t array_size = 0,
-    const std::string &index_var = ""
+    const std::string &index_var = "",
+    bool needs_strided = false,
+    const std::string &offset = "0"
   ) const override;
 
   // simple split, using const size and content variables
@@ -33,7 +35,11 @@ public:
     const std::string &access_var_name,
     size_t size,
     size_t array_size = 0,
-    const std::string &index_var = ""
+    const std::string &index_var = "",
+    std::function<std::vector<std::string>(const std::string&)> generate_counter_update=nullptr,
+    const std::string &distance = "",
+    bool needs_strided = false,
+    const std::string &offset = "0"
     ) const override;
 
   // simple split, using auxiliary size and content variables
@@ -42,7 +48,9 @@ public:
     const std::string &access_var_name,
     size_t size,
     size_t array_size = 0,
-    const std::string &index_var = ""
+    const std::string &index_var = "",
+    bool needs_strided = false,
+    const std::string &offset = "0"
   ) const override;
 
   // generate from the given index to index + size
@@ -51,7 +59,9 @@ public:
     const std::string &access_var_name,
     std::string index,
     size_t size,
-    std::function<std::vector<std::string>(const std::string&)>  generate_preconditions_check_distance
+    std::function<std::vector<std::string>(const std::string&)>  generate_preconditions_check_distance,
+    bool needs_strided = false,
+    const std::string &offset = "0"
   ) const override;
 
   // generate using the given index up to index + distance
@@ -72,7 +82,9 @@ public:
     std::string distance,
     std::function<std::vector<std::string>(const std::string&)>  generate_preconditions_check_distance,
     std::function<std::vector<std::string>(const std::string&, const std::string&, const std::string&)>  generate_preconditions_check_in_range,
-    std::function<std::vector<std::string>(const std::string&)>  generate_counter_update
+    std::function<std::vector<std::string>(const std::string&)>  generate_counter_update,
+    bool needs_strided = false,
+    const std::string &offset = "0"
     ) const override;
 
   // generate in bulks using an auxiliary pointer
@@ -83,7 +95,9 @@ public:
     std::string distance,
     std::function<std::vector<std::string>(const std::string&)>  generate_preconditions_check_distance,
     std::function<std::vector<std::string>(const std::string&, const std::string&, const std::string&)>  generate_preconditions_check_in_range,
-    std::function<std::vector<std::string>(const std::string&)>  generate_counter_update
+    std::function<std::vector<std::string>(const std::string&)>  generate_counter_update,
+    bool needs_strided = false,
+    const std::string &offset = "0"
   ) const override;
 
   // generate using a load widening to uint32
@@ -93,7 +107,9 @@ public:
     std::string to,
     std::string distance,
     size_t size,
-    std::function<std::vector<std::string>(const std::string&)>  generate_preconditions_check_distance
+    std::function<std::vector<std::string>(const std::string&)>  generate_preconditions_check_distance,
+    bool needs_strided = false,
+    const std::string &offset = "0"
     ) const override;
 
   // generate after casting to uint8
@@ -103,6 +119,8 @@ public:
     std::string to,
     std::string distance,
     size_t size,
-    std::function<std::vector<std::string>(const std::string&)>  generate_preconditions_check_distance
+    std::function<std::vector<std::string>(const std::string&)>  generate_preconditions_check_distance,
+    bool needs_strided = false,
+    const std::string &offset = "0"
   ) const override;
 };

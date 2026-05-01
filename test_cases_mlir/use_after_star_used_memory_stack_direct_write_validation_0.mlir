@@ -16,26 +16,24 @@ module {
   memref.global @target_address : memref<1xindex>
   memref.global @target_ptr : memref<1xmemref<8xi8>>
   func.func private @exit(%arg0: i32) -> ()
-  %c0 = arith.constant 0 : index
-  %c1 = arith.constant 1 : index
-  %c8 = arith.constant 8 : index
-  %c0xFF = arith.constant 255 : i8
 
   func.func @f() -> i32 {
-    // locals
-
-    %target = memref.alloca() : memref<8xi8>
     %c0 = arith.constant 0 : index
     %c1 = arith.constant 1 : index
     %c8 = arith.constant 8 : index
     %c0xAA = arith.constant 170 : i8
+    %precond_fail = arith.constant 43 : i32
+    %test_success = arith.constant 42 : i32
+    %c0xFF = arith.constant 255 : i8
+    %c0_i32 = arith.constant 0 : i32
+    // locals
+
+    %target = memref.alloca() : memref<8xi8>
     scf.for %i = %c0 to %c8 step %c1 {
       memref.store %c0xAA, %target[%i] : memref<8xi8>
     }
     %reallocated = memref.alloca() : memref<8xi8>
 
-    %precond_fail = arith.constant 43 : i32
-    %test_success = arith.constant 42 : i32
     %target_addr = memref.extract_aligned_pointer_as_index %target : memref<8xi8> -> index
     %global_addr = memref.get_global @target_address : memref<1xindex>
     memref.store %target_addr, %global_addr[%c0] : memref<1xindex>
@@ -48,7 +46,6 @@ module {
     }
     func.call @exit(%test_success) : (i32) -> ()
 
-    %c0_i32 = arith.constant 0 : i32
     return %c0_i32 : i32
   }
 

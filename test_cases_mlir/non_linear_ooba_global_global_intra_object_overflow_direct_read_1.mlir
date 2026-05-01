@@ -19,26 +19,26 @@ module {
   memref.global @s : memref<16xi8> = dense<170>
 
   func.func @f() -> i32 {
+    %precond_fail = arith.constant 43 : i32
+    %test_success = arith.constant 42 : i32
+    %c0 = arith.constant 0 : index
+    %distance = arith.constant 8 : index
+    %c1 = arith.constant 1 : index
+    %c8 = arith.constant 8 : index
+    %c0_i32 = arith.constant 0 : i32
     // locals
 
 
-    %precond_fail = arith.constant 43 : i32
-    %test_success = arith.constant 42 : i32
     %s = memref.get_global @s : memref<16xi8>
-    %s_target = memref.subview %s[0][8][1] : memref<16xi8> to memref<8xi8>
-    %s_origin = memref.subview %s[8][8][1] : memref<16xi8> to memref<8xi8>
-    %distance = arith.constant 8 : index
+    %s_target = memref.subview %s[0][8][1] : memref<16xi8> to memref<8xi8, strided<[1], offset: 0>>
+    %s_origin = memref.subview %s[8][8][1] : memref<16xi8> to memref<8xi8, strided<[1], offset: 8>>
     %distance_negated = arith.subi %c0, %distance : index
-    %c0 = arith.constant 0 : index
-    %c1 = arith.constant 1 : index
-    %c8 = arith.constant 8 : index
     scf.for %j = %c0 to %c8 step %c1 {
       %idx = arith.addi %j, %distance : index
-      %val = memref.load %s_origin[%idx] : memref<8xi8>
+      %val = memref.load %s_origin[%idx] : memref<8xi8, strided<[1], offset: 8>>
     }
     func.call @exit(%test_success) : (i32) -> ()
 
-    %c0_i32 = arith.constant 0 : i32
     return %c0_i32 : i32
   }
 

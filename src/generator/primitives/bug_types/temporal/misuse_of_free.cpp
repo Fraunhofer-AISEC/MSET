@@ -157,6 +157,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >MisuseOfFree::generate_validatio
   */
 
   CodeCanvas code;
+  code.add_global("func.func private @exit(%arg0: i32) -> ()");
   code.add_test_case_description_line("Memory region: " + memory_region->get_name());
   code.add_test_case_description_line("Bug type: misuse-of-free, " + memory_state->get_printable_name());
   code.add_test_case_description_line("Access type: " + access_location->get_name() + ", " + access_action->get_name());

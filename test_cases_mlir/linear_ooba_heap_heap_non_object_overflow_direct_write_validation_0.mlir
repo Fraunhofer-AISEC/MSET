@@ -18,41 +18,34 @@ module {
 
   func.func private @exit(%arg0: i32) -> ()
   func.func @use(%arg0: memref<8xi8>) -> memref<8xi8> { return %arg0 : memref<8xi8> }
-  %c0 = arith.constant 0 : index
-  %c1 = arith.constant 1 : index
-  %c0xFF = arith.constant 255 : i8
 
   func.func @f() -> i32 {
-    // locals
-
-
     %precond_fail = arith.constant 43 : i32
     %test_success = arith.constant 42 : i32
-    %origin = memref.alloc() : memref<8xi8>
     %c0 = arith.constant 0 : index
     %c1 = arith.constant 1 : index
     %c8 = arith.constant 8 : index
     %c0xAA = arith.constant 170 : i8
+    %distance = arith.constant 8 : index
+    %c0xFF = arith.constant 255 : i8
+    %c0_i32 = arith.constant 0 : i32
+    // locals
+
+
+    %origin = memref.alloc() : memref<8xi8>
     scf.for %i = %c0 to %c8 step %c1 {
       memref.store %c0xAA, %origin[%i] : memref<8xi8>
     }
-    %distance = arith.constant 8 : index
     %distance_negated = arith.subi %c0, %distance : index
-    func.call @use(%origin) : (memref<8xi8>) -> ()
     scf.for %reach_index = %c0 to %c0 step %c1 {
       memref.store %c0xFF, %origin[%reach_index] : memref<8xi8>
     }
-    %c0 = arith.constant 0 : index
-    %c1 = arith.constant 1 : index
-    %c1 = arith.constant 1 : index
-    %c0xFF = arith.constant 255 : i8
-    scf.for %i = %c0 to %c1 step %c1 {
-      memref.store %c0xFF, %origin[%i] : memref<1xi8>
+    scf.for %i = %c0 to %c8 step %c1 {
+      memref.store %c0xFF, %origin[%i] : memref<8xi8>
     }
     func.call @exit(%test_success) : (i32) -> ()
 
     memref.dealloc %origin : memref<8xi8>
-    %c0_i32 = arith.constant 0 : i32
     return %c0_i32 : i32
   }
 

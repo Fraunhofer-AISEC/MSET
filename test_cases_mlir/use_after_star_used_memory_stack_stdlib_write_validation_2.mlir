@@ -14,42 +14,40 @@ module {
   memref.global @target_addresses : memref<16xindex>
   memref.global @target_arr : memref<1xmemref<16x8xi8>>
   func.func private @exit(%arg0: i32)  -> ()
-  %c0 = arith.constant 0 : index
-  %c1 = arith.constant 1 : index
-  %c8 = arith.constant 8 : index
-  %c0xFF = arith.constant 255 : i8
 
   func.func @f() -> i32 {
+    %precond_fail = arith.constant 43 : i32
+    %test_success = arith.constant 42 : i32
+    %c0 = arith.constant 0 : index
+    %c1 = arith.constant 1 : index
+    %c_arr = arith.constant 16 : index
+    %c8 = arith.constant 8 : index
+    %c0xAA = arith.constant 170 : i8
+    %false = arith.constant false
+    %c0xFF = arith.constant 255 : i8
+    %c0_i32 = arith.constant 0 : i32
     // locals
 
     %reallocated = memref.alloca() : memref<8xi8>
 
-    %precond_fail = arith.constant 43 : i32
-    %test_success = arith.constant 42 : i32
     %target = memref.alloca() : memref<16x8xi8>
-    %c0 = arith.constant 0 : index
-    %c1 = arith.constant 1 : index
-    %c_arr = arith.constant 16 : index
-    %c_sz = arith.constant 8 : index
-    %c0xAA = arith.constant 170 : i8
     scf.for %i = %c0 to %c_arr step %c1 {
-      scf.for %j = %c0 to %c_sz step %c1 {
+      scf.for %j = %c0 to %c8 step %c1 {
         memref.store %c0xAA, %target[%i, %j] : memref<16x8xi8>
       }
     }
     %global_arr = memref.get_global @target_arr : memref<1xmemref<16x8xi8>>
     memref.store %target, %global_arr[%c0] : memref<1xmemref<16x8xi8>>
     %base_addr = memref.extract_aligned_pointer_as_index %target : memref<16x8xi8> -> index
-    %c8 = arith.constant 8 : index
     %global_addrs = memref.get_global @target_addresses : memref<16xindex>
-    scf.for %i = %c0 to %c16 step %c1 {
+    scf.for %i = %c0 to %c_arr step %c1 {
       %offset = arith.muli %i, %c8 : index
       %row_addr = arith.addi %base_addr, %offset : index
       memref.store %row_addr, %global_addrs[%i] : memref<16xindex>
     }
     %realloc_addr = memref.extract_aligned_pointer_as_index %reallocated : memref<8xi8> -> index
     %global_addrs_other = memref.get_global @target_addresses : memref<16xindex>
-    %result:2 = scf.for %i = %c0 to %c16 step %c1 iter_args(%found = %false, %idx = %c0) -> (i1, index) {
+    %result:2 = scf.for %i = %c0 to %c_arr step %c1 iter_args(%found = %false, %idx = %c0) -> (i1, index) {
       %target_addr = memref.load %global_addrs_other[%i] : memref<16xindex>
       %eq = arith.cmpi eq, %realloc_addr, %target_addr : index
       %next_found = arith.ori %found, %eq : i1
@@ -59,11 +57,10 @@ module {
     %global_arr_access = memref.get_global @target_arr : memref<1xmemref<16x8xi8>>
     %target_loaded = memref.load %global_arr_access[%c0] : memref<1xmemref<16x8xi8>>
     scf.for %i = %c0 to %c8 step %c1 {
-      memref.store %c0xFF, %target_loaded[%idx, %i] : memref<16x8xi8>
+      memref.store %c0xFF, %target_loaded[%result#1, %i] : memref<16x8xi8>
     }
     func.call @exit(%test_success) : (i32) -> ()
 
-    %c0_i32 = arith.constant 0 : i32
     return %c0_i32 : i32
   }
 

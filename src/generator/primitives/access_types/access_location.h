@@ -7,6 +7,7 @@
 
 #pragma once
 #include <algorithm>
+#include <cstddef>
 #include <memory>
 #include <string>
 #include <utility>
@@ -148,15 +149,15 @@ public:
 
   // size known at compile-time
   // simple generate
-  virtual std::vector<std::string> generate(std::shared_ptr<AccessAction> action, const std::string &access_var_name, size_t size, size_t array_size = 0, const std::string &index_var = "") const = 0;
+  virtual std::vector<std::string> generate(std::shared_ptr<AccessAction> action, const std::string &access_var_name, size_t size, size_t array_size = 0, const std::string &index_var = "", bool needs_strided = false, const std::string &offset = "0") const = 0;
 
 
   // simple split, all variants
-  std::vector<SplitAccess> generate_split_all(std::shared_ptr<AccessAction> action, const std::string &access_var_name, size_t size) const;
+  std::vector<SplitAccess> generate_split_all(std::shared_ptr<AccessAction> action, const std::string &access_var_name, size_t size, std::function<std::vector<std::string>(const std::string&)> generate_counter_update,const std::string &distance, bool needs_strided = false, const std::string &offset = "0") const;
   // simple split, using auxiliary size and content variables
-  virtual SplitAccess generate_split_aux_vars(std::shared_ptr<AccessAction> action, const std::string &access_var_name, size_t size, size_t array_size = 0, const std::string &index_var = "") const = 0;
+  virtual SplitAccess generate_split_aux_vars(std::shared_ptr<AccessAction> action, const std::string &access_var_name, size_t size, size_t array_size = 0, const std::string &index_var = "", std::function<std::vector<std::string>(const std::string&)> generate_counter_update=nullptr, const std::string &distance = "", bool needs_strided = false, const std::string &offset = "0") const = 0;
   // simple split, using const size and content variables
-  virtual SplitAccess generate_split_const_vars(std::shared_ptr<AccessAction> action, const std::string &access_var_name, size_t size, size_t array_size = 0, const std::string &index_var = "") const = 0;
+  virtual SplitAccess generate_split_const_vars(std::shared_ptr<AccessAction> action, const std::string &access_var_name, size_t size, size_t array_size = 0, const std::string &index_var = "", bool needs_strided = false, const std::string &offset = "0") const = 0;
 
   // generate from the given index to index + size
   virtual std::vector<std::string> generate_at_index(
@@ -164,7 +165,9 @@ public:
     const std::string &access_var_name,
     std::string index,
     size_t size,
-    std::function<std::vector<std::string>(const std::string&)>  generate_preconditions_check_distance
+    std::function<std::vector<std::string>(const std::string&)>  generate_preconditions_check_distance,
+    bool needs_strided = false,
+    const std::string &offset = "0"
   ) const = 0;
 
   // generate using the given index up to index + distance
@@ -185,7 +188,9 @@ public:
     std::string distance,
     std::function<std::vector<std::string>(const std::string&)>  generate_preconditions_check_distance,
     std::function<std::vector<std::string>(const std::string&, const std::string&, const std::string&)>  generate_preconditions_check_in_range,
-    std::function<std::vector<std::string>(const std::string&)>  generate_counter_update
+    std::function<std::vector<std::string>(const std::string&)>  generate_counter_update,
+    bool needs_strided = false,
+    const std::string &offset = "0"
   ) const;
   // generate in bulks using an index
   virtual SplitAccess generate_bulk_split_using_index(
@@ -195,7 +200,9 @@ public:
     std::string distance,
     std::function<std::vector<std::string>(const std::string&)>  generate_preconditions_check_distance,
     std::function<std::vector<std::string>(const std::string&, const std::string&, const std::string&)>  generate_preconditions_check_in_range,
-    std::function<std::vector<std::string>(const std::string&)>  generate_counter_update
+    std::function<std::vector<std::string>(const std::string&)>  generate_counter_update,
+    bool needs_strided = false,
+    const std::string &offset = "0"
     ) const = 0;
 
   // generate in bulks using an auxiliary pointer
@@ -206,7 +213,9 @@ public:
     std::string distance,
     std::function<std::vector<std::string>(const std::string&)>  generate_preconditions_check_distance,
     std::function<std::vector<std::string>(const std::string&, const std::string&, const std::string&)>  generate_preconditions_check_in_range,
-    std::function<std::vector<std::string>(const std::string&)>  generate_counter_update
+    std::function<std::vector<std::string>(const std::string&)>  generate_counter_update,
+    bool needs_strided = false,
+    const std::string &offset = "0"
   ) const = 0;
 
   // generate using a load widening to uint32
@@ -216,7 +225,9 @@ public:
     std::string to,
     std::string distance,
     size_t size,
-    std::function<std::vector<std::string>(const std::string&)>  generate_preconditions_check_distance
+    std::function<std::vector<std::string>(const std::string&)>  generate_preconditions_check_distance,
+    bool needs_strided = false,
+    const std::string &offset = "0"
   ) const = 0;
 
   // generate after casting to uint8
@@ -226,6 +237,8 @@ public:
     std::string to,
     std::string distance,
     size_t size,
-    std::function<std::vector<std::string>(const std::string&)>  generate_preconditions_check_distance
+    std::function<std::vector<std::string>(const std::string&)>  generate_preconditions_check_distance,
+    bool needs_strided = false,
+    const std::string &offset = "0"
   ) const = 0;
 };

@@ -11,6 +11,7 @@
 #include "generator/primitives/bug_types/spatial/flow/underflow.h"
 #include "generator/primitives/bug_types/spatial/origin_target_relation/inter_object.h"
 #include "generator/primitives/bug_types/spatial/origin_target_relation/intra_object.h"
+#include "generator/primitives/bug_types/spatial/origin_target_relation/non_object.h"
 
 bool NonLinearOOBA::accepts(std::shared_ptr<Flow> flow) const
 {
@@ -63,12 +64,17 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> NonLinearOOBA::generate(
 
     if ( distance == "N/A" ) continue;
     auto origin_target_canvas_copy = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas);
+    ssize_t static_dist = origin_target_canvas->get_distance_static_value();
+    std::string origin_offset = static_dist > 0 ? "0" : std::to_string(std::abs(static_dist));
+    bool needs_strided = !is_a<NonObject>(origin_target_relation);
     std::vector<std::string> access_target_code = access_location->generate_at_index(
       access_action,
       origin_target_canvas_copy->get_origin_name(),
       distance,
       origin_target_canvas_copy->get_target_size(),
-      generate_preconditions_check_distance
+      generate_preconditions_check_distance,
+      needs_strided,
+      origin_offset
     );
     origin_target_canvas_copy->add_during_lifetime(access_target_code);
     origin_target_canvas_copy->add_during_lifetime("func.call @exit(%test_success) : (i32) -> ()");
@@ -110,25 +116,32 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> NonLinearOOBA::generate_val
   for ( auto &origin_target_canvas : origin_target_canvases )
   {
     if ( origin_target_canvas->get_forces_underflow() && !is_a<Underflow>(flow) ) continue; // the origin-target requires an underflow, but the for is not an underflow -> skip
-    std::string distance = { "0" };
+    std::string distance = { "c0" };
 
     if ( distance == "N/A" ) continue;
     auto origin_target_canvas_copy = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas);
     std::string var_name_to_access;
+    std::string var_offset = "0";
     if ( origin_target_canvas_copy->is_target_allocated() )
     {
       var_name_to_access = origin_target_canvas_copy->get_target_name();
+      ssize_t static_dist = origin_target_canvas->get_distance_static_value();
+      if ( static_dist > 0 )
+        var_offset = std::to_string(static_dist);
     }
     else
     {
       var_name_to_access = origin_target_canvas_copy->get_origin_name();
     }
+    bool needs_strided = !is_a<NonObject>(origin_target_relation);
     std::vector<std::string> access_target_code = access_location->generate_at_index(
       access_action,
       var_name_to_access,
       distance,
       origin_target_canvas_copy->get_target_size(),
-      nullptr
+      nullptr,
+      needs_strided,
+      var_offset
     );
     origin_target_canvas_copy->add_during_lifetime(access_target_code);
     origin_target_canvas_copy->add_during_lifetime("func.call @exit(%test_success) : (i32) -> ()");

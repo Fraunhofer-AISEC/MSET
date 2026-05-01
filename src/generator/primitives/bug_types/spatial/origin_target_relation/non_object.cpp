@@ -45,7 +45,7 @@ std::vector< std::shared_ptr<OriginTargetCodeCanvas> > NonObject::generate(
   );
 
   auto variant = std::make_shared<OriginTargetCodeCanvas>(
-    origin_canvas, 1, 8, "origin", "origin",
+    origin_canvas, origin_size, origin_size, "origin", "origin",
     "distance", "distance_negated", /*is_target_allocated=*/false, false, distance_up
   );
   variant->set_lifetime_pos(origin_canvas->get_lifetime_pos());
@@ -59,7 +59,7 @@ std::vector< std::shared_ptr<OriginTargetCodeCanvas> > NonObject::generate(
   );
 
   variant = std::make_shared<OriginTargetCodeCanvas>(
-    origin_canvas, 1, 8, "origin", "origin",
+    origin_canvas, origin_size, origin_size, "origin", "origin",
     "underflow_dist", "N/A", /*is_target_allocated=*/false, /*requires_underflow=*/true, -1
   );
   variant->set_lifetime_pos(origin_canvas->get_lifetime_pos());

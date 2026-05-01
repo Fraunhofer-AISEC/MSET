@@ -19,37 +19,34 @@ module {
   func.func private @exit(%arg0: i32)
 
   func.func @f() -> i32 {
-    // locals
-
-
     %precond_fail = arith.constant 43 : i32
     %test_success = arith.constant 42 : i32
-    %parent = memref.alloc() : memref<91xi8>
-    %parent_origin = memref.subview %parent[0][8][1] : memref<91xi8> to memref<8xi8>
-    %parent_target = memref.subview %parent[83][8][1] : memref<91xi8> to memref<8xi8>
     %c0 = arith.constant 0 : index
     %c1 = arith.constant 1 : index
     %c8 = arith.constant 8 : index
     %c0xAA = arith.constant 170 : i8
-    scf.for %i = %c0 to %c8 step %c1 {
-      memref.store %c0xAA, %parent_origin[%i] : memref<8xi8>
-    }
-    %c0 = arith.constant 0 : index
-    %c1 = arith.constant 1 : index
-    %c8 = arith.constant 8 : index
     %c0xBB = arith.constant 187 : i8
-    scf.for %i = %c0 to %c8 step %c1 {
-      memref.store %c0xBB, %parent_target[%i] : memref<8xi8>
-    }
-    %distance = arith.constant 83 : index
-    %distance_negated = arith.subi %c0, %distance : index
-    %idx = arith.constant 3 : index
+    %distance = arith.constant 625 : index
+    %idx = arith.constant 7 : index
     %c0xFF = arith.constant 255 : i8
-    memref.store %c0xFF, %parent_origin[%idx] : memref<4xi8>
+    %c0_i32 = arith.constant 0 : i32
+    // locals
+
+
+    %parent = memref.alloc() : memref<633xi8>
+    %parent_origin = memref.subview %parent[0][8][1] : memref<633xi8> to memref<8xi8, strided<[1], offset: 0>>
+    %parent_target = memref.subview %parent[625][8][1] : memref<633xi8> to memref<8xi8, strided<[1], offset: 625>>
+    scf.for %i = %c0 to %c8 step %c1 {
+      memref.store %c0xAA, %parent_origin[%i] : memref<8xi8, strided<[1], offset: 0>>
+    }
+    scf.for %i = %c0 to %c8 step %c1 {
+      memref.store %c0xBB, %parent_target[%i] : memref<8xi8, strided<[1], offset: 625>>
+    }
+    %distance_negated = arith.subi %c0, %distance : index
+    memref.store %c0xFF, %parent_origin[%idx] : memref<8xi8, strided<[1], offset: 0>>
     func.call @exit(%test_success) : (i32) -> ()
 
-    memref.dealloc %parent : memref<91xi8>
-    %c0_i32 = arith.constant 0 : i32
+    memref.dealloc %parent : memref<633xi8>
     return %c0_i32 : i32
   }
 

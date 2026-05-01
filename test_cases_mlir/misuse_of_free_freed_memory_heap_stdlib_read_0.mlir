@@ -17,17 +17,18 @@ module {
   func.func private @exit(%arg0: i32) -> ()
 
   func.func @f() -> i32 {
-    // locals
-
-
     %precond_fail = arith.constant 43 : i32
     %test_success = arith.constant 42 : i32
-    %target = memref.alloc() : memref<160xi8>
-    
   %c8_mof = arith.constant 8 : index
   %c104_mof = arith.constant 104 : index
   %c_magic = arith.constant 32 : i8
   %c0x40 = arith.constant 64 : i8
+    %c0_i32 = arith.constant 0 : i32
+    // locals
+
+
+    %target = memref.alloc() : memref<160xi8>
+    
   memref.store %c_magic, %target[%c8_mof] : memref<160xi8> // magic value
   memref.store %c0x40, %target[%c104_mof] : memref<160xi8>
   %crafted = memref.subview %target[16][8][1] : memref<160xi8> to memref<8xi8, strided<[1], offset: 16>>
@@ -42,10 +43,9 @@ module {
   scf.if %eq_cmp {
     memref.dealloc %target : memref<160xi8>
   }
-  %read_value = memref.alloca() : memref<8xi8>
-  memref.copy %heap_obj, %read_value : memref<8xi8> to memref<8xi8>
+  %read_value_28 = memref.alloca() : memref<8xi8>
+  memref.copy %heap_obj, %read_value_28 : memref<8xi8> to memref<8xi8>
   func.call @exit(%test_success) : (i32) -> ()
-    %c0_i32 = arith.constant 0 : i32
     return %c0_i32 : i32
   }
 

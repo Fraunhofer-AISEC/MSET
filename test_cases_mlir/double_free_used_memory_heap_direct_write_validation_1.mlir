@@ -18,34 +18,31 @@ module {
   func.func @use(%arg0: memref<8xi8>) -> memref<8xi8> { return %arg0 : memref<8xi8> }
 
   func.func @f() -> i32 {
+    %precond_fail = arith.constant 43 : i32
+    %test_success = arith.constant 42 : i32
+  %c0 = arith.constant 0 : index
+  %c1 = arith.constant 1 : index
+  %c8 = arith.constant 8 : index
+  %c0xFF = arith.constant 255 : i8
+    %c0_i32 = arith.constant 0 : i32
     // locals
 
 
-    %precond_fail = arith.constant 43 : i32
-    %test_success = arith.constant 42 : i32
     %tmp = memref.alloc() : memref<8xi8>
     %tmp2 = memref.alloc() : memref<8xi8>
     %pointer_to_double_free = memref.alloc() : memref<8xi8> // pointer to be double-freed
     memref.dealloc %pointer_to_double_free : memref<8xi8>
     memref.dealloc %tmp : memref<8xi8> // no use after free required
-    memref.dealloc %pointer_to_double_free : memref<8xi8> // double free
     %pointer_to_use = memref.alloc() : memref<8xi8> // allocate a new object
     %tmp3 = memref.alloc() : memref<8xi8>
-    func.call @use(%tmp2) : (memref<8xi8>) -> ()
-    func.call @use(%tmp3) : (memref<8xi8>) -> ()
     %target = memref.alloc() : memref<8xi8>
     
-  %c0 = arith.constant 0 : index
-  %c1 = arith.constant 1 : index
-  %c8 = arith.constant 8 : index
-  %c0xFF = arith.constant 255 : i8
   scf.for %i = %c0 to %c8 step %c1 {
     memref.store %c0xFF, %pointer_to_use[%i] : memref<8xi8>
   }
   func.call @exit(%test_success) : (i32) -> ()
 
     memref.dealloc %target : memref<8xi8>
-    %c0_i32 = arith.constant 0 : i32
     return %c0_i32 : i32
   }
 

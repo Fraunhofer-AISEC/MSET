@@ -17,13 +17,19 @@ module {
   func.func private @exit(%arg0: i32) -> ()
 
   func.func @f() -> i32 {
-    // locals
-
-    %target = memref.alloca() : memref<160xi8>
   %c8_mof = arith.constant 8 : index
   %c104_mof = arith.constant 104 : index
   %c_magic = arith.constant 32 : i8
   %c0x40 = arith.constant 64 : i8
+  %c0 = arith.constant 0 : index
+  %c1 = arith.constant 1 : index
+  %c8 = arith.constant 8 : index
+    %precond_fail = arith.constant 43 : i32
+    %test_success = arith.constant 42 : i32
+    %c0_i32 = arith.constant 0 : i32
+    // locals
+
+    %target = memref.alloca() : memref<160xi8>
   memref.store %c_magic, %target[%c8_mof] : memref<160xi8> // magic value
   memref.store %c0x40, %target[%c104_mof] : memref<160xi8>
   %crafted = memref.subview %target[16][8][1] : memref<160xi8> to memref<8xi8, strided<[1], offset: 16>>
@@ -31,18 +37,12 @@ module {
   memref.dealloc %crafted : memref<8xi8, strided<[1], offset: 16>>
   
   %heap_obj = memref.alloc() : memref<8xi8>
-  %c0 = arith.constant 0 : index
-  %c1 = arith.constant 1 : index
-  %c8 = arith.constant 8 : index
   scf.for %i = %c0 to %c8 step %c1 {
     %val = memref.load %heap_obj[%i] : memref<8xi8>
   }
   func.call @exit(%test_success) : (i32) -> ()
 
-    %precond_fail = arith.constant 43 : i32
-    %test_success = arith.constant 42 : i32
 
-    %c0_i32 = arith.constant 0 : i32
     return %c0_i32 : i32
   }
 

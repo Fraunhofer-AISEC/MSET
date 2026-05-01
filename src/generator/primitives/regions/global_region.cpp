@@ -31,6 +31,9 @@ std::shared_ptr<RegionCodeCanvas> GlobalRegion::generate(std::shared_ptr<CodeCan
   
   // In function body, get_global to use it
   populated_code_canvas->add_to_f_body(
+    "%c0 = arith.constant 0 : index"
+  );
+  populated_code_canvas->add_to_f_body(
     "%" + name + " = memref.get_global @" + name + " : memref<" + std::to_string(size) + "xi8>"
   );
   
@@ -70,14 +73,17 @@ std::shared_ptr<RegionCodeCanvas> GlobalRegion::generate(
   auto it = populated_code_canvas->add_global(definition);
   
   // In function body, get_global and create subviews
+  populated_code_canvas->add_to_f_body(
+    "%c0 = arith.constant 0 : index"
+  );
   CodeCanvas::code_pos_t current = populated_code_canvas->add_to_f_body(
     "%" + name + " = memref.get_global @" + name + " : memref<" + std::to_string(total_size) + "xi8>"
   );
   current = populated_code_canvas->add_to_f_body(
-    "%" + name + "_" + name_field_1 + " = memref.subview %" + name + "[0][" + std::to_string(size_field_1) + "][1] : memref<" + std::to_string(total_size) + "xi8> to memref<" + std::to_string(size_field_1) + "xi8>"
+    "%" + name + "_" + name_field_1 + " = memref.subview %" + name + "[0][" + std::to_string(size_field_1) + "][1] : memref<" + std::to_string(total_size) + "xi8> to memref<" + std::to_string(size_field_1) + "xi8, strided<[1], offset: 0>>"
   );
   current = populated_code_canvas->add_to_f_body(
-    "%" + name + "_" + name_field_2 + " = memref.subview %" + name + "[" + std::to_string(size_field_1 + gap) + "][" + std::to_string(size_field_2) + "][1] : memref<" + std::to_string(total_size) + "xi8> to memref<" + std::to_string(size_field_2) + "xi8>"
+    "%" + name + "_" + name_field_2 + " = memref.subview %" + name + "[" + std::to_string(size_field_1 + gap) + "][" + std::to_string(size_field_2) + "][1] : memref<" + std::to_string(total_size) + "xi8> to memref<" + std::to_string(size_field_2) + "xi8, strided<[1], offset: " + std::to_string(size_field_1 + gap) + ">>"
   );
   
   populated_code_canvas->set_allocation_pos(it);
