@@ -616,9 +616,9 @@ extern void compile_and_evaluate(
     std::vector<std::shared_ptr<TestCaseInformation>> &test_case_infos = grouped_test_case.second;
     std::sort(test_case_infos.begin(), test_case_infos.end(), compare_test_case_variants);
 
-    Logger(log_level_t::VERBOSE) << "Evaluating baseline: " << grouped_test_case.first << "\n";
     if (compute_baseline)
     {
+      Logger(log_level_t::VERBOSE) << "Evaluating baseline: " << grouped_test_case.first << "\n";
       for (const auto& test_case_info : test_case_infos)
       {
         if ( test_case_info->get_is_validation() ) continue; // only normal phase for the baseline
