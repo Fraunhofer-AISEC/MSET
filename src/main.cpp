@@ -28,6 +28,7 @@ static bool verbose = false;
 static bool evaluate_baseline = false;
 static bool run_all_variants = false;
 static bool keep_binaries = false;
+static int spatial_object_size = 8;
 static std::string sanitizer_config_path;
 
 const std::vector<std::tuple< std::string, ArgParser::Argument>> accepted_arguments
@@ -44,7 +45,8 @@ const std::vector<std::tuple< std::string, ArgParser::Argument>> accepted_argume
   std::make_tuple( "--evaluate-prebuilt-binaries",  ArgParser::Argument{true ,     "<SANITIZER_CONFIG>",    "",                         "\t\t\t\tEvaluate the sanitizer configured in <SANITIZER_CONFIG> using the pre-built binaries in <TEST_CASE_DIR>."} ),
   std::make_tuple( "--compile",                     ArgParser::Argument{true,      "<SANITIZER_CONFIG>",    "",                         "\t\t\tCompile all the test case files in <TEST_CASE_DIR> using the sanitizer configured in <SANITIZER_CONFIG>."} ),
   std::make_tuple( "--help",                        ArgParser::Argument{false,     "",                      "",                         "\t\t\t\t\tShow this help message and exit."} ),
-  std::make_tuple( "--print-table-summary",         ArgParser::Argument{false ,    "",                      "",                         "\t\t\t\tPrint a summary in the form of a table line." } )
+  std::make_tuple( "--print-table-summary",         ArgParser::Argument{false ,    "",                      "",                         "\t\t\t\tPrint a summary in the form of a table line." } ),
+  std::make_tuple( "--spatial-object-size",         ArgParser::Argument{true,      "<OBJECT_SIZE>",         "8",                        "\t\t\t\tSpecify <OBJECT_SIZE> as the size of the spatial objects (origin and target). Default: 8. This option is applicable only when --generate is specified."} ),
 };
 
 static void print_usage()
@@ -91,6 +93,16 @@ static bool parse_arguments(int argc, char **argv)
     std::cerr << "You must either specify --generate, --evaluate, --evaluate-prebuilt-binaries, or --compile." << std::endl;
     print_usage();
     return false;
+  }
+
+  std::unique_ptr<std::string> spatial_object_size_ptr = parser->get_value_and_consume("--spatial-object-size");
+  if ( spatial_object_size_ptr )
+  {
+    spatial_object_size = std::stoi(*spatial_object_size_ptr);
+    if ( !do_generate )
+    {
+      std::cerr << "WARNING: --spatial-object-size used when not generating (--generate).\n";
+    }
   }
 
   std::unique_ptr<std::string> test_case_dir = parser->get_value_and_consume("--test-case-dir");
@@ -158,7 +170,7 @@ static bool parse_arguments(int argc, char **argv)
     {
       if ( keep_binaries )
       {
-        std::cerr << "WARNING: --keep-binaries ignores when evaluating prebuilt binaries.\n";
+        std::cerr << "WARNING: --keep-binaries ignored when evaluating prebuilt binaries.\n";
       }
     }
   }
@@ -243,7 +255,7 @@ int main( int argc, char **argv )
       create_directory( generated_path );
     }
     std::cout << "Generating test cases in: '" << generated_path << "'" << std::endl;
-    generate( generated_path );
+    generate( generated_path, spatial_object_size );
   }
 
   if ( do_compile || do_evaluate || do_evaluate_prebuilt )

@@ -27,6 +27,12 @@ std::string Underflow::generate_counter_update(const std::string &cnt) const
 
 std::string Underflow::generate_preconditions_check_distance( const std::string &distance ) const
 {
+  int int_distance;
+  if (to_int(distance, int_distance))
+  {
+    // this is a constant
+    return std::to_string(int_distance <= 0);
+  }
   return distance + " <= 0";
 }
 

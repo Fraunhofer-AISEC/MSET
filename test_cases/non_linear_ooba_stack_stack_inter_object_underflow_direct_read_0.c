@@ -12,6 +12,7 @@
  * Access type: direct, read
  * Variant:
  *  - target declared after origin
+ *  - To avoid optimizations, index into the target, upper bound hidden
  */
 
 #include <unistd.h> // _exit
@@ -28,7 +29,10 @@
 #define MAX_OBJECT_SIZE ((size_t)1 << 29)
 #endif
 
-volatile void *_use(volatile void *p) { return p; }
+__attribute__((section(".data.index"))) volatile size_t _sink;
+volatile void *_use(volatile void *p) { _sink = (size_t)p; return p; }
+volatile long long _use_value(volatile long long p) { return p; }
+__attribute__((noinline)) static size_t _hide_value(volatile size_t n) { volatile size_t v = n; return v; }
 const char content[8] = "ZZZZZZZ";
 
 // types
@@ -36,12 +40,12 @@ const char content[8] = "ZZZZZZZ";
 // globals
 
 
-int f()
+__attribute__((noinline)) int f()
 {
   // locals
 
-  char origin[8] = "";
-  char target[8] = "";
+  volatile char origin[8] = "";
+  volatile char target[8] = "";
 
   origin[0] = 0xAA;
   origin[1] = 0xAA;
@@ -59,13 +63,18 @@ int f()
   target[5] = 0xAA;
   target[6] = 0xAA;
   target[7] = 0xAA;
-  volatile char read_value[8];
+  // index into the target to prevent optimizations
+  for (ssize_t i = 0; i < _hide_value(8); i++) { char tmp = target[i]; _use(&tmp);  }
   if ( !((ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) <= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
+  volatile char read_value[8];
   for (ssize_t access_index = 0; access_index < 8; access_index++)
   {
     read_value[access_index] = origin[access_index + (ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin))];
+    _use(&read_value[access_index]);
   }
   _use(read_value);
+  _use_value(*read_value);
+  
   _exit(TEST_CASE_SUCCESSFUL_VALUE);
 
   return 0;

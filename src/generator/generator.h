@@ -8,4 +8,4 @@
 #pragma once
 #include <string>
 
-extern void generate(const std::string& dir_path);
+extern void generate(const std::string& dir_path, int spatial_object_size);

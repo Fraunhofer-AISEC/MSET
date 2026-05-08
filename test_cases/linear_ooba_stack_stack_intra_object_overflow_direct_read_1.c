@@ -13,8 +13,9 @@
  * Variant:
  *  - target declared after origin
  *  - distance is checked as is
+ *  - To avoid optimizations, index into the target
  *  - target reached by using a index
- *  - target accessed by using constants
+ *  - target accessed by using auxiliary variables
  */
 
 #include <unistd.h> // _exit
@@ -31,14 +32,17 @@
 #define MAX_OBJECT_SIZE ((size_t)1 << 29)
 #endif
 
-volatile void *_use(volatile void *p) { return p; }
+__attribute__((section(".data.index"))) volatile size_t _sink;
+volatile void *_use(volatile void *p) { _sink = (size_t)p; return p; }
+volatile long long _use_value(volatile long long p) { return p; }
+__attribute__((noinline)) static size_t _hide_value(volatile size_t n) { volatile size_t v = n; return v; }
 const char content[8] = "ZZZZZZZ";
 
 // types
 struct T
 {
-  char origin[8];
-  char target[8];
+  volatile char origin[8];
+  volatile char target[8];
 };
 
 // globals
@@ -47,7 +51,7 @@ __attribute__((section(".data.index"))) volatile char tmp;
 __attribute__((section(".data.index"))) volatile size_t i;
 __attribute__((section(".data.index"))) volatile ssize_t reach_index = 0;
 
-int f()
+__attribute__((noinline)) int f()
 {
   // locals
 
@@ -69,22 +73,30 @@ int f()
   s.target[5] = 0xBB;
   s.target[6] = 0xBB;
   s.target[7] = 0xBB;
+  // index into the target to prevent optimizations
+  for (ssize_t i = 0; i < _hide_value(8); i++) { char tmp = s.target[i]; _use(&tmp); }
   _use(s.target);
+  _use_value(*s.target);
   _use(s.origin);
+  _use_value(*s.origin);
   if ( !((ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
   while( GET_ADDR_BITS(&s.origin[reach_index]) != GET_ADDR_BITS(s.target) )
   {
     tmp = s.origin[reach_index];
     ++reach_index;
     _use(&tmp);
+    _use_value(tmp);
   }
   volatile char read_value[8];
   volatile size_t i;
-  for (i = 0; i < 8; i++)
+  volatile size_t size = 8;
+  for (i = 0; i < size; i++)
   {
     read_value[i] = (s.origin + reach_index)[i];
+    _use(&(s.origin + reach_index)[i]);
   }
   _use(read_value);
+  _use_value(*read_value);
   _exit(TEST_CASE_SUCCESSFUL_VALUE);
 
   return 0;

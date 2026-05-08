@@ -11,10 +11,10 @@
  * Bug type: intra-object, linear OOBA, overflow
  * Access type: direct, write
  * Variant:
- *  - target declared before origin
+ *  - target declared after origin
  *  - distance is negated before checking
  *  - target reached by using a auxiliary pointer
- *  - target accessed by using auxiliary variables
+ *  - target accessed by using constants
  */
 
 #include <unistd.h> // _exit
@@ -31,14 +31,17 @@
 #define MAX_OBJECT_SIZE ((size_t)1 << 29)
 #endif
 
-volatile void *_use(volatile void *p) { return p; }
+__attribute__((section(".data.index"))) volatile size_t _sink;
+volatile void *_use(volatile void *p) { _sink = (size_t)p; return p; }
+volatile long long _use_value(volatile long long p) { return p; }
+__attribute__((noinline)) static size_t _hide_value(volatile size_t n) { volatile size_t v = n; return v; }
 const char content[8] = "ZZZZZZZ";
 
 // types
 struct T
 {
-  char target[8];
-  char origin[8];
+  volatile char origin[8];
+  volatile char target[8];
 };
 
 // globals
@@ -46,13 +49,15 @@ struct T
 struct T s = { {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA}, {0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB} };
 __attribute__((section(".data.index"))) volatile char * aux_ptr;
 
-int f()
+__attribute__((noinline)) int f()
 {
   // locals
 
 
   _use(s.target);
+  _use_value(*s.target);
   _use(s.origin);
+  _use_value(*s.origin);
   if ( !(-(ssize_t)(GET_ADDR_BITS(s.origin) - GET_ADDR_BITS(s.target)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
   if ( GET_ADDR_BITS(&aux_ptr) < GET_ADDR_BITS(s.target) && GET_ADDR_BITS(&aux_ptr) > GET_ADDR_BITS(s.origin) ) _exit(PRECONDITIONS_FAILED_VALUE);
   aux_ptr = s.origin;
@@ -61,14 +66,16 @@ int f()
     *aux_ptr = 0xFF;
     ++aux_ptr;
     _use(aux_ptr);
+    _use_value(*aux_ptr);
   }
   volatile size_t i;
-  volatile size_t size = 8;
-  for (i = 0; i < size; i++)
+  for (i = 0; i < 8; i++)
   {
-    aux_ptr[i] = content[i];
+    aux_ptr[i] = 0xFF;
+    _use(&aux_ptr[i]);
   }
   _use(aux_ptr);
+  _use_value(*aux_ptr);
   _exit(TEST_CASE_SUCCESSFUL_VALUE);
 
   return 0;

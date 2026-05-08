@@ -38,38 +38,41 @@ CodeCanvas::CodeCanvas():
     "#define MAX_OBJECT_SIZE ((size_t)1 << 29)",            // 11
     "#endif",                                               // 12
     "",             // 13
-    "volatile void *_use(volatile void *p) { return p; }",  // 14
-    "const char content[8] = \"ZZZZZZZ\";",                 // 15
-    "",             // 16
-    "// types",     // 17
-    "",             // 18
-    "// globals",   // 19
-    "",             // 20
+    "__attribute__((section(\".data.index\"))) volatile size_t _sink;", // 14
+    "volatile void *_use(volatile void *p) { _sink = (size_t)p; return p; }",  // 15
+    "volatile long long _use_value(volatile long long p) { return p; }", // 16
+    "__attribute__((noinline)) static size_t _hide_value(volatile size_t n) { volatile size_t v = n; return v; }", // 17
+    "const char content[8] = \"ZZZZZZZ\";",                 // 18
+    "",             // 19
+    "// types",     // 20
     "",             // 21
-    "int f()",      // 22
-    "{",            // 23
-    "  // locals",  // 24
-    "",             // 25
-    "",             // 26
-    "",             // 27
-    "  return 0;",  // 28
-    "}",            // 29
+    "// globals",   // 22
+    "",             // 23
+    "",             // 24
+    "__attribute__((noinline)) int f()",      // 25
+    "{",            // 26
+    "  // locals",  // 27
+    "",             // 28
+    "",             // 29
     "",             // 30
-    "int main()",   // 31
-    "{",            // 32
-    "  f();",       // 33
-    "",             // 34
-    "  return 0;",  // 35
-    "}"             // 36
+    "  return 0;",  // 31
+    "}",            // 32
+    "",             // 33
+    "int main()",   // 34
+    "{",            // 35
+    "  f();",       // 36
+    "",             // 37
+    "  return 0;",  // 38
+    "}"             // 39
   };
 
-  types_pos         = 18;
-  global_start_pos  = 20;
-  global_pos        = 21;
-  locals_start_pos  = 25;
-  locals_end_pos    = 26;
-  start_of_f_pos    = 24;
-  f_call_pos        = 33;
+  types_pos         = 21;
+  global_start_pos  = 23;
+  global_pos        = 24;
+  locals_start_pos  = 28;
+  locals_end_pos    = 29;
+  start_of_f_pos    = 27;
+  f_call_pos        = 36;
   current_pos_in_f  = locals_end_pos + 1;
   end_of_f_pos      = current_pos_in_f + 1;
   current_pos_in_main = f_call_pos + 1;
@@ -294,7 +297,7 @@ std::string CodeCanvas::to_string() const
 void CodeCanvas::_generate_other_f_and_call()
 {
   std::vector<std::string> other_f_body = {
-    "int other_f()", // -5
+    "__attribute__((noinline)) int other_f()", // -5
     "{", // -4
     "", // -3
     "  return 0;", // -2

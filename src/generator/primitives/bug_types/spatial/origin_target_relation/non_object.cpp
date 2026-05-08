@@ -7,6 +7,8 @@
 
 #include "non_object.h"
 
+#include <cassert>
+
 #include "misc.h"
 #include "generator/primitives/regions/global_region.h"
 #include "generator/primitives/regions/heap_region.h"
@@ -37,14 +39,14 @@ std::vector< std::shared_ptr<OriginTargetCodeCanvas> > NonObject::generate(
   std::string distance_up = std::to_string(origin_size);
 
   std::shared_ptr<OriginTargetCodeCanvas> variant = std::make_shared<OriginTargetCodeCanvas>(
-    origin_canvas, 1, 8, "(origin + " + std::to_string(origin_size) + ")", "origin",
+    origin_canvas, 1, origin_size, "(origin + " + std::to_string(origin_size) + ")", "origin",
     distance_up, "N/A", /*is_target_allocated=*/false
   );
   variant->set_lifetime_pos( origin_canvas->get_lifetime_pos() );
   variants.push_back(variant);
 
   variant = std::make_shared<OriginTargetCodeCanvas>(
-    origin_canvas, 1, 8, "(origin - 1)", "origin", "-1", "N/A",
+    origin_canvas, 1, origin_size, "(origin - 1)", "origin", "0", "N/A",
     /*is_target_allocated=*/false, /*requires_underflow=*/true
   );
   variant->set_lifetime_pos( origin_canvas->get_lifetime_pos() );

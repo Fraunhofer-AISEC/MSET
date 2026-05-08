@@ -13,7 +13,8 @@
  * Variant:
  *  - target declared after origin
  *  - distance is checked as is
- *  - target reached by using a auxiliary pointer
+ *  - To avoid optimizations, index into the target
+ *  - target reached by using a index
  *  - target accessed by using constants
  */
 
@@ -31,23 +32,26 @@
 #define MAX_OBJECT_SIZE ((size_t)1 << 29)
 #endif
 
-volatile void *_use(volatile void *p) { return p; }
+__attribute__((section(".data.index"))) volatile size_t _sink;
+volatile void *_use(volatile void *p) { _sink = (size_t)p; return p; }
+volatile long long _use_value(volatile long long p) { return p; }
+__attribute__((noinline)) static size_t _hide_value(volatile size_t n) { volatile size_t v = n; return v; }
 const char content[8] = "ZZZZZZZ";
 
 // types
 
 // globals
 
-char target[8] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
+volatile char target[8] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
 __attribute__((section(".data.index"))) volatile char tmp;
-__attribute__((section(".data.index"))) volatile char * aux_ptr;
+__attribute__((section(".data.index"))) volatile size_t i;
 __attribute__((section(".data.index"))) volatile ssize_t reach_index = 0;
 
-int f()
+__attribute__((noinline)) int f()
 {
   // locals
 
-  char origin[8] = "";
+  volatile char origin[8] = "";
 
   origin[0] = 0xAA;
   origin[1] = 0xAA;
@@ -57,23 +61,29 @@ int f()
   origin[5] = 0xAA;
   origin[6] = 0xAA;
   origin[7] = 0xAA;
+  // index into the target to prevent optimizations
+  for (ssize_t i = 0; i < _hide_value(8); i++) { char tmp = target[i]; _use(&tmp); }
   _use(target);
+  _use_value(*target);
   _use(origin);
+  _use_value(*origin);
   if ( !((ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) <= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
-  aux_ptr = &origin[0];
-  while( GET_ADDR_BITS(aux_ptr) != GET_ADDR_BITS(target) )
+  while( GET_ADDR_BITS(&origin[reach_index]) != GET_ADDR_BITS(target) )
   {
-    tmp = *aux_ptr;
-    --aux_ptr;
+    tmp = origin[reach_index];
+    --reach_index;
     _use(&tmp);
+    _use_value(tmp);
   }
   volatile char read_value[8];
   volatile size_t i;
   for (i = 0; i < 8; i++)
   {
-    read_value[i] = aux_ptr[i];
+    read_value[i] = (origin + reach_index)[i];
+    _use(&(origin + reach_index)[i]);
   }
   _use(read_value);
+  _use_value(*read_value);
   _exit(TEST_CASE_SUCCESSFUL_VALUE);
 
   return 0;

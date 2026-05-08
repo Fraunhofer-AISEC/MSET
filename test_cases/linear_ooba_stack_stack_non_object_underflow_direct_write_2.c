@@ -30,7 +30,10 @@
 #define MAX_OBJECT_SIZE ((size_t)1 << 29)
 #endif
 
-volatile void *_use(volatile void *p) { return p; }
+__attribute__((section(".data.index"))) volatile size_t _sink;
+volatile void *_use(volatile void *p) { _sink = (size_t)p; return p; }
+volatile long long _use_value(volatile long long p) { return p; }
+__attribute__((noinline)) static size_t _hide_value(volatile size_t n) { volatile size_t v = n; return v; }
 const char content[8] = "ZZZZZZZ";
 
 // types
@@ -39,11 +42,11 @@ const char content[8] = "ZZZZZZZ";
 
 __attribute__((section(".data.index"))) volatile char * aux_ptr;
 
-int f()
+__attribute__((noinline)) int f()
 {
   // locals
 
-  char origin[8] = "";
+  volatile char origin[8] = "";
 
   origin[0] = 0xAA;
   origin[1] = 0xAA;
@@ -54,8 +57,9 @@ int f()
   origin[6] = 0xAA;
   origin[7] = 0xAA;
   _use((origin - 1));
+  _use_value(*(origin - 1));
   _use(origin);
-  if ( !(-1 <= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
+  _use_value(*origin);
   if ( GET_ADDR_BITS(&aux_ptr) < GET_ADDR_BITS(origin) && GET_ADDR_BITS(&aux_ptr) > GET_ADDR_BITS((origin - 1)) ) _exit(PRECONDITIONS_FAILED_VALUE);
   aux_ptr = origin;
   while( GET_ADDR_BITS(aux_ptr) != GET_ADDR_BITS((origin - 1)) )
@@ -63,14 +67,17 @@ int f()
     *aux_ptr = 0xFF;
     --aux_ptr;
     _use(aux_ptr);
+    _use_value(*aux_ptr);
   }
   volatile size_t i;
   volatile size_t size = 1;
   for (i = 0; i < size; i++)
   {
     aux_ptr[i] = content[i];
+    _use(&aux_ptr[i]);
   }
   _use(aux_ptr);
+  _use_value(*aux_ptr);
   _exit(TEST_CASE_SUCCESSFUL_VALUE);
 
   return 0;

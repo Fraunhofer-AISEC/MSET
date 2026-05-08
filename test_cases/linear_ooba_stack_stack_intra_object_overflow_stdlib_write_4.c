@@ -12,8 +12,8 @@
  * Access type: stdlib, write
  * Variant:
  *  - target declared after origin
- *  - distance is negated before checking
- *  - target reached by using a index
+ *  - distance is checked as is
+ *  - target reached by using a auxiliary pointer
  *  - target accessed by using auxiliary variables
  */
 
@@ -31,22 +31,25 @@
 #define MAX_OBJECT_SIZE ((size_t)1 << 29)
 #endif
 
-volatile void *_use(volatile void *p) { return p; }
+__attribute__((section(".data.index"))) volatile size_t _sink;
+volatile void *_use(volatile void *p) { _sink = (size_t)p; return p; }
+volatile long long _use_value(volatile long long p) { return p; }
+__attribute__((noinline)) static size_t _hide_value(volatile size_t n) { volatile size_t v = n; return v; }
 const char content[8] = "ZZZZZZZ";
 
 // types
 struct T
 {
-  char origin[8];
-  char target[8];
+  volatile char origin[8];
+  volatile char target[8];
 };
 
 // globals
 
-__attribute__((section(".data.index"))) volatile ssize_t i = 0;
+__attribute__((section(".data.index"))) volatile char * aux_ptr;
 __attribute__((section(".data.index"))) volatile size_t step_distance;
 
-int f()
+__attribute__((noinline)) int f()
 {
   // locals
 
@@ -69,22 +72,26 @@ int f()
   s.target[6] = 0xBB;
   s.target[7] = 0xBB;
   _use(s.target);
+  _use_value(*s.target);
   _use(s.origin);
-  if ( !(-(ssize_t)(GET_ADDR_BITS(s.origin) - GET_ADDR_BITS(s.target)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
-  if ( GET_ADDR_BITS(&i) < GET_ADDR_BITS(s.target) && GET_ADDR_BITS(&i) > GET_ADDR_BITS(s.origin) ) _exit(PRECONDITIONS_FAILED_VALUE);
+  _use_value(*s.origin);
+  if ( GET_ADDR_BITS(&aux_ptr) < GET_ADDR_BITS(s.target) && GET_ADDR_BITS(&aux_ptr) > GET_ADDR_BITS(s.origin) ) _exit(PRECONDITIONS_FAILED_VALUE);
   if ( GET_ADDR_BITS(&step_distance) < GET_ADDR_BITS(s.target) && GET_ADDR_BITS(&step_distance) > GET_ADDR_BITS(s.origin) ) _exit(PRECONDITIONS_FAILED_VALUE);
-  i = 0;
-  while( GET_ADDR_BITS(&s.origin[i]) < GET_ADDR_BITS(s.target) )
+  if ( !((ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
+  aux_ptr = s.origin;
+  while( GET_ADDR_BITS(aux_ptr) < GET_ADDR_BITS(s.target) )
   {
-    step_distance = (GET_ADDR_BITS(s.target) > (1024 + GET_ADDR_BITS(&s.origin[i]))) ? 1024 : GET_ADDR_BITS(s.target) - GET_ADDR_BITS(&s.origin[i]);
-    memset((void *)&s.origin[i], 0xFF, step_distance);
-    i += step_distance;
-    _use(&s.origin[i]);
+    step_distance = (GET_ADDR_BITS(s.target) > (1024 + GET_ADDR_BITS(aux_ptr))) ? 1024 : GET_ADDR_BITS(s.target) - GET_ADDR_BITS(aux_ptr);
+    memset((void *)aux_ptr, 0xFF, step_distance);
+    aux_ptr += step_distance;
+    _use(aux_ptr);
+    _use_value(*aux_ptr);
   }
-  _use(s.origin);
+  _use(s.origin);_use_value(*s.origin);
   volatile size_t size = 8;
-  memset( (void *)&s.origin[i], 0xFF, size);
-  _use(&s.origin[i]);
+  memset( (void *)aux_ptr, 0xFF, size);
+  _use( aux_ptr );
+  _use_value( *aux_ptr );
   _exit(TEST_CASE_SUCCESSFUL_VALUE);
 
   return 0;

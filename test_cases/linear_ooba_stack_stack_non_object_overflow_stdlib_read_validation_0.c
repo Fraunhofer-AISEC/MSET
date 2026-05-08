@@ -28,7 +28,10 @@
 #define MAX_OBJECT_SIZE ((size_t)1 << 29)
 #endif
 
-volatile void *_use(volatile void *p) { return p; }
+__attribute__((section(".data.index"))) volatile size_t _sink;
+volatile void *_use(volatile void *p) { _sink = (size_t)p; return p; }
+volatile long long _use_value(volatile long long p) { return p; }
+__attribute__((noinline)) static size_t _hide_value(volatile size_t n) { volatile size_t v = n; return v; }
 const char content[8] = "ZZZZZZZ";
 
 // types
@@ -37,11 +40,11 @@ const char content[8] = "ZZZZZZZ";
 
 __attribute__((section(".data.index"))) volatile ssize_t i = 0;
 
-int f()
+__attribute__((noinline)) int f()
 {
   // locals
 
-  char origin[8] = "";
+  volatile char origin[8] = "";
 
   origin[0] = 0xAA;
   origin[1] = 0xAA;
@@ -52,16 +55,18 @@ int f()
   origin[6] = 0xAA;
   origin[7] = 0xAA;
   _use(origin);
+  _use_value(*origin);
   while( i < 0 )
   {
     volatile char read_value[1024];
     size_t step_distance = (0 > (1024 + i)) ? 1024 : 0 - i;
-    memcpy((void *)read_value, (void *)&origin[i], step_distance);
+    memcpy((void *)read_value, (void *)&origin[i], _hide_value(step_distance));
     i += step_distance;
-    _use(&read_value);
+    _use(read_value);
+    _use_value(*read_value);
   }
   volatile char read_value[1];
-  memcpy( (void *)read_value, (void *)&origin[i], 1);
+  memcpy( (void *)read_value, (void *)&origin[i], _hide_value(1));
   _use( read_value );
   _exit(TEST_CASE_SUCCESSFUL_VALUE);
 

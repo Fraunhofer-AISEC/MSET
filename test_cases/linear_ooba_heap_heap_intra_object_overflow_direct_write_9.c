@@ -11,10 +11,11 @@
  * Bug type: intra-object, linear OOBA, overflow
  * Access type: direct, write
  * Variant:
- *  - target declared before origin
- *  - distance is checked as is
+ *  - target declared after origin
+ *  - distance is negated before checking
+ *  - To avoid optimizations, index into the target
  *  - target reached by using a index
- *  - target accessed by using constants
+ *  - target accessed by using auxiliary variables
  */
 
 #include <unistd.h> // _exit
@@ -31,61 +32,72 @@
 #define MAX_OBJECT_SIZE ((size_t)1 << 29)
 #endif
 
-volatile void *_use(volatile void *p) { return p; }
+__attribute__((section(".data.index"))) volatile size_t _sink;
+volatile void *_use(volatile void *p) { _sink = (size_t)p; return p; }
+volatile long long _use_value(volatile long long p) { return p; }
+__attribute__((noinline)) static size_t _hide_value(volatile size_t n) { volatile size_t v = n; return v; }
 const char content[8] = "ZZZZZZZ";
 
 // types
 struct T
 {
-  char target[8];
-  char origin[8];
+  volatile char origin[8];
+  volatile char target[8];
 };
 
 // globals
 
-__attribute__((section(".data.index"))) ssize_t reach_index = 0;
+__attribute__((section(".data.index"))) volatile ssize_t reach_index = 0;
 
-int f()
+__attribute__((noinline)) int f()
 {
   // locals
 
 
   struct T *s = (struct T *)malloc( sizeof(struct T) );
-  s->target[0] = 0xAA;
-  s->target[1] = 0xAA;
-  s->target[2] = 0xAA;
-  s->target[3] = 0xAA;
-  s->target[4] = 0xAA;
-  s->target[5] = 0xAA;
-  s->target[6] = 0xAA;
-  s->target[7] = 0xAA;
-  s->origin[0] = 0xBB;
-  s->origin[1] = 0xBB;
-  s->origin[2] = 0xBB;
-  s->origin[3] = 0xBB;
-  s->origin[4] = 0xBB;
-  s->origin[5] = 0xBB;
-  s->origin[6] = 0xBB;
-  s->origin[7] = 0xBB;
+  s->origin[0] = 0xAA;
+  s->origin[1] = 0xAA;
+  s->origin[2] = 0xAA;
+  s->origin[3] = 0xAA;
+  s->origin[4] = 0xAA;
+  s->origin[5] = 0xAA;
+  s->origin[6] = 0xAA;
+  s->origin[7] = 0xAA;
+  s->target[0] = 0xBB;
+  s->target[1] = 0xBB;
+  s->target[2] = 0xBB;
+  s->target[3] = 0xBB;
+  s->target[4] = 0xBB;
+  s->target[5] = 0xBB;
+  s->target[6] = 0xBB;
+  s->target[7] = 0xBB;
+  // index into the target to prevent optimizations
+  for (ssize_t i = 0; i < _hide_value(8); i++) { char tmp = s->target[i]; _use(&tmp); }
   _use(s->target);
+  _use_value(*s->target);
   _use(s->origin);
+  _use_value(*s->origin);
   if ( GET_ADDR_BITS(&reach_index) < GET_ADDR_BITS(s->target) && GET_ADDR_BITS(&reach_index) > GET_ADDR_BITS(s->origin) ) _exit(PRECONDITIONS_FAILED_VALUE);
-  if ( !((ssize_t)(GET_ADDR_BITS(s->target) - GET_ADDR_BITS(s->origin)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
+  if ( !(-(ssize_t)(GET_ADDR_BITS(s->origin) - GET_ADDR_BITS(s->target)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
   while( GET_ADDR_BITS(&s->origin[reach_index]) != GET_ADDR_BITS(s->target) )
   {
     s->origin[reach_index] = 0xFF;
     ++reach_index;
     _use(&s->origin[reach_index]);
+    _use_value(s->origin[reach_index]);
   }
   volatile size_t i;
-  for (i = 0; i < 8; i++)
+  volatile size_t size = 8;
+  for (i = 0; i < size; i++)
   {
-    (s->origin + reach_index)[i] = 0xFF;
+    (s->origin + reach_index)[i] = content[i];
+    _use(&(s->origin + reach_index)[i]);
   }
   _use((s->origin + reach_index));
+  _use_value(*(s->origin + reach_index));
   _exit(TEST_CASE_SUCCESSFUL_VALUE);
 
-  free(s);
+  free( (void *)s );
   return 0;
 }
 

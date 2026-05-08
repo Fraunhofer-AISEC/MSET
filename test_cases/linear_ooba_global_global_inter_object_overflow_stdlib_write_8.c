@@ -11,8 +11,8 @@
  * Bug type: inter-object, linear OOBA, overflow
  * Access type: stdlib, write
  * Variant:
- *  - target declared before origin
- *  - distance is checked as is
+ *  - target declared after origin
+ *  - distance is negated before checking
  *  - target reached by using a index
  *  - target accessed by using auxiliary variables
  */
@@ -31,26 +31,31 @@
 #define MAX_OBJECT_SIZE ((size_t)1 << 29)
 #endif
 
-volatile void *_use(volatile void *p) { return p; }
+__attribute__((section(".data.index"))) volatile size_t _sink;
+volatile void *_use(volatile void *p) { _sink = (size_t)p; return p; }
+volatile long long _use_value(volatile long long p) { return p; }
+__attribute__((noinline)) static size_t _hide_value(volatile size_t n) { volatile size_t v = n; return v; }
 const char content[8] = "ZZZZZZZ";
 
 // types
 
 // globals
 
-char target[8] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
-char origin[8] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
+volatile char origin[8] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
+volatile char target[8] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
 __attribute__((section(".data.index"))) volatile ssize_t i = 0;
 __attribute__((section(".data.index"))) volatile size_t step_distance;
 
-int f()
+__attribute__((noinline)) int f()
 {
   // locals
 
 
   _use(target);
+  _use_value(*target);
   _use(origin);
-  if ( !((ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
+  _use_value(*origin);
+  if ( !(-(ssize_t)(GET_ADDR_BITS(origin) - GET_ADDR_BITS(target)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
   if ( GET_ADDR_BITS(&i) < GET_ADDR_BITS(target) && GET_ADDR_BITS(&i) > GET_ADDR_BITS(origin) ) _exit(PRECONDITIONS_FAILED_VALUE);
   if ( GET_ADDR_BITS(&step_distance) < GET_ADDR_BITS(target) && GET_ADDR_BITS(&step_distance) > GET_ADDR_BITS(origin) ) _exit(PRECONDITIONS_FAILED_VALUE);
   i = 0;
@@ -60,11 +65,14 @@ int f()
     memset((void *)&origin[i], 0xFF, step_distance);
     i += step_distance;
     _use(&origin[i]);
+    _use_value(origin[i]);
   }
   _use(origin);
+  _use_value(*origin);
   volatile size_t size = 8;
   memset( (void *)&origin[i], 0xFF, size);
-  _use(&origin[i]);
+  _use( &origin[i] );
+  _use_value( *&origin[i] );
   _exit(TEST_CASE_SUCCESSFUL_VALUE);
 
   return 0;

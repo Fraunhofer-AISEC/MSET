@@ -35,7 +35,8 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> LinearOOBA::generate(
   std::shared_ptr<OriginTargetRelation> origin_target_relation,
   std::shared_ptr<Flow> flow,
   std::shared_ptr<AccessAction> access_action,
-  std::shared_ptr<AccessLocation> access_location
+  std::shared_ptr<AccessLocation> access_location,
+  int object_size
 ) const
 {
   std::vector< std::shared_ptr<OriginTargetCodeCanvas> >full_variants;
@@ -57,7 +58,7 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> LinearOOBA::generate(
   auto generate_counter_update = std::bind(&Flow::generate_counter_update, flow.get(), std::placeholders::_1);
 
   std::vector< std::shared_ptr<OriginTargetCodeCanvas> > origin_target_canvases = origin_target_relation->generate(
-    variant, origin, 8, target, 8);
+    variant, origin, object_size, target, object_size);
 
   for ( auto &origin_target_canvas : origin_target_canvases )
   {
@@ -82,6 +83,7 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> LinearOOBA::generate(
         if ( !flow->accepts_static_distance(distance_as_static_number) ) continue;
       }
       auto origin_target_canvas_copy = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas);
+      std::shared_ptr<OriginTargetCodeCanvas> origin_target_canvas_copy_avoid_optimizations = nullptr;
       std::vector<AccessLocation::SplitAccess> reach_target_codes;
       if (!distance_statically_known)
       {
@@ -90,6 +92,13 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> LinearOOBA::generate(
             generate_preconditions_check_distance, generate_preconditions_check_in_range, generate_counter_update
           );
         origin_target_canvas_copy->add_variant_description_line( distance_description );
+        if ( origin_target_canvas_copy->is_target_allocated() )
+        {
+          origin_target_canvas_copy_avoid_optimizations = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas_copy);
+          origin_target_canvas_copy_avoid_optimizations->add_during_lifetime("// index into the target to prevent optimizations");
+          origin_target_canvas_copy_avoid_optimizations->add_during_lifetime("for (ssize_t i = 0; i < _hide_value(" + std::to_string(origin_target_canvas_copy->get_target_size()) + "); i++) { char tmp = " + origin_target_canvas_copy->get_target_name() + "[i]; _use(&tmp); }");
+          origin_target_canvas_copy_avoid_optimizations->add_variant_description_line("To avoid optimizations, index into the target");
+        }
       }
       else
       {
@@ -100,13 +109,14 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> LinearOOBA::generate(
           origin_target_canvas_copy->add_variant_description_line("no space in between origin and target");
           std::vector<AccessLocation::SplitAccess> access_target_codes = access_location->generate_split_all(
             access_action,
-            "(" + origin_target_canvas_copy->get_origin_name() + " + " + std::to_string(origin_target_canvas_copy->get_target_size()) + ")",
-            distance_as_static_number);
+            "(" + origin_target_canvas_copy->get_origin_name() + " + _hide_value(" + std::to_string(origin_target_canvas_copy->get_origin_size()) + "))",
+            origin_target_canvas_copy->get_target_size());
           for ( auto &access_target_code : access_target_codes )
           {
             auto origin_target_canvas_with_access = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas_copy);
             origin_target_canvas_with_access->add_during_lifetime(access_target_code.to_lines());
             origin_target_canvas_with_access->add_during_lifetime("_use(" + origin_target_canvas_copy->get_origin_name() + ");");
+            origin_target_canvas_with_access->add_during_lifetime("_use_value(*" + origin_target_canvas_copy->get_origin_name() + ");");
             origin_target_canvas_with_access->add_during_lifetime("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
             origin_target_canvas_with_access->add_variant_description_line("target accessed by using " + access_target_code.description);
             full_variants.push_back(origin_target_canvas_with_access);
@@ -118,6 +128,13 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> LinearOOBA::generate(
           generate_preconditions_check_distance, generate_preconditions_check_in_range, generate_counter_update
         );
         origin_target_canvas_copy->add_variant_description_line( distance_description );
+        if ( origin_target_canvas_copy->is_target_allocated() )
+        {
+          origin_target_canvas_copy_avoid_optimizations = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas_copy);
+          origin_target_canvas_copy_avoid_optimizations->add_during_lifetime("// index into the target to prevent optimizations");
+          origin_target_canvas_copy_avoid_optimizations->add_during_lifetime("for (ssize_t i = 0; i < _hide_value(" + std::to_string(origin_target_canvas_copy->get_target_size()) + "); i++) { char tmp = " + origin_target_canvas_copy->get_target_name() + "[i]; _use(&tmp); }");
+          origin_target_canvas_copy_avoid_optimizations->add_variant_description_line("To avoid optimizations, index into the target");
+        }
       }
 
 
@@ -132,7 +149,9 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> LinearOOBA::generate(
         {
           auto origin_target_canvas_with_access = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas_copy);
           origin_target_canvas_with_access->add_during_lifetime("_use(" + origin_target_canvas_copy->get_target_name() + ");");
+          origin_target_canvas_with_access->add_during_lifetime("_use_value(*" + origin_target_canvas_copy->get_target_name() + ");");
           origin_target_canvas_with_access->add_during_lifetime("_use(" + origin_target_canvas_copy->get_origin_name() + ");");
+          origin_target_canvas_with_access->add_during_lifetime("_use_value(*" + origin_target_canvas_copy->get_origin_name() + ");");
           origin_target_canvas_with_access->add_during_lifetime(reach_target_code.access_lines);
           origin_target_canvas_with_access->add_during_lifetime(access_target_code.to_lines());
           origin_target_canvas_with_access->add_during_lifetime("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
@@ -143,6 +162,23 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> LinearOOBA::generate(
           origin_target_canvas_with_access->add_variant_description_line("target accessed by using " + access_target_code.description);
 
           full_variants.push_back(origin_target_canvas_with_access);
+          if ( origin_target_canvas_copy_avoid_optimizations )
+          {
+            origin_target_canvas_with_access = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas_copy_avoid_optimizations);
+            origin_target_canvas_with_access->add_during_lifetime("_use(" + origin_target_canvas_copy->get_target_name() + ");");
+            origin_target_canvas_with_access->add_during_lifetime("_use_value(*" + origin_target_canvas_copy->get_target_name() + ");");
+            origin_target_canvas_with_access->add_during_lifetime("_use(" + origin_target_canvas_copy->get_origin_name() + ");");
+            origin_target_canvas_with_access->add_during_lifetime("_use_value(*" + origin_target_canvas_copy->get_origin_name() + ");");
+            origin_target_canvas_with_access->add_during_lifetime(reach_target_code.access_lines);
+            origin_target_canvas_with_access->add_during_lifetime(access_target_code.to_lines());
+            origin_target_canvas_with_access->add_during_lifetime("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
+
+            origin_target_canvas_with_access->add_to_custom_section( AccessLocation::AuxiliaryVariable::to_string_vector( reach_target_code.aux_variables ) );
+  
+            origin_target_canvas_with_access->add_variant_description_line("target reached by using a " + reach_target_code.description);
+            origin_target_canvas_with_access->add_variant_description_line("target accessed by using " + access_target_code.description);
+            full_variants.push_back(origin_target_canvas_with_access);
+          }
         }
       }
     }
@@ -158,7 +194,8 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> LinearOOBA::generate_valida
   std::shared_ptr<OriginTargetRelation> origin_target_relation,
   std::shared_ptr<Flow> flow,
   std::shared_ptr<AccessAction> access_action,
-  std::shared_ptr<AccessLocation> access_location
+  std::shared_ptr<AccessLocation> access_location,
+  int object_size
 ) const
 {
   std::vector< std::shared_ptr<OriginTargetCodeCanvas> >full_variants;
@@ -176,7 +213,7 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> LinearOOBA::generate_valida
   variant.add_test_case_description_line("Access type: " + access_location->get_name() + ", " + access_action->get_name());
 
   std::vector< std::shared_ptr<OriginTargetCodeCanvas> > origin_target_canvases = origin_target_relation->generate(
-    variant, origin, 8, target, 8);
+    variant, origin, object_size, target, object_size);
 
   for ( auto &origin_target_canvas : origin_target_canvases )
   {
@@ -206,7 +243,7 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> LinearOOBA::generate_valida
       }
       auto origin_target_canvas_copy = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas);
       if ( distance_statically_known
-           && distance_as_static_number == static_cast<ssize_t>( origin_target_canvas_copy->get_origin_size() )
+           && distance_as_static_number == static_cast<ssize_t>( origin_target_canvas_copy->get_target_size() )
       )
       {
         // special case for when there is no space in between the origin and the target.
@@ -216,6 +253,7 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> LinearOOBA::generate_valida
           distance_as_static_number);
         origin_target_canvas_copy->add_during_lifetime(access_target_code);
         origin_target_canvas_copy->add_during_lifetime("_use(" + origin_target_canvas_copy->get_origin_name() + ");");
+        origin_target_canvas_copy->add_during_lifetime("_use_value(*" + origin_target_canvas_copy->get_origin_name() + ");");
         origin_target_canvas_copy->add_during_lifetime("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
         origin_target_canvas_copy->add_variant_description_line("no space between origin and target");
         full_variants.push_back(origin_target_canvas_copy);
@@ -234,8 +272,15 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> LinearOOBA::generate_valida
           origin_target_canvas_copy->get_target_size()
         );
 
-        if ( origin_target_canvas_copy->is_target_allocated() ) origin_target_canvas_copy->add_during_lifetime("_use(" + origin_target_canvas_copy->get_target_name() + ");");
+        if ( origin_target_canvas_copy->is_target_allocated() )
+        {
+          origin_target_canvas_copy->add_during_lifetime("_use(" + origin_target_canvas_copy->get_target_name() + ");");
+          origin_target_canvas_copy->add_during_lifetime("_use_value(*" + origin_target_canvas_copy->get_target_name() + ");");
+          origin_target_canvas_copy->add_during_lifetime("// index into the target to prevent optimizations");
+          origin_target_canvas_copy->add_during_lifetime("for (ssize_t i = 0; i < _hide_value(" + std::to_string(origin_target_canvas_copy->get_target_size()) + "); i++) { char tmp = " + origin_target_canvas_copy->get_target_name() + "[i]; _use(&tmp); }");
+        }
         origin_target_canvas_copy->add_during_lifetime("_use(" + origin_target_canvas_copy->get_origin_name() + ");");
+        origin_target_canvas_copy->add_during_lifetime("_use_value(*" + origin_target_canvas_copy->get_origin_name() + ");");
         origin_target_canvas_copy->add_during_lifetime(reach_target_code.access_lines);
         origin_target_canvas_copy->add_during_lifetime(access_target_code);
         origin_target_canvas_copy->add_during_lifetime("_exit(TEST_CASE_SUCCESSFUL_VALUE);");

@@ -24,7 +24,10 @@
 #define MAX_OBJECT_SIZE ((size_t)1 << 29)
 #endif
 
-volatile void *_use(volatile void *p) { return p; }
+__attribute__((section(".data.index"))) volatile size_t _sink;
+volatile void *_use(volatile void *p) { _sink = (size_t)p; return p; }
+volatile long long _use_value(volatile long long p) { return p; }
+__attribute__((noinline)) static size_t _hide_value(volatile size_t n) { volatile size_t v = n; return v; }
 const char content[8] = "ZZZZZZZ";
 
 // types
@@ -34,13 +37,13 @@ const char content[8] = "ZZZZZZZ";
 char *target_addresses[16];
 volatile char read_value[8];
 
-int f()
+__attribute__((noinline)) int f()
 {
   // locals
 
-  char reallocated[8] = "";
+  volatile char reallocated[8] = "";
 
-  char target[16][8];
+  volatile char target[16][8];
   for (int i = 0; i < 16; i++)
   {
     target[i][0] = 0xAA;
@@ -52,14 +55,14 @@ int f()
     target[i][6] = 0xAA;
     target[i][7] = 0xAA;
   }
-  for (int counter = 0; counter < 16; counter++) target_addresses[counter] = &target[counter][0];
+  for (int counter = 0; counter < 16; counter++) target_addresses[counter] = (char *)&target[counter][0];
   int counter;
   for (counter = 0; counter < 16; counter++)
   {
     if ( GET_ADDR_BITS(&reallocated[0]) == GET_ADDR_BITS(target_addresses[counter]) ) break;
   }
   if (counter == 16) counter = 0;
-  memcpy( (void *)read_value, (void *)target_addresses[counter], 8);
+  memcpy( (void *)read_value, (void *)target_addresses[counter], _hide_value(8));
   _use( read_value );
   _exit(TEST_CASE_SUCCESSFUL_VALUE);
 

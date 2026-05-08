@@ -18,7 +18,7 @@ StackRegion::StackRegion():
 std::shared_ptr<RegionCodeCanvas> StackRegion::generate(std::shared_ptr<CodeCanvas> code_canvas, std::string name, size_t size, bool initialize) const
 {
   std::shared_ptr<RegionCodeCanvas> populated_code_canvas = std::make_shared<RegionCodeCanvas>(*code_canvas, std::to_string(size) );
-  CodeCanvas::code_pos_t allocation_pos = populated_code_canvas->add_local("char " + name + "[" + std::to_string(size) + "] = \"\";");
+  CodeCanvas::code_pos_t allocation_pos = populated_code_canvas->add_local("volatile char " + name + "[" + std::to_string(size) + "] = \"\";");
   CodeCanvas::code_pos_t current = allocation_pos;
   if (initialize)
   {
@@ -43,7 +43,7 @@ std::shared_ptr<RegionCodeCanvas> StackRegion::generate_in_other_f(std::shared_p
   bool initialize) const
 {
   std::shared_ptr<RegionCodeCanvas> populated_code_canvas = std::make_shared<RegionCodeCanvas>(*canvas, size);
-  CodeCanvas::code_pos_t allocation_pos = populated_code_canvas->add_to_other_f_body("char " + name + "[" + std::to_string(size) + "];");
+  CodeCanvas::code_pos_t allocation_pos = populated_code_canvas->add_to_other_f_body("volatile char " + name + "[" + std::to_string(size) + "];");
   CodeCanvas::code_pos_t current = allocation_pos;
   if (initialize)
   {
@@ -64,7 +64,7 @@ std::shared_ptr<RegionCodeCanvas> StackRegion::generate_array(std::shared_ptr<Co
   bool initialize) const
 {
   std::shared_ptr<RegionCodeCanvas> populated_code_canvas = std::make_shared<RegionCodeCanvas>(*canvas, size);
-  CodeCanvas::code_pos_t allocation_pos = populated_code_canvas->add_to_f_body("char " + name + "[" + std::to_string(array_size) + "][" + std::to_string(size) + "];");
+  CodeCanvas::code_pos_t allocation_pos = populated_code_canvas->add_to_f_body("volatile char " + name + "[" + std::to_string(array_size) + "][" + std::to_string(size) + "];");
   CodeCanvas::code_pos_t current = allocation_pos;
   if (initialize)
   {
@@ -97,8 +97,8 @@ std::shared_ptr<RegionCodeCanvas> StackRegion::generate(
   populated_code_canvas->add_type({
     "struct T",
     "{",
-    "  char " + name_field_1 + "[" + std::to_string(size_field_1) + "];",
-    "  char " + name_field_2 + "[" + std::to_string(size_field_2) + "];",
+    "  volatile char " + name_field_1 + "[" + std::to_string(size_field_1) + "];",
+    "  volatile char " + name_field_2 + "[" + std::to_string(size_field_2) + "];",
     "};"
   });
   CodeCanvas::code_pos_t allocation_pos = populated_code_canvas->add_local("struct T " + name + ";");

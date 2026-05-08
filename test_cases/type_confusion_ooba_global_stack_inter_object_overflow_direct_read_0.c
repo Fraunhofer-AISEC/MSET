@@ -30,7 +30,10 @@
 #define MAX_OBJECT_SIZE ((size_t)1 << 29)
 #endif
 
-volatile void *_use(volatile void *p) { return p; }
+__attribute__((section(".data.index"))) volatile size_t _sink;
+volatile void *_use(volatile void *p) { _sink = (size_t)p; return p; }
+volatile long long _use_value(volatile long long p) { return p; }
+__attribute__((noinline)) static size_t _hide_value(volatile size_t n) { volatile size_t v = n; return v; }
 const char content[8] = "ZZZZZZZ";
 
 // types
@@ -41,14 +44,14 @@ struct BigType
 
 // globals
 
-char origin[8] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
+volatile char origin[8] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
 __attribute__((section(".data.index"))) ssize_t i;
 
-int f()
+__attribute__((noinline)) int f()
 {
   // locals
 
-  char target[8] = "";
+  volatile char target[8] = "";
 
   target[0] = 0xAA;
   target[1] = 0xAA;
@@ -59,20 +62,24 @@ int f()
   target[6] = 0xAA;
   target[7] = 0xAA;
   if ( ((ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) > 0 && (ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) > (MAX_OBJECT_SIZE))
-       || ((ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) < 0 && (ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin))< -(MAX_OBJECT_SIZE) ) )  _exit(PRECONDITIONS_FAILED_VALUE);
+       || ((ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) < 0 && (ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) < -(MAX_OBJECT_SIZE) ) )  _exit(PRECONDITIONS_FAILED_VALUE);
   if ( !((ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
   volatile char tmp;
   for (i = 0; i < (ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)); i++)
   {
     tmp = ((struct BigType *)origin)->buffer[i];
+    _use(&tmp);
   }
   _use(&tmp);
+  _use_value(tmp);
   volatile char read_value[8];
   for (ssize_t access_index = 0; access_index < 8; access_index++)
   {
     read_value[access_index] = ((struct BigType *)origin)->buffer[access_index + (ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin))];
+    _use(&read_value[access_index]);
   }
   _use(read_value);
+  _use_value(*read_value);
   _exit(TEST_CASE_SUCCESSFUL_VALUE);
 
   return 0;
