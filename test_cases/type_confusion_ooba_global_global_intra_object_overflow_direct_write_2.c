@@ -30,14 +30,17 @@
 #define MAX_OBJECT_SIZE ((size_t)1 << 29)
 #endif
 
-volatile void *_use(volatile void *p) { return p; }
+__attribute__((section(".data.index"))) volatile size_t _sink;
+volatile void *_use(volatile void *p) { _sink = (size_t)p; return p; }
+volatile long long _use_value(volatile long long p) { return p; }
+__attribute__((noinline)) static size_t _hide_value(volatile size_t n) { volatile size_t v = n; return v; }
 const char content[8] = "ZZZZZZZ";
 
 // types
 struct T
 {
-  char target[8];
-  char origin[8];
+  volatile char target[8];
+  volatile char origin[8];
 };
 struct BigType
 {
@@ -49,25 +52,29 @@ struct BigType
 struct T s = { {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA}, {0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB} };
 __attribute__((section(".data.index"))) ssize_t i;
 
-int f()
+__attribute__((noinline)) int f()
 {
   // locals
 
 
   if ( ((ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin)) > 0 && (ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin)) > (MAX_OBJECT_SIZE))
-       || ((ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin)) < 0 && (ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin))< -(MAX_OBJECT_SIZE) ) )  _exit(PRECONDITIONS_FAILED_VALUE);
+       || ((ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin)) < 0 && (ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin)) < -(MAX_OBJECT_SIZE) ) )  _exit(PRECONDITIONS_FAILED_VALUE);
   if ( !((ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
   if ( GET_ADDR_BITS(&i) < GET_ADDR_BITS(&((struct BigType *)s.origin)->buffer[(ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin))]) && GET_ADDR_BITS(&i) > GET_ADDR_BITS(&((struct BigType *)s.origin)->buffer[0]) ) _exit(PRECONDITIONS_FAILED_VALUE);
   for (i = 0; i < (ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin)); i++)
   {
     ((struct BigType *)s.origin)->buffer[i] = 0xFF;
+    _use(&((struct BigType *)s.origin)->buffer[i]);
   }
   _use(((struct BigType *)s.origin)->buffer);
+  _use_value(*((struct BigType *)s.origin)->buffer);
   for (ssize_t i = 0; i < 8; i++)
   {
     ((struct BigType *)s.origin)->buffer[i + (ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin))] = 0xFF;
+    _use(&((struct BigType *)s.origin)->buffer[i + (ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin))]);
   }
   _use(((struct BigType *)s.origin)->buffer);
+  _use_value(*((struct BigType *)s.origin)->buffer);
   _exit(TEST_CASE_SUCCESSFUL_VALUE);
 
   return 0;

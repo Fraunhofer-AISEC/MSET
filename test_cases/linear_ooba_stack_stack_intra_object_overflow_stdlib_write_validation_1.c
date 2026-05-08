@@ -29,14 +29,17 @@
 #define MAX_OBJECT_SIZE ((size_t)1 << 29)
 #endif
 
-volatile void *_use(volatile void *p) { return p; }
+__attribute__((section(".data.index"))) volatile size_t _sink;
+volatile void *_use(volatile void *p) { _sink = (size_t)p; return p; }
+volatile long long _use_value(volatile long long p) { return p; }
+__attribute__((noinline)) static size_t _hide_value(volatile size_t n) { volatile size_t v = n; return v; }
 const char content[8] = "ZZZZZZZ";
 
 // types
 struct T
 {
-  char target[8];
-  char origin[8];
+  volatile char target[8];
+  volatile char origin[8];
 };
 
 // globals
@@ -44,7 +47,7 @@ struct T
 __attribute__((section(".data.index"))) volatile ssize_t i = 0;
 __attribute__((section(".data.index"))) volatile size_t step_distance;
 
-int f()
+__attribute__((noinline)) int f()
 {
   // locals
 
@@ -67,7 +70,11 @@ int f()
   s.origin[6] = 0xBB;
   s.origin[7] = 0xBB;
   _use(s.target);
+  _use_value(*s.target);
+  // index into the target to prevent optimizations
+  for (ssize_t i = 0; i < _hide_value(8); i++) { char tmp = s.target[i]; _use(&tmp); }
   _use(s.origin);
+  _use_value(*s.origin);
   i = 0;
   while( GET_ADDR_BITS(&s.target[i]) < GET_ADDR_BITS(s.target) )
   {
@@ -75,8 +82,10 @@ int f()
     memset((void *)&s.target[i], 0xFF, step_distance);
     i += step_distance;
     _use(&s.target[i]);
+    _use_value(s.target[i]);
   }
   _use(s.target);
+  _use_value(*s.target);
   memset( (void *)&s.target[i], 0xFF, 8);
   _use(&s.target[i]);
   _exit(TEST_CASE_SUCCESSFUL_VALUE);

@@ -27,7 +27,10 @@
 #define MAX_OBJECT_SIZE ((size_t)1 << 29)
 #endif
 
-volatile void *_use(volatile void *p) { return p; }
+__attribute__((section(".data.index"))) volatile size_t _sink;
+volatile void *_use(volatile void *p) { _sink = (size_t)p; return p; }
+volatile long long _use_value(volatile long long p) { return p; }
+__attribute__((noinline)) static size_t _hide_value(volatile size_t n) { volatile size_t v = n; return v; }
 const char content[8] = "ZZZZZZZ";
 
 // types
@@ -35,7 +38,7 @@ const char content[8] = "ZZZZZZZ";
 // globals
 
 
-int f()
+__attribute__((noinline)) int f()
 {
   // locals
 
@@ -46,20 +49,24 @@ int f()
   char *pointer_to_double_free; // pointer to be double-freed
   char *pointer_to_use; // pointer to illegally use
   pointer_to_double_free = (char *)malloc(10);
+  _use(pointer_to_double_free);
   free(pointer_to_double_free);
   pointer_to_use = (char *)malloc(8); // allocate a new object
-  char *target = (char *)malloc( 8 );
+  _use(pointer_to_use);
+  volatile char *target = (char *)malloc( 8 );
   
   volatile char read_value[8];
   volatile size_t i;
   for (i = 0; i < 8; i++)
   {
     read_value[i] = pointer_to_use[i];
+    _use(&pointer_to_use[i]);
   }
   _use(read_value);
+  _use_value(*read_value);
   exit(TEST_CASE_SUCCESSFUL_VALUE);
 
-  free(target);
+  free( (void *)target );
   return 0;
 }
 

@@ -31,21 +31,24 @@
 #define MAX_OBJECT_SIZE ((size_t)1 << 29)
 #endif
 
-volatile void *_use(volatile void *p) { return p; }
+__attribute__((section(".data.index"))) volatile size_t _sink;
+volatile void *_use(volatile void *p) { _sink = (size_t)p; return p; }
+volatile long long _use_value(volatile long long p) { return p; }
+__attribute__((noinline)) static size_t _hide_value(volatile size_t n) { volatile size_t v = n; return v; }
 const char content[8] = "ZZZZZZZ";
 
 // types
 struct T
 {
-  char origin[8];
-  char target[8];
+  volatile char origin[8];
+  volatile char target[8];
 };
 
 // globals
 
 __attribute__((section(".data.index"))) volatile ssize_t i = 0;
 
-int f()
+__attribute__((noinline)) int f()
 {
   // locals
 
@@ -68,19 +71,23 @@ int f()
   s.target[6] = 0xBB;
   s.target[7] = 0xBB;
   _use(s.target);
+  _use_value(*s.target);
   _use(s.origin);
+  _use_value(*s.origin);
   if ( !((ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
   while( i < (ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin)) )
   {
     volatile char read_value[1024];
     size_t step_distance = ((ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin)) > (1024 + i)) ? 1024 : (ssize_t)(GET_ADDR_BITS(s.target) - GET_ADDR_BITS(s.origin)) - i;
-    memcpy((void *)read_value, (void *)&s.origin[i], step_distance);
+    memcpy((void *)read_value, (void *)&s.origin[i], _hide_value(step_distance));
     i += step_distance;
-    _use(&read_value);
+    _use(read_value);
+    _use_value(*read_value);
   }
   volatile char read_value[8];
-  memcpy( (void *)read_value, (void *)&s.origin[i], 8);
+  memcpy( (void *)read_value, (void *)&s.origin[i], _hide_value(8));
   _use( read_value );
+  _use_value( *read_value );
   _exit(TEST_CASE_SUCCESSFUL_VALUE);
 
   return 0;

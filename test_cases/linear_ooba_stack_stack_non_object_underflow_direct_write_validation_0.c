@@ -28,20 +28,23 @@
 #define MAX_OBJECT_SIZE ((size_t)1 << 29)
 #endif
 
-volatile void *_use(volatile void *p) { return p; }
+__attribute__((section(".data.index"))) volatile size_t _sink;
+volatile void *_use(volatile void *p) { _sink = (size_t)p; return p; }
+volatile long long _use_value(volatile long long p) { return p; }
+__attribute__((noinline)) static size_t _hide_value(volatile size_t n) { volatile size_t v = n; return v; }
 const char content[8] = "ZZZZZZZ";
 
 // types
 
 // globals
 
-__attribute__((section(".data.index"))) ssize_t reach_index = 0;
+__attribute__((section(".data.index"))) volatile ssize_t reach_index = 0;
 
-int f()
+__attribute__((noinline)) int f()
 {
   // locals
 
-  char origin[8] = "";
+  volatile char origin[8] = "";
 
   origin[0] = 0xAA;
   origin[1] = 0xAA;
@@ -52,18 +55,22 @@ int f()
   origin[6] = 0xAA;
   origin[7] = 0xAA;
   _use(origin);
+  _use_value(*origin);
   while( GET_ADDR_BITS(&origin[reach_index]) != GET_ADDR_BITS(origin) )
   {
     origin[reach_index] = 0xFF;
     --reach_index;
     _use(&origin[reach_index]);
+    _use_value(origin[reach_index]);
   }
   volatile size_t i;
   for (i = 0; i < 1; i++)
   {
     (origin + reach_index)[i] = 0xFF;
+    _use(&(origin + reach_index)[i]);
   }
   _use((origin + reach_index));
+  _use_value(*(origin + reach_index));
   _exit(TEST_CASE_SUCCESSFUL_VALUE);
 
   return 0;

@@ -28,7 +28,10 @@
 #define MAX_OBJECT_SIZE ((size_t)1 << 29)
 #endif
 
-volatile void *_use(volatile void *p) { return p; }
+__attribute__((section(".data.index"))) volatile size_t _sink;
+volatile void *_use(volatile void *p) { _sink = (size_t)p; return p; }
+volatile long long _use_value(volatile long long p) { return p; }
+__attribute__((noinline)) static size_t _hide_value(volatile size_t n) { volatile size_t v = n; return v; }
 const char content[8] = "ZZZZZZZ";
 
 // types
@@ -36,11 +39,11 @@ const char content[8] = "ZZZZZZZ";
 // globals
 
 
-int f()
+__attribute__((noinline)) int f()
 {
   // locals
 
-  char origin[8] = "";
+  volatile char origin[8] = "";
 
   origin[0] = 0xAA;
   origin[1] = 0xAA;
@@ -50,7 +53,7 @@ int f()
   origin[5] = 0xAA;
   origin[6] = 0xAA;
   origin[7] = 0xAA;
-  char *target = (char *)malloc( 8 );
+  volatile char *target = (char *)malloc( 8 );
   target[0] = 0xAA;
   target[1] = 0xAA;
   target[2] = 0xAA;
@@ -60,11 +63,11 @@ int f()
   target[6] = 0xAA;
   target[7] = 0xAA;
   char read_value[8];
-  memcpy(read_value, (void *)&target[0], 8);
-  _use(read_value);
+  memcpy(read_value, (void *)&target[0], _hide_value(8));
+  _use(read_value);_use_value(*read_value);
   _exit(TEST_CASE_SUCCESSFUL_VALUE);
 
-  free(target);
+  free( (void *)target );
   return 0;
 }
 

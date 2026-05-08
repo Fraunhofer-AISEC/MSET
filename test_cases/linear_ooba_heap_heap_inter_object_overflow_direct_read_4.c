@@ -12,8 +12,8 @@
  * Access type: direct, read
  * Variant:
  *  - target declared after origin
- *  - distance is negated before checking
- *  - target reached by using a index
+ *  - distance is checked as is
+ *  - target reached by using a auxiliary pointer
  *  - target accessed by using auxiliary variables
  */
 
@@ -31,7 +31,10 @@
 #define MAX_OBJECT_SIZE ((size_t)1 << 29)
 #endif
 
-volatile void *_use(volatile void *p) { return p; }
+__attribute__((section(".data.index"))) volatile size_t _sink;
+volatile void *_use(volatile void *p) { _sink = (size_t)p; return p; }
+volatile long long _use_value(volatile long long p) { return p; }
+__attribute__((noinline)) static size_t _hide_value(volatile size_t n) { volatile size_t v = n; return v; }
 const char content[8] = "ZZZZZZZ";
 
 // types
@@ -39,15 +42,15 @@ const char content[8] = "ZZZZZZZ";
 // globals
 
 __attribute__((section(".data.index"))) volatile char tmp;
-__attribute__((section(".data.index"))) volatile size_t i;
+__attribute__((section(".data.index"))) volatile char * aux_ptr;
 __attribute__((section(".data.index"))) volatile ssize_t reach_index = 0;
 
-int f()
+__attribute__((noinline)) int f()
 {
   // locals
 
 
-  char *origin = (char *)malloc( 8 );
+  volatile char *origin = (char *)malloc( 8 );
   origin[0] = 0xAA;
   origin[1] = 0xAA;
   origin[2] = 0xAA;
@@ -56,7 +59,7 @@ int f()
   origin[5] = 0xAA;
   origin[6] = 0xAA;
   origin[7] = 0xAA;
-  char *target = (char *)malloc( 8 );
+  volatile char *target = (char *)malloc( 8 );
   target[0] = 0xAA;
   target[1] = 0xAA;
   target[2] = 0xAA;
@@ -66,26 +69,32 @@ int f()
   target[6] = 0xAA;
   target[7] = 0xAA;
   _use(target);
+  _use_value(*target);
   _use(origin);
-  if ( !(-(ssize_t)(GET_ADDR_BITS(origin) - GET_ADDR_BITS(target)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
-  while( GET_ADDR_BITS(&origin[reach_index]) != GET_ADDR_BITS(target) )
+  _use_value(*origin);
+  if ( !((ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
+  aux_ptr = &origin[0];
+  while( GET_ADDR_BITS(aux_ptr) != GET_ADDR_BITS(target) )
   {
-    tmp = origin[reach_index];
-    ++reach_index;
+    tmp = *aux_ptr;
+    ++aux_ptr;
     _use(&tmp);
+    _use_value(tmp);
   }
   volatile char read_value[8];
   volatile size_t i;
   volatile size_t size = 8;
   for (i = 0; i < size; i++)
   {
-    read_value[i] = (origin + reach_index)[i];
+    read_value[i] = aux_ptr[i];
+    _use(&aux_ptr[i]);
   }
   _use(read_value);
+  _use_value(*read_value);
   _exit(TEST_CASE_SUCCESSFUL_VALUE);
 
-  free(origin);
-  free(target);
+  free( (void *)origin );
+  free( (void *)target );
   return 0;
 }
 

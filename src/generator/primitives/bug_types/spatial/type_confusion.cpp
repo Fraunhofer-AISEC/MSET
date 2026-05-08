@@ -32,7 +32,8 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> TypeConfusion::generate(
   std::shared_ptr<OriginTargetRelation> origin_target_relation,
   std::shared_ptr<Flow> flow,
   std::shared_ptr<AccessAction> access_action,
-  std::shared_ptr<AccessLocation> access_location
+  std::shared_ptr<AccessLocation> access_location,
+  int object_size
 ) const
 {
   std::vector< std::shared_ptr<OriginTargetCodeCanvas> >full_variants;
@@ -54,7 +55,7 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> TypeConfusion::generate(
   auto generate_preconditions_check_in_range = std::bind(&Flow::generate_preconditions_check_in_range, flow.get(), std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
 
   std::vector< std::shared_ptr<OriginTargetCodeCanvas> > origin_target_canvases = origin_target_relation->generate(
-    variant, origin, 8, target, 8);
+    variant, origin, object_size, target, object_size);
 
   for ( auto &origin_target_canvas : origin_target_canvases )
   {
@@ -77,11 +78,36 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> TypeConfusion::generate(
       variant_with_big_type->get_target_size(),
       nullptr
     );
-    variant_with_big_type->add_during_lifetime({
-      "if ( (" + variant_with_big_type->get_distance() + " > 0 && " + variant_with_big_type->get_distance() + " > (MAX_OBJECT_SIZE))",
-      "     || (" + variant_with_big_type->get_distance() + " < 0 && " + variant_with_big_type->get_distance() + "< -(MAX_OBJECT_SIZE) ) )"\
-      "  _exit(PRECONDITIONS_FAILED_VALUE);"
-    });
+
+    int int_distance;
+    if (to_int(variant_with_big_type->get_distance(), int_distance))
+    {
+      // distance known at compile time
+      if (int_distance > 0 )
+      {
+        variant_with_big_type->add_during_lifetime({
+          "if ( " + variant_with_big_type->get_distance() + " > (MAX_OBJECT_SIZE) )",
+          "  _exit(PRECONDITIONS_FAILED_VALUE);"
+        });
+      }
+      else
+      {
+        // negative distance
+        variant_with_big_type->add_during_lifetime({
+          "if ( " + variant_with_big_type->get_distance() + " < -(MAX_OBJECT_SIZE) )",
+          "  _exit(PRECONDITIONS_FAILED_VALUE);"
+        });
+      }
+    }
+    else
+    {
+      // distance not known at compile time
+      variant_with_big_type->add_during_lifetime({
+        "if ( (" + variant_with_big_type->get_distance() + " > 0 && " + variant_with_big_type->get_distance() + " > (MAX_OBJECT_SIZE))",
+        "     || (" + variant_with_big_type->get_distance() + " < 0 && " + variant_with_big_type->get_distance() + " < -(MAX_OBJECT_SIZE) ) )"\
+        "  _exit(PRECONDITIONS_FAILED_VALUE);"
+      });
+    }
     variant_with_big_type->add_during_lifetime(reach_target_code);
     variant_with_big_type->add_during_lifetime(access_target_code);
     variant_with_big_type->add_during_lifetime("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
@@ -99,12 +125,18 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> TypeConfusion::generate(
 
     // load widening variant
     std::shared_ptr<OriginTargetCodeCanvas> variant_with_load_widening = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas);
+
+    if (to_int(variant_with_load_widening->get_distance(), int_distance))
+    {
+      if ( int_distance < 0 ) continue; // only works for positive distance, i.e., for overflows
+      if ( int_distance > static_cast<int>(variant_with_big_type->get_origin_size() + 3) ) continue; // cannot go more than 3 bytes over the origin with an uint32
+    }
     access_target_code = access_location->generate_uint32(
       access_action,
       variant_with_load_widening->get_origin_name(),
       variant_with_load_widening->get_origin_name(),
       variant_with_load_widening->get_distance(),
-      8,
+      variant_with_load_widening->get_origin_size(),
       generate_preconditions_check_distance
     );
     variant_with_load_widening->add_during_lifetime(access_target_code);
@@ -123,7 +155,8 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> TypeConfusion::generate_val
   std::shared_ptr<OriginTargetRelation> origin_target_relation,
   std::shared_ptr<Flow> flow,
   std::shared_ptr<AccessAction> access_action,
-  std::shared_ptr<AccessLocation> access_location
+  std::shared_ptr<AccessLocation> access_location,
+  int object_size
 ) const
 {
   std::vector< std::shared_ptr<OriginTargetCodeCanvas> >full_variants;
@@ -139,7 +172,7 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> TypeConfusion::generate_val
   variant.add_test_case_description_line("Access type: " + access_location->get_name() + ", " + access_action->get_name());
 
   std::vector< std::shared_ptr<OriginTargetCodeCanvas> > origin_target_canvases = origin_target_relation->generate(
-    variant, origin, 8, target, 8);
+    variant, origin, object_size, target, object_size);
 
   for ( auto &origin_target_canvas : origin_target_canvases )
   {

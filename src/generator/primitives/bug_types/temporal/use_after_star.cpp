@@ -77,7 +77,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >UseAfterStar::_generate_unused_m
   std::shared_ptr<StackRegion> stack_memory_region_simple = std::make_shared<StackRegion>(*stack_memory_region);
   std::shared_ptr<RegionCodeCanvas> region_canvas = stack_memory_region_simple->generate(std::make_shared<CodeCanvas>(code_simple), "target", 8, true);
 
-  region_canvas->add_during_lifetime("target_address = &target[0];");
+  region_canvas->add_during_lifetime("target_address = (char *)&target[0];");
   AccessLocation::SplitAccess access_type_code = access_location->generate_split_const_vars(
     access_action, "target_address", 8);
 
@@ -109,7 +109,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >UseAfterStar::_generate_unused_m
   assert( is_a<HeapRegion>(memory_region) );
   std::vector<std::string> access_type_code = access_location->generate(
     access_action, "target_address", 8);
-  auto index = region_canvas->add_at(region_canvas->get_deallocation_pos(), "target_address = &target[0];", "  ");
+  auto index = region_canvas->add_at(region_canvas->get_deallocation_pos(), "target_address = (char *)&target[0];", "  ");
   // region_canvas->add_during_lifetime("target_address = &target[0];");
   index = region_canvas->add_at(index, access_type_code, "  ");
   region_canvas->add_at(index, "_exit(TEST_CASE_SUCCESSFUL_VALUE);", "  ");
@@ -145,7 +145,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >UseAfterStar::_generate_reused_m
   std::shared_ptr<RegionCodeCanvas> region_canvas = memory_region->generate(std::make_shared<CodeCanvas>(code), "target", 8, false);
 
   assert ( is_a<HeapRegion>(memory_region) );
-  region_canvas->add_during_lifetime("target_address = &target[0];");
+  region_canvas->add_during_lifetime("target_address = (char *)&target[0];");
     std::vector<std::string> access_type_code = access_location->generate(
     access_action, "target_address", 8);
   std::shared_ptr<HeapRegion> heap_memory_region = std::dynamic_pointer_cast<HeapRegion>(memory_region);
@@ -202,7 +202,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >UseAfterStar::_generate_reused_m
   std::shared_ptr<StackRegion> stack_memory_region = std::dynamic_pointer_cast<StackRegion>(memory_region);
   std::shared_ptr<StackRegion> stack_memory_region_simple = std::make_shared<StackRegion>(*stack_memory_region);
   std::shared_ptr<RegionCodeCanvas> region_canvas = stack_memory_region_simple->generate(std::make_shared<CodeCanvas>(code_simple), "target", 8, true);
-  region_canvas->add_during_lifetime("target_address = &target[0];");
+  region_canvas->add_during_lifetime("target_address = (char *)&target[0];");
   AccessLocation::SplitAccess access_type_code = access_location->generate_split_const_vars(
     access_action, "target_address", 8);
 
@@ -212,6 +212,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >UseAfterStar::_generate_reused_m
   reused_region_canvas_simple->add_during_lifetime("if (GET_ADDR_BITS(&reallocated[0]) != GET_ADDR_BITS(target_address)) _exit(PRECONDITIONS_FAILED_VALUE);");
   reused_region_canvas_simple->add_during_lifetime(access_type_code.access_lines);
   reused_region_canvas_simple->add_during_lifetime("_use(reallocated);");
+  reused_region_canvas_simple->add_during_lifetime("_use_value(*reallocated);");
   reused_region_canvas_simple->add_during_lifetime("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
   reused_region_canvas_simple->add_globals( AccessLocation::AuxiliaryVariable::to_string_vector( access_type_code.aux_variables ) );
 
@@ -228,7 +229,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >UseAfterStar::_generate_reused_m
   reused_region_canvas_repeated->add_global("char *last_address = NULL;");
   reused_region_canvas_repeated->add_during_lifetime({
     "if (GET_ADDR_BITS(last_address) == GET_ADDR_BITS(&reallocated[0])) _exit(PRECONDITIONS_FAILED_VALUE); // repeating does not help",
-    "last_address = &reallocated[0];",
+    "last_address = (char *)&reallocated[0];",
     "if (GET_ADDR_BITS(&reallocated[0]) != GET_ADDR_BITS(target_address)) return PRECONDITIONS_FAILED_VALUE;"
   });
   reused_region_canvas_repeated->add_during_lifetime(access_type_code.access_lines);
@@ -257,7 +258,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >UseAfterStar::_generate_reused_m
   std::shared_ptr<StackRegion> stack_memory_region_array = std::make_shared<StackRegion>(*stack_memory_region);
   std::shared_ptr<RegionCodeCanvas> array_region_canvas = stack_memory_region_array->generate_array(std::make_shared<CodeCanvas>(code_array), "target", 8, 16, true);
 
-  array_region_canvas->add_during_lifetime("for (int counter = 0; counter < 16; counter++) target_addresses[counter] = &target[counter][0];");
+  array_region_canvas->add_during_lifetime("for (int counter = 0; counter < 16; counter++) target_addresses[counter] = (char *)&target[counter][0];");
   access_type_code = access_location->generate_split_const_vars(
     access_action, "target_addresses[counter]", 8);
   std::shared_ptr<RegionCodeCanvas> reused_region_canvas_simple_array = stack_memory_region_array->generate_in_other_f(
@@ -283,7 +284,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >UseAfterStar::_generate_reused_m
   std::shared_ptr<StackRegion> stack_memory_region_array_repeated = std::make_shared<StackRegion>(*stack_memory_region);
   array_region_canvas = stack_memory_region_array_repeated->generate_array(std::make_shared<CodeCanvas>(code_array), "target", 8, 16, true);
 
-  array_region_canvas->add_during_lifetime("for (int counter = 0; counter < 16; counter++) target_addresses[counter] = &target[counter][0];");
+  array_region_canvas->add_during_lifetime("for (int counter = 0; counter < 16; counter++) target_addresses[counter] = (char *)&target[counter][0];");
   access_type_code = access_location->generate_split_const_vars(
     access_action, "target_addresses[counter]", 8);
   std::shared_ptr<RegionCodeCanvas> reused_region_canvas_array_repeated = stack_memory_region_array->generate_in_other_f(
@@ -368,7 +369,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >UseAfterStar::_generate_unused_m
   std::shared_ptr<StackRegion> stack_memory_region_simple = std::make_shared<StackRegion>(*stack_memory_region);
   std::shared_ptr<RegionCodeCanvas> region_canvas = stack_memory_region_simple->generate(std::make_shared<CodeCanvas>(code_simple), "target", 8, true);
 
-  region_canvas->add_to_f_body("target_address = &target[0];");
+  region_canvas->add_to_f_body("target_address = (char *)&target[0];");
   AccessLocation::SplitAccess access_type_code = access_location->generate_split_const_vars(
     access_action, "target_address", 8);
 
@@ -402,7 +403,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >UseAfterStar::_generate_unused_m
 
   std::vector<std::string> access_type_code = access_location->generate(
     access_action, "target_address", 8);
-  auto index = region_canvas->add_to_f_body("target_address = &target[0];");
+  auto index = region_canvas->add_to_f_body("target_address = (char *)&target[0];");
   index = region_canvas->add_at(index, access_type_code, "  ");
   region_canvas->add_at(index, "_exit(TEST_CASE_SUCCESSFUL_VALUE);", "  ");
 
@@ -439,7 +440,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >UseAfterStar::_generate_reused_m
 
   assert ( is_a<HeapRegion>(memory_region) );
 
-  region_canvas->add_during_lifetime("target_address = &target[0];");
+  region_canvas->add_during_lifetime("target_address = (char *)&target[0];");
     std::vector<std::string> access_type_code = access_location->generate(
     access_action, "target_address", 8);
   std::shared_ptr<HeapRegion> heap_memory_region = std::dynamic_pointer_cast<HeapRegion>(memory_region);
@@ -495,7 +496,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >UseAfterStar::_generate_reused_m
   std::shared_ptr<StackRegion> stack_memory_region_simple = std::make_shared<StackRegion>(*stack_memory_region);
   std::shared_ptr<RegionCodeCanvas> region_canvas = stack_memory_region_simple->generate(std::make_shared<CodeCanvas>(code_simple), "target", 8, true);
 
-  region_canvas->add_during_lifetime("target_address = &target[0];");
+  region_canvas->add_during_lifetime("target_address = (char *)&target[0];");
   AccessLocation::SplitAccess access_type_code = access_location->generate_split_const_vars(
     access_action, "target_address", 8);
 
@@ -504,6 +505,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >UseAfterStar::_generate_reused_m
   );
   reused_region_canvas_simple->add_to_f_body(access_type_code.access_lines);
   reused_region_canvas_simple->add_to_f_body("_use(reallocated);");
+  reused_region_canvas_simple->add_to_f_body("_use_value(*reallocated);");
   reused_region_canvas_simple->add_to_f_body("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
   reused_region_canvas_simple->add_globals( AccessLocation::AuxiliaryVariable::to_string_vector( access_type_code.aux_variables ) );
   variants.push_back( reused_region_canvas_simple );
@@ -514,7 +516,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >UseAfterStar::_generate_reused_m
   reused_region_canvas_repeated->add_global("int counter = 0;");
   reused_region_canvas_repeated->add_global("char *last_address = NULL;");
   reused_region_canvas_repeated->add_to_f_body(
-    "last_address = &reallocated[0];"
+    "last_address = (char *)&reallocated[0];"
   );
   reused_region_canvas_repeated->add_to_f_body(access_type_code.access_lines);
   reused_region_canvas_repeated->add_globals( AccessLocation::AuxiliaryVariable::to_string_vector( access_type_code.aux_variables ) );
@@ -542,7 +544,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >UseAfterStar::_generate_reused_m
   std::shared_ptr<StackRegion> stack_memory_region_array = std::make_shared<StackRegion>(*stack_memory_region);
   std::shared_ptr<RegionCodeCanvas> array_region_canvas = stack_memory_region_array->generate_array(std::make_shared<CodeCanvas>(code_array), "target", 8, 16, true);
 
-  array_region_canvas->add_during_lifetime("for (int counter = 0; counter < 16; counter++) target_addresses[counter] = &target[counter][0];");
+  array_region_canvas->add_during_lifetime("for (int counter = 0; counter < 16; counter++) target_addresses[counter] = (char *)&target[counter][0];");
   access_type_code = access_location->generate_split_const_vars(
     access_action, "target_addresses[counter]", 8);
   std::shared_ptr<RegionCodeCanvas> reused_region_canvas_simple_array = stack_memory_region_array->generate(
@@ -569,7 +571,7 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >UseAfterStar::_generate_reused_m
   std::shared_ptr<StackRegion> stack_memory_region_array_repeated = std::make_shared<StackRegion>(*stack_memory_region);
   array_region_canvas = stack_memory_region_array_repeated->generate_array(std::make_shared<CodeCanvas>(code_array), "target", 8, 16, true);
 
-  array_region_canvas->add_to_f_body("for (int counter = 0; counter < 16; counter++) target_addresses[counter] = &target[counter][0];");
+  array_region_canvas->add_to_f_body("for (int counter = 0; counter < 16; counter++) target_addresses[counter] = (char *)&target[counter][0];");
   access_type_code = access_location->generate_split_const_vars(
     access_action, "target_addresses[counter]", 8);
   std::shared_ptr<RegionCodeCanvas> reused_region_canvas_array_repeated = stack_memory_region_array->generate(

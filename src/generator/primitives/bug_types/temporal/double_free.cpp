@@ -73,10 +73,12 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >DoubleFree::generate(
     "char *pointer_to_double_free; // pointer to be double-freed",
     "char *pointer_to_use; // pointer to illegally use",
     "pointer_to_double_free = (char *)malloc(10);",
+    "_use(pointer_to_double_free);",
     "free(pointer_to_double_free);",
-    "pointer_to_double_free[sizeof(void *)] = 0; // use-after-free for heap metadata corruption",
+    "((volatile char *)pointer_to_double_free)[sizeof(void *)] = 0; // use-after-free for heap metadata corruption",
     "free(pointer_to_double_free); // double free",
-    "pointer_to_use = (char *)malloc(8); // allocate a new object"
+    "pointer_to_use = (char *)malloc(8); // allocate a new object",
+    "_use(pointer_to_use);",
   });
 
   std::shared_ptr<RegionCodeCanvas> region_canvas = memory_region->generate(std::make_shared<CodeCanvas>(variant_with_use_after_free), "target", 8, false);
@@ -104,13 +106,17 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >DoubleFree::generate(
     "tmp = (char *)malloc(8);",
     "tmp2 = (char *)malloc(8);",
     "pointer_to_double_free = (char *)malloc(8);",
+    "_use(pointer_to_double_free);",
+    "_use(tmp);",
     "free(pointer_to_double_free);",
     "free(tmp); // no use after free required",
     "free(pointer_to_double_free); // double free",
     "pointer_to_use = (char *)malloc(8); // allocate a new object",
     "tmp3 = (char *)malloc(8);",
     "_use(tmp2);",
-    "_use(tmp3);"
+    "_use_value(*tmp2);",
+    "_use(tmp3);",
+    "_use_value(*tmp3);",
   });
 
   region_canvas = memory_region->generate(std::make_shared<CodeCanvas>(variant_without_use_after_free), "target", 8, false);
@@ -162,8 +168,10 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >DoubleFree::generate_validation(
     "char *pointer_to_double_free; // pointer to be double-freed",
     "char *pointer_to_use; // pointer to illegally use",
     "pointer_to_double_free = (char *)malloc(10);",
+    "_use(pointer_to_double_free);",
     "free(pointer_to_double_free);",
-    "pointer_to_use = (char *)malloc(8); // allocate a new object"
+    "pointer_to_use = (char *)malloc(8); // allocate a new object",
+    "_use(pointer_to_use);",
   });
 
   std::shared_ptr<RegionCodeCanvas> region_canvas = memory_region->generate(std::make_shared<CodeCanvas>(variant_with_use_after_free), "target", 8, false);
@@ -192,12 +200,16 @@ std::vector< std::shared_ptr<RegionCodeCanvas> >DoubleFree::generate_validation(
     "tmp = (char *)malloc(8);",
     "tmp2 = (char *)malloc(8);",
     "pointer_to_double_free = (char *)malloc(8);",
+    "_use(pointer_to_double_free);",
     "free(pointer_to_double_free);",
+    "_use(tmp);",
     "free(tmp); // no use after free required",
     "pointer_to_use = (char *)malloc(8); // allocate a new object",
     "tmp3 = (char *)malloc(8);",
     "_use(tmp2);",
-    "_use(tmp3);"
+    "_use_value(*tmp2);",
+    "_use(tmp3);",
+    "_use_value(*tmp3);",
   });
 
   region_canvas = memory_region->generate(std::make_shared<CodeCanvas>(variant_without_use_after_free), "target", 8, false);

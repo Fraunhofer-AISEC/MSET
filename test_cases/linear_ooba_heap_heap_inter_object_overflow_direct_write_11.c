@@ -11,9 +11,10 @@
  * Bug type: inter-object, linear OOBA, overflow
  * Access type: direct, write
  * Variant:
- *  - target declared before origin
- *  - distance is checked as is
- *  - target reached by using a auxiliary pointer
+ *  - target declared after origin
+ *  - distance is negated before checking
+ *  - To avoid optimizations, index into the target
+ *  - target reached by using a index
  *  - target accessed by using constants
  */
 
@@ -31,30 +32,24 @@
 #define MAX_OBJECT_SIZE ((size_t)1 << 29)
 #endif
 
-volatile void *_use(volatile void *p) { return p; }
+__attribute__((section(".data.index"))) volatile size_t _sink;
+volatile void *_use(volatile void *p) { _sink = (size_t)p; return p; }
+volatile long long _use_value(volatile long long p) { return p; }
+__attribute__((noinline)) static size_t _hide_value(volatile size_t n) { volatile size_t v = n; return v; }
 const char content[8] = "ZZZZZZZ";
 
 // types
 
 // globals
 
-__attribute__((section(".data.index"))) volatile char * aux_ptr;
+__attribute__((section(".data.index"))) volatile ssize_t reach_index = 0;
 
-int f()
+__attribute__((noinline)) int f()
 {
   // locals
 
 
-  char *target = (char *)malloc( 8 );
-  target[0] = 0xAA;
-  target[1] = 0xAA;
-  target[2] = 0xAA;
-  target[3] = 0xAA;
-  target[4] = 0xAA;
-  target[5] = 0xAA;
-  target[6] = 0xAA;
-  target[7] = 0xAA;
-  char *origin = (char *)malloc( 8 );
+  volatile char *origin = (char *)malloc( 8 );
   origin[0] = 0xAA;
   origin[1] = 0xAA;
   origin[2] = 0xAA;
@@ -63,27 +58,42 @@ int f()
   origin[5] = 0xAA;
   origin[6] = 0xAA;
   origin[7] = 0xAA;
+  volatile char *target = (char *)malloc( 8 );
+  target[0] = 0xAA;
+  target[1] = 0xAA;
+  target[2] = 0xAA;
+  target[3] = 0xAA;
+  target[4] = 0xAA;
+  target[5] = 0xAA;
+  target[6] = 0xAA;
+  target[7] = 0xAA;
+  // index into the target to prevent optimizations
+  for (ssize_t i = 0; i < _hide_value(8); i++) { char tmp = target[i]; _use(&tmp); }
   _use(target);
+  _use_value(*target);
   _use(origin);
-  if ( !((ssize_t)(GET_ADDR_BITS(target) - GET_ADDR_BITS(origin)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
-  if ( GET_ADDR_BITS(&aux_ptr) < GET_ADDR_BITS(target) && GET_ADDR_BITS(&aux_ptr) > GET_ADDR_BITS(origin) ) _exit(PRECONDITIONS_FAILED_VALUE);
-  aux_ptr = origin;
-  while( GET_ADDR_BITS(aux_ptr) != GET_ADDR_BITS(target) )
+  _use_value(*origin);
+  if ( GET_ADDR_BITS(&reach_index) < GET_ADDR_BITS(target) && GET_ADDR_BITS(&reach_index) > GET_ADDR_BITS(origin) ) _exit(PRECONDITIONS_FAILED_VALUE);
+  if ( !(-(ssize_t)(GET_ADDR_BITS(origin) - GET_ADDR_BITS(target)) >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
+  while( GET_ADDR_BITS(&origin[reach_index]) != GET_ADDR_BITS(target) )
   {
-    *aux_ptr = 0xFF;
-    ++aux_ptr;
-    _use(aux_ptr);
+    origin[reach_index] = 0xFF;
+    ++reach_index;
+    _use(&origin[reach_index]);
+    _use_value(origin[reach_index]);
   }
   volatile size_t i;
   for (i = 0; i < 8; i++)
   {
-    aux_ptr[i] = 0xFF;
+    (origin + reach_index)[i] = 0xFF;
+    _use(&(origin + reach_index)[i]);
   }
-  _use(aux_ptr);
+  _use((origin + reach_index));
+  _use_value(*(origin + reach_index));
   _exit(TEST_CASE_SUCCESSFUL_VALUE);
 
-  free(target);
-  free(origin);
+  free( (void *)origin );
+  free( (void *)target );
   return 0;
 }
 

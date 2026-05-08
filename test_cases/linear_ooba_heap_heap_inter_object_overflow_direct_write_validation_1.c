@@ -29,21 +29,24 @@
 #define MAX_OBJECT_SIZE ((size_t)1 << 29)
 #endif
 
-volatile void *_use(volatile void *p) { return p; }
+__attribute__((section(".data.index"))) volatile size_t _sink;
+volatile void *_use(volatile void *p) { _sink = (size_t)p; return p; }
+volatile long long _use_value(volatile long long p) { return p; }
+__attribute__((noinline)) static size_t _hide_value(volatile size_t n) { volatile size_t v = n; return v; }
 const char content[8] = "ZZZZZZZ";
 
 // types
 
 // globals
 
-__attribute__((section(".data.index"))) ssize_t reach_index = 0;
+__attribute__((section(".data.index"))) volatile ssize_t reach_index = 0;
 
-int f()
+__attribute__((noinline)) int f()
 {
   // locals
 
 
-  char *target = (char *)malloc( 8 );
+  volatile char *target = (char *)malloc( 8 );
   target[0] = 0xAA;
   target[1] = 0xAA;
   target[2] = 0xAA;
@@ -52,7 +55,7 @@ int f()
   target[5] = 0xAA;
   target[6] = 0xAA;
   target[7] = 0xAA;
-  char *origin = (char *)malloc( 8 );
+  volatile char *origin = (char *)malloc( 8 );
   origin[0] = 0xAA;
   origin[1] = 0xAA;
   origin[2] = 0xAA;
@@ -62,23 +65,30 @@ int f()
   origin[6] = 0xAA;
   origin[7] = 0xAA;
   _use(target);
+  _use_value(*target);
+  // index into the target to prevent optimizations
+  for (ssize_t i = 0; i < _hide_value(8); i++) { char tmp = target[i]; _use(&tmp); }
   _use(origin);
+  _use_value(*origin);
   while( GET_ADDR_BITS(&target[reach_index]) != GET_ADDR_BITS(target) )
   {
     target[reach_index] = 0xFF;
     ++reach_index;
     _use(&target[reach_index]);
+    _use_value(target[reach_index]);
   }
   volatile size_t i;
   for (i = 0; i < 8; i++)
   {
     (target + reach_index)[i] = 0xFF;
+    _use(&(target + reach_index)[i]);
   }
   _use((target + reach_index));
+  _use_value(*(target + reach_index));
   _exit(TEST_CASE_SUCCESSFUL_VALUE);
 
-  free(target);
-  free(origin);
+  free( (void *)target );
+  free( (void *)origin );
   return 0;
 }
 

@@ -23,7 +23,10 @@
 #define MAX_OBJECT_SIZE ((size_t)1 << 29)
 #endif
 
-volatile void *_use(volatile void *p) { return p; }
+__attribute__((section(".data.index"))) volatile size_t _sink;
+volatile void *_use(volatile void *p) { _sink = (size_t)p; return p; }
+volatile long long _use_value(volatile long long p) { return p; }
+__attribute__((noinline)) static size_t _hide_value(volatile size_t n) { volatile size_t v = n; return v; }
 const char content[8] = "ZZZZZZZ";
 
 // types
@@ -33,22 +36,23 @@ const char content[8] = "ZZZZZZZ";
 char *target_address;
 volatile char read_value[8];
 
-int other_f()
+__attribute__((noinline)) int other_f()
 {
-  char reallocated[8];
+  volatile char reallocated[8];
   if (GET_ADDR_BITS(&reallocated[0]) != GET_ADDR_BITS(target_address)) _exit(PRECONDITIONS_FAILED_VALUE);
-  memcpy( (void *)read_value, (void *)target_address, 8);
+  memcpy( (void *)read_value, (void *)target_address, _hide_value(8));
   _use( read_value );
   _use(reallocated);
+  _use_value(*reallocated);
   _exit(TEST_CASE_SUCCESSFUL_VALUE);
 
   return 0;
 }
-int f()
+__attribute__((noinline)) int f()
 {
   // locals
 
-  char target[8] = "";
+  volatile char target[8] = "";
 
   target[0] = 0xAA;
   target[1] = 0xAA;
@@ -58,7 +62,7 @@ int f()
   target[5] = 0xAA;
   target[6] = 0xAA;
   target[7] = 0xAA;
-  target_address = &target[0];
+  target_address = (char *)&target[0];
 
   return 0;
 }

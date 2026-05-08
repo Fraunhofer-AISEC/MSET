@@ -29,7 +29,10 @@
 #define MAX_OBJECT_SIZE ((size_t)1 << 29)
 #endif
 
-volatile void *_use(volatile void *p) { return p; }
+__attribute__((section(".data.index"))) volatile size_t _sink;
+volatile void *_use(volatile void *p) { _sink = (size_t)p; return p; }
+volatile long long _use_value(volatile long long p) { return p; }
+__attribute__((noinline)) static size_t _hide_value(volatile size_t n) { volatile size_t v = n; return v; }
 const char content[8] = "ZZZZZZZ";
 
 // types
@@ -42,12 +45,12 @@ struct BigType
 
 __attribute__((section(".data.index"))) ssize_t i;
 
-int f()
+__attribute__((noinline)) int f()
 {
   // locals
 
 
-  char *origin = (char *)malloc( 8 );
+  volatile char *origin = (char *)malloc( 8 );
   origin[0] = 0xAA;
   origin[1] = 0xAA;
   origin[2] = 0xAA;
@@ -56,24 +59,27 @@ int f()
   origin[5] = 0xAA;
   origin[6] = 0xAA;
   origin[7] = 0xAA;
-  if ( (8 > 0 && 8 > (MAX_OBJECT_SIZE))
-       || (8 < 0 && 8< -(MAX_OBJECT_SIZE) ) )  _exit(PRECONDITIONS_FAILED_VALUE);
-  if ( !(8 >= 0) ) _exit(PRECONDITIONS_FAILED_VALUE);
+  if ( 8 > (MAX_OBJECT_SIZE) )
+    _exit(PRECONDITIONS_FAILED_VALUE);
   volatile char tmp;
   for (i = 0; i < 8; i++)
   {
     tmp = ((struct BigType *)origin)->buffer[i];
+    _use(&tmp);
   }
   _use(&tmp);
+  _use_value(tmp);
   volatile char read_value[1];
   for (ssize_t access_index = 0; access_index < 1; access_index++)
   {
     read_value[access_index] = ((struct BigType *)origin)->buffer[access_index + 8];
+    _use(&read_value[access_index]);
   }
   _use(read_value);
+  _use_value(*read_value);
   _exit(TEST_CASE_SUCCESSFUL_VALUE);
 
-  free(origin);
+  free( (void *)origin );
   return 0;
 }
 

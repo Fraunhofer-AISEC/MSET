@@ -7,6 +7,7 @@
 
 #pragma once
 #include <algorithm>
+#include <cassert>
 #include <memory>
 #include <string>
 #include <utility>
@@ -238,3 +239,25 @@ public:
     std::function<std::string(const std::string&)>  generate_preconditions_check_distance
   ) const = 0;
 };
+
+inline void insert_distance_check_to_start_if_not_constant(std::vector<std::string> &lines, const std::string &distance, const std::function<std::string(const std::string&)> &check_distance_function)
+{
+  std::string distance_condition = check_distance_function(distance);
+  assert (distance_condition != "0");
+  if ( distance_condition != "1" )
+  {
+    // not known at compile time
+    lines.insert( lines.begin(), "if ( !(" + distance_condition + ") ) _exit(PRECONDITIONS_FAILED_VALUE);" );
+  }
+}
+
+inline void insert_distance_check_to_end_if_not_constant(std::vector<std::string> &lines, const std::string &distance, const std::function<std::string(const std::string&)> &check_distance_function)
+{
+  std::string distance_condition = check_distance_function(distance);
+  assert (distance_condition != "0");
+  if ( distance_condition != "1" )
+  {
+    // not known at compile time
+    lines.push_back( "if ( !(" + distance_condition + ") ) _exit(PRECONDITIONS_FAILED_VALUE);" );
+  }
+}

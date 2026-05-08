@@ -18,7 +18,7 @@ std::shared_ptr<RegionCodeCanvas> GlobalRegion::generate(std::shared_ptr<CodeCan
 {
   assert(size);
   std::shared_ptr<RegionCodeCanvas> populated_code_canvas = std::make_shared<RegionCodeCanvas>(*canvas, size);
-  std::string definition = "char " + name + "[" + std::to_string(size) + "]";
+  std::string definition = "volatile char " + name + "[" + std::to_string(size) + "]";
   if (initialize)
   {
     definition += " = {";
@@ -54,8 +54,8 @@ std::shared_ptr<RegionCodeCanvas> GlobalRegion::generate(
   populated_code_canvas->add_type({
     "struct T",
     "{",
-    "  char " + name_field_1 + "[" + std::to_string(size_field_1) + "];",
-    "  char " + name_field_2 + "[" + std::to_string(size_field_2) + "];",
+    "  volatile char " + name_field_1 + "[" + std::to_string(size_field_1) + "];",
+    "  volatile char " + name_field_2 + "[" + std::to_string(size_field_2) + "];",
     "};"
   });
   std::string definition = "struct T " + name;

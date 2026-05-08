@@ -22,7 +22,7 @@ std::shared_ptr<RegionCodeCanvas> HeapRegion::generate(CodeCanvas::code_pos_t wh
 
   where = populated_code_canvas->add_at(
     where,
-    "char *" + name + " = (char *)malloc( " + std::to_string(size) + " );",
+    "volatile char *" + name + " = (char *)malloc( " + std::to_string(size) + " );",
     "  "
   );
   CodeCanvas::code_pos_t allocation_pos = where;
@@ -40,7 +40,7 @@ std::shared_ptr<RegionCodeCanvas> HeapRegion::generate(CodeCanvas::code_pos_t wh
   {
     lifetime_pos = populated_code_canvas->add_at(where, "");
   }
-  CodeCanvas::code_pos_t deallocation_pos = populated_code_canvas->add_to_f_body_end("free(" + name + ");");
+  CodeCanvas::code_pos_t deallocation_pos = populated_code_canvas->add_to_f_body_end("free( (void *)" + name + " );");
   populated_code_canvas->set_allocation_pos(allocation_pos);
   populated_code_canvas->set_deallocation_pos(deallocation_pos);
   populated_code_canvas->set_lifetime_pos(lifetime_pos);
@@ -52,7 +52,7 @@ std::shared_ptr<RegionCodeCanvas> HeapRegion::generate(std::shared_ptr<CodeCanva
   std::shared_ptr<RegionCodeCanvas> populated_code_canvas = std::make_shared<RegionCodeCanvas>(*canvas, size);
 
   CodeCanvas::code_pos_t allocation_pos = populated_code_canvas->add_to_f_body(
-    "char *" + name + " = (char *)malloc( " + std::to_string(size) + " );"
+    "volatile char *" + name + " = (char *)malloc( " + std::to_string(size) + " );"
   );
 
   CodeCanvas::code_pos_t lifetime_pos = populated_code_canvas->get_lifetime_pos();
@@ -67,7 +67,7 @@ std::shared_ptr<RegionCodeCanvas> HeapRegion::generate(std::shared_ptr<CodeCanva
   {
     lifetime_pos = populated_code_canvas->add_to_f_body("");
   }
-  CodeCanvas::code_pos_t deallocation_pos = populated_code_canvas->add_to_f_body_end("free(" + name + ");");
+  CodeCanvas::code_pos_t deallocation_pos = populated_code_canvas->add_to_f_body_end("free( (void *)" + name + " );");
   populated_code_canvas->set_allocation_pos(allocation_pos);
   populated_code_canvas->set_deallocation_pos(deallocation_pos);
   populated_code_canvas->set_lifetime_pos(lifetime_pos);
@@ -88,8 +88,8 @@ std::shared_ptr<RegionCodeCanvas> HeapRegion::generate(
   populated_code_canvas->add_type({
     "struct T",
     "{",
-    "  char " + name_field_1 + "[" + std::to_string(size_field_1) + "];",
-    "  char " + name_field_2 + "[" + std::to_string(size_field_2) + "];",
+    "  volatile char " + name_field_1 + "[" + std::to_string(size_field_1) + "];",
+    "  volatile char " + name_field_2 + "[" + std::to_string(size_field_2) + "];",
     "};"
   });
   CodeCanvas::code_pos_t allocation_pos = populated_code_canvas->add_to_f_body(
@@ -112,7 +112,7 @@ std::shared_ptr<RegionCodeCanvas> HeapRegion::generate(
   {
     lifetime_pos = populated_code_canvas->add_to_f_body("");
   }
-  CodeCanvas::code_pos_t deallocation_pos = populated_code_canvas->add_to_f_body_end("free(" + name + ");");
+  CodeCanvas::code_pos_t deallocation_pos = populated_code_canvas->add_to_f_body_end("free( (void *)" + name + " );");
   populated_code_canvas->set_allocation_pos(allocation_pos);
   populated_code_canvas->set_deallocation_pos(deallocation_pos);
   populated_code_canvas->set_lifetime_pos(lifetime_pos);
@@ -136,5 +136,5 @@ std::vector<std::string> HeapRegion::generate_reallocation(std::string name, siz
 
 std::vector<std::string> HeapRegion::generate_deallocation(std::string name, std::string indent) const
 {
-  return {indent + "free(" + name + ");"};
+  return {indent + "free( (void *)" + name + " );"};
 }

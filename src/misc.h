@@ -6,6 +6,7 @@
  */
 
 #pragma once
+#include <climits>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -25,6 +26,21 @@ inline bool is_number(const std::string& s)
   {
     return false;
   }
+}
+
+inline bool to_int(const std::string& s, int& value)
+{
+  if ( s.empty() ) return false;
+
+  char* endptr = nullptr;
+  long val = std::strtol(s.c_str(), &endptr, 10);
+
+  // Check that the entire string was parsed and within int range
+  if (*endptr != '\0') return false;
+  if (val < INT_MIN || val > INT_MAX) return false;
+
+  value = static_cast<int>(val);
+  return true;
 }
 
 template <typename T, typename U>

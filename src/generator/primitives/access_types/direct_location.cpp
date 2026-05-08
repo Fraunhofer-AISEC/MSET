@@ -40,8 +40,10 @@ AccessLocation::SplitAccess DirectLocation::generate_split_aux_vars(
     split_access.access_lines.emplace_back("for (i = 0; i < size; i++)");
     split_access.access_lines.emplace_back("{");
     split_access.access_lines.push_back("  read_value[i] = " + access_var_name + "[i];");
+    split_access.access_lines.push_back("  _use(&" + access_var_name + "[i]);");
     split_access.access_lines.emplace_back("}");
     split_access.access_lines.emplace_back("_use(read_value);" );
+    split_access.access_lines.emplace_back("_use_value(*read_value);" );
   }
   else
   {
@@ -53,9 +55,11 @@ AccessLocation::SplitAccess DirectLocation::generate_split_aux_vars(
     split_access.access_lines.emplace_back("for (i = 0; i < size; i++)");
     split_access.access_lines.emplace_back("{");
     split_access.access_lines.push_back("  " + access_var_name + "[i] = content[i];");
+    split_access.access_lines.push_back("  _use(&" + access_var_name + "[i]);");
     split_access.access_lines.emplace_back("}");
 
     split_access.access_lines.emplace_back("_use(" + access_var_name + ");" );
+    split_access.access_lines.emplace_back("_use_value(*" + access_var_name + ");" );
   }
   split_access.description = "auxiliary variables";
   return split_access;
@@ -80,8 +84,10 @@ AccessLocation::SplitAccess DirectLocation::generate_split_const_vars(
     split_access.access_lines.push_back("for (i = 0; i < " + std::to_string(size) + "; i++)");
     split_access.access_lines.emplace_back("{");
     split_access.access_lines.push_back("  read_value[i] = " + access_var_name + "[i];");
+    split_access.access_lines.push_back("  _use(&" + access_var_name + "[i]);");
     split_access.access_lines.emplace_back("}");
     split_access.access_lines.emplace_back("_use(read_value);" );
+    split_access.access_lines.emplace_back("_use_value(*read_value);" );
   }
   else
   {
@@ -93,9 +99,11 @@ AccessLocation::SplitAccess DirectLocation::generate_split_const_vars(
     split_access.access_lines.push_back("for (i = 0; i < " + std::to_string(size) + "; i++)");
     split_access.access_lines.emplace_back("{");
     split_access.access_lines.push_back("  " + access_var_name + "[i] = 0xFF;");
+    split_access.access_lines.push_back("  _use(&" + access_var_name + "[i]);");
     split_access.access_lines.emplace_back("}");
 
     split_access.access_lines.emplace_back("_use(" + access_var_name + ");" );
+    split_access.access_lines.emplace_back("_use_value(*" + access_var_name + ");" );
   }
   split_access.description = "constants";
   return split_access;
@@ -120,33 +128,32 @@ std::vector<std::string> DirectLocation::generate_at_index(
 
     if (generate_preconditions_check_distance)
     {
-      lines.push_back( "if ( !(" + generate_preconditions_check_distance(index) + ") ) _exit(PRECONDITIONS_FAILED_VALUE);" );
+      insert_distance_check_to_start_if_not_constant(lines, index, generate_preconditions_check_distance);
     };
 
     lines.push_back("for (ssize_t access_index = 0; access_index < " + std::to_string(size) + "; access_index++)");
     lines.emplace_back("{");
     lines.push_back("  read_value[access_index] = " + access_var_name + "[access_index + " + index + "];");
+    lines.push_back("  _use(&read_value[access_index]);");
     lines.emplace_back("}");
     lines.emplace_back("_use(read_value);" );
+    lines.emplace_back("_use_value(*read_value);" );
   }
   else
   {
     // WRITE
+    lines = {};
     if (generate_preconditions_check_distance)
     {
-      lines = {
-        "if ( !(" + generate_preconditions_check_distance(index) + ") ) _exit(PRECONDITIONS_FAILED_VALUE);"
-      };
-    }
-    else
-    {
-      lines = {};
+      insert_distance_check_to_start_if_not_constant(lines, index, generate_preconditions_check_distance);
     }
     lines.push_back("for (ssize_t i = 0; i < " + std::to_string(size) + "; i++)");
     lines.emplace_back("{");
     lines.push_back("  " + access_var_name + "[i + " + index + "] = 0xFF;");
+    lines.push_back("  _use(&" + access_var_name + "[i + " + index + "]);");
     lines.emplace_back("}");
     lines.emplace_back("_use(" + access_var_name + ");" );
+    lines.emplace_back("_use_value(*" + access_var_name + ");" );
   }
   return lines;
 }
@@ -170,10 +177,12 @@ std::vector<std::string> DirectLocation::generate_using_runtime_index(
       "for (" + index + " = 0; " + index + " < " + distance + "; " + index + "++)",
       "{",
       "  tmp = " + access_var_name + "[" + index + "];",
+      "  _use(&tmp);",
       "}",
       "_use(&tmp);",
+      "_use_value(tmp);"
     };
-    if (!distance.empty() && generate_preconditions_check_distance) lines.insert(lines.begin(), "if ( !(" + generate_preconditions_check_distance(distance) + ") ) _exit(PRECONDITIONS_FAILED_VALUE);");
+    if (!distance.empty() && generate_preconditions_check_distance) insert_distance_check_to_start_if_not_constant(lines, distance, generate_preconditions_check_distance);
   }
   else
   {
@@ -182,13 +191,15 @@ std::vector<std::string> DirectLocation::generate_using_runtime_index(
       "for (" + index + " = 0; " + index + " < " + distance + "; " + index + "++)",
       "{",
       "  " + access_var_name + "[" + index + "] = 0xFF;",
+      "  _use(&" + access_var_name + "[" + index + "]);",
       "}",
-      "_use(" + access_var_name + ");"
+      "_use(" + access_var_name + ");",
+      "_use_value(*" + access_var_name + ");"
     };
     if (!distance.empty())
     {
       if (generate_preconditions_check_in_range) lines.insert(lines.begin(), "if ( " + generate_preconditions_check_in_range(index, "&" + access_var_name + "[0]", "&" + access_var_name + "[" + distance + "]") + " ) _exit(PRECONDITIONS_FAILED_VALUE);");
-      if (generate_preconditions_check_distance) lines.insert(lines.begin(), "if ( !(" + generate_preconditions_check_distance(distance) + ") ) _exit(PRECONDITIONS_FAILED_VALUE);");
+      if (generate_preconditions_check_distance) insert_distance_check_to_start_if_not_constant(lines, distance, generate_preconditions_check_distance);
     }
   }
   return lines;
@@ -217,16 +228,18 @@ AccessLocation::SplitAccess DirectLocation::generate_bulk_split_using_index(
 
     split_access.result = "(" + from + " + reach_index)";
     split_access.access_lines.insert( split_access.access_lines.end(), {
+      // "while( GET_ADDR_BITS(&" + to + "[reach_index]) != GET_ADDR_BITS(_use(" + to + ")) ) { tmp = " + to + "[reach_index]; " + generate_counter_update("reach_index") + "; } // never executed, prevents optimizations",
       "while( GET_ADDR_BITS(&" + from + "[reach_index]) != GET_ADDR_BITS(" + to + ") )",
       "{",
       "  tmp = " + from + "[reach_index];",
       "  " + generate_counter_update("reach_index") + ";",
       "  _use(&tmp);",
+      "  _use_value(tmp);",
       "}"
     });
     if (!distance.empty() && generate_preconditions_check_distance)
     {
-      split_access.access_lines.insert(split_access.access_lines.begin(), "if ( !(" + generate_preconditions_check_distance(distance) + ") ) _exit(PRECONDITIONS_FAILED_VALUE);");
+      insert_distance_check_to_start_if_not_constant(split_access.access_lines, distance, generate_preconditions_check_distance);
     }
   }
   else
@@ -234,20 +247,22 @@ AccessLocation::SplitAccess DirectLocation::generate_bulk_split_using_index(
     // WRITE
     // the caller must handle the allocation of reach_index, as it might be overwritten
     split_access.aux_variables = {
-      {"reach_index", "ssize_t", "", "0"} // ssize_t reach_index = 0;
+      {"reach_index", "volatile ssize_t", "", "0"} // ssize_t reach_index = 0;
     };
     split_access.result = "(" + from + " + reach_index)";
     split_access.access_lines = {
+      // "while( GET_ADDR_BITS(&" + to + "[reach_index]) != GET_ADDR_BITS(_use(" + to + ")) ) { " + to + "[reach_index] = 0xFF; " + generate_counter_update("reach_index") + "; } // never executed, prevents optimizations",
       "while( GET_ADDR_BITS(&" + from + "[reach_index]) != GET_ADDR_BITS(" + to + ") )",
       "{",
       "  " + from + "[reach_index] = 0xFF;",
       "  " + generate_counter_update("reach_index") + ";",
       "  _use(&" + from + "[reach_index]);",
+      "  _use_value(" + from + "[reach_index]);",
       "}",
     };
     if (!distance.empty() && generate_preconditions_check_distance)
     {
-      split_access.access_lines.insert(split_access.access_lines.begin(), "if ( !(" + generate_preconditions_check_distance(distance) + ") ) _exit(PRECONDITIONS_FAILED_VALUE);");
+      insert_distance_check_to_start_if_not_constant(split_access.access_lines, distance, generate_preconditions_check_distance);
     }
     if (generate_preconditions_check_in_range)
     {
@@ -288,11 +303,12 @@ AccessLocation::SplitAccess DirectLocation::generate_bulk_split_using_aux_ptr(
       "  tmp = *aux_ptr;",
       "  " + generate_counter_update("aux_ptr") + ";",
       "  _use(&tmp);",
+      "  _use_value(tmp);",
       "}"
     } };
     if (!distance.empty() && generate_preconditions_check_distance)
     {
-      split_access.access_lines.insert(split_access.access_lines.begin(), "if ( !(" + generate_preconditions_check_distance(distance) + ") ) _exit(PRECONDITIONS_FAILED_VALUE);");
+      insert_distance_check_to_start_if_not_constant(split_access.access_lines, distance, generate_preconditions_check_distance);;
     }
   }
   else
@@ -310,12 +326,16 @@ AccessLocation::SplitAccess DirectLocation::generate_bulk_split_using_aux_ptr(
       "  *aux_ptr = 0xFF;",
       "  " + generate_counter_update("aux_ptr") + ";",
       "  _use(aux_ptr);",
+      "  _use_value(*aux_ptr);",
       "}",
     };
     if (!distance.empty())
     {
       if (generate_preconditions_check_in_range) split_access.access_lines.insert(split_access.access_lines.begin(), "if ( " + generate_preconditions_check_in_range("aux_ptr", from, to) + " ) _exit(PRECONDITIONS_FAILED_VALUE);");
-      if (generate_preconditions_check_distance) split_access.access_lines.insert(split_access.access_lines.begin(), "if ( !(" + generate_preconditions_check_distance(distance) + ") ) _exit(PRECONDITIONS_FAILED_VALUE);");
+      if (generate_preconditions_check_distance)
+      {
+        insert_distance_check_to_start_if_not_constant(split_access.access_lines, distance, generate_preconditions_check_distance);
+      }
     }
   }
   split_access.description = "auxiliary pointer";
@@ -338,26 +358,51 @@ std::vector<std::string> DirectLocation::generate_uint32(
     // READ
     lines = {
       "volatile uint32_t read_value;",
-      "read_value = *((volatile uint32_t *)(" + from + " + (" + std::to_string(size) + " - 3)));",
-      "_use(&read_value);"
+      "read_value = *((volatile uint32_t *)(" + from + " + (_hide_value(" + std::to_string(size) + ") - 3)));",
+      "_use(&read_value);",
+      "_use_value(read_value);"
     };
     if (!distance.empty() && generate_preconditions_check_distance)
     {
-      lines.insert(lines.begin(), "if ( !(" + distance + " < (" + std::to_string(size) + " + 3) ) ) _exit(PRECONDITIONS_FAILED_VALUE);");
-      lines.insert(lines.begin(), "if ( !(" + generate_preconditions_check_distance(distance) + ") ) _exit(PRECONDITIONS_FAILED_VALUE);");
+      int int_distance;
+      if (to_int(distance, int_distance))
+      {
+        // known at compile time
+        assert( int_distance <= (int)size + 1 );
+        // assert( int_distance <= (int)size + 3 );
+      }
+      else
+      {
+        // not known at compile time
+        lines.insert(lines.begin(), "if ( !(" + distance + " < (" + std::to_string(size) + " + 1) ) ) _exit(PRECONDITIONS_FAILED_VALUE);");
+      }
+      insert_distance_check_to_start_if_not_constant(lines, distance, generate_preconditions_check_distance);
     }
   }
   else
   {
     // WRITE
     lines = {
-      "*((volatile uint32_t *)(" + from + " + (" + std::to_string(size) + " - 1))) = 0xFFFFFFFF;",
+      "*((volatile uint32_t *)(" + from + " + (_hide_value(" + std::to_string(size) + ") - 3))) = 0xFFFFFFFF;",
       "_use(" + from + ");"
+      "_use_value(*" + from + ");"
     };
     if (!distance.empty() && generate_preconditions_check_distance)
     {
-      lines.insert(lines.begin(), "if ( !(" + distance + " < (" + std::to_string(size) + " + 3) ) ) _exit(PRECONDITIONS_FAILED_VALUE);");
-      lines.insert(lines.begin(), "if ( !(" + generate_preconditions_check_distance(distance) + ") ) _exit(PRECONDITIONS_FAILED_VALUE);");
+      int int_distance;
+      if (to_int(distance, int_distance))
+      {
+        // known at compile time
+        assert( int_distance <= (int)size + 1 );
+        // assert( int_distance <= (int)size + 3 );
+      }
+      else
+      {
+        // not known at compile time
+        lines.insert(lines.begin(), "if ( !(" + distance + " < (" + std::to_string(size) + " + 1) ) ) _exit(PRECONDITIONS_FAILED_VALUE);");
+        // lines.insert(lines.begin(), "if ( !(" + distance + " < (" + std::to_string(size) + " + 3) ) ) _exit(PRECONDITIONS_FAILED_VALUE);");
+      }
+      insert_distance_check_to_start_if_not_constant(lines, distance, generate_preconditions_check_distance);
     }
   }
   return lines;
@@ -379,25 +424,26 @@ std::vector<std::string> DirectLocation::generate_uint8(
     // READ
     lines = {
       "volatile uint8_t read_value;",
-      "read_value = *((volatile uint8_t *)(" + from + " + (" + std::to_string(size) + " - 1)));",
-      "_use(&read_value);"
+      "read_value = *((volatile uint8_t *)(" + from + " + (_hide_value(" + std::to_string(size) + ") - 1)));",
+      "_use(&read_value);",
+      "_use_value(read_value);"
     };
     if (!distance.empty() && generate_preconditions_check_distance)
     {
       lines.insert(lines.begin(), "if ( !(" + distance + " < (" + std::to_string(size) + " + 1) ) ) _exit(PRECONDITIONS_FAILED_VALUE);");
-      lines.insert(lines.begin(), "if ( !(" + generate_preconditions_check_distance(distance) + ") ) _exit(PRECONDITIONS_FAILED_VALUE);");
+      insert_distance_check_to_start_if_not_constant(lines, distance, generate_preconditions_check_distance);
     }
   }
   else
   {
     // WRITE
     lines = {
-      "*((volatile uint8_t *)(" + from + " + (" + std::to_string(size) + " - 1))) = 0xFF;",
+      "*((volatile uint8_t *)(" + from + " + (_hide_value(" + std::to_string(size) + ") - 1))) = 0xFF;",
     };
     if (!distance.empty() && generate_preconditions_check_distance)
     {
       lines.insert(lines.begin(), "if ( !(" + distance + " < (" + std::to_string(size) + " + 1) ) ) _exit(PRECONDITIONS_FAILED_VALUE);");
-      lines.insert(lines.begin(), "if ( !(" + generate_preconditions_check_distance(distance) + ") ) _exit(PRECONDITIONS_FAILED_VALUE);");
+      insert_distance_check_to_start_if_not_constant(lines, distance, generate_preconditions_check_distance);
     }
   }
   return lines;

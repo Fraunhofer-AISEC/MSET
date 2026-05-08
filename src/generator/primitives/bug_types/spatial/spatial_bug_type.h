@@ -16,11 +16,12 @@
 #include "generator/primitives/bug_types/spatial/origin_target_relation/origin_target_relation.h"
 #include "generator/primitives/regions/region.h"
 
+#include <cstdlib>   // std::getenv
 
 class SpatialBugType: public Property
 {
 public:
-  explicit SpatialBugType(std::string name): Property(name) {}
+  explicit SpatialBugType(const std::string &name): Property(name) {}
   virtual ~SpatialBugType() = default;
 
   virtual bool accepts(std::shared_ptr<Flow> flow) const = 0;
@@ -33,7 +34,8 @@ public:
     std::shared_ptr<OriginTargetRelation> origin_target_relation,
     std::shared_ptr<Flow> flow,
     std::shared_ptr<AccessAction> access_action,
-    std::shared_ptr<AccessLocation> access_location
+    std::shared_ptr<AccessLocation> access_location,
+    int object_size
     ) const = 0;
 
   virtual std::vector< std::shared_ptr<OriginTargetCodeCanvas> > generate_validation(
@@ -42,6 +44,7 @@ public:
     std::shared_ptr<OriginTargetRelation> origin_target_relation,
     std::shared_ptr<Flow> flow,
     std::shared_ptr<AccessAction> access_action,
-    std::shared_ptr<AccessLocation> access_location
+    std::shared_ptr<AccessLocation> access_location,
+    int object_size
     ) const = 0;
 };

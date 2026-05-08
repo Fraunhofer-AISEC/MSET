@@ -54,7 +54,7 @@ std::string build_file_name(
     + "_" + access_location->get_name() + "_" + access_action->get_name();
 }
 
-void generate(const std::string& dir_path)
+void generate(const std::string& dir_path, int spatial_object_size)
 {
   size_t temporal_generated_counter = 0;
   for ( auto temporal_bug_type: temporal_bug_types )
@@ -146,7 +146,7 @@ void generate(const std::string& dir_path)
                 std::vector< std::shared_ptr<OriginTargetCodeCanvas> > code_canvas_variants = spatial_bug_type->generate(
                   origin, target, origin_target_relation,
                   flow,
-                  access_action, access_location
+                  access_action, access_location, spatial_object_size
                 );
                 std::string file_name = build_file_name(
                   spatial_bug_type,
@@ -165,7 +165,7 @@ void generate(const std::string& dir_path)
                 std::vector< std::shared_ptr<OriginTargetCodeCanvas> > code_canvas_validation_variants = spatial_bug_type->generate_validation(
                   origin, target, origin_target_relation,
                   flow,
-                  access_action, access_location
+                  access_action, access_location, spatial_object_size
                   );
                 variant_index = 0;
                 for ( const auto &code_canvas: code_canvas_validation_variants )

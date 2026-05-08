@@ -7,6 +7,8 @@
 
 #include "overflow.h"
 
+#include "misc.h"
+
 bool Overflow::accepts(std::shared_ptr<AccessLocation> access_location) const
 {
   return true;
@@ -24,6 +26,12 @@ std::string Overflow::generate_counter_update( const std::string &cnt ) const
 
 std::string Overflow::generate_preconditions_check_distance( const std::string &distance ) const
 {
+  int int_distance;
+  if (to_int(distance, int_distance))
+  {
+    // this is a constant
+    return std::to_string(int_distance >= 0);
+  }
   return distance + " >= 0";
 }
 

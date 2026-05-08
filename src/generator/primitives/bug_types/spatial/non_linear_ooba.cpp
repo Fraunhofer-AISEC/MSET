@@ -34,7 +34,8 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> NonLinearOOBA::generate(
   std::shared_ptr<OriginTargetRelation> origin_target_relation,
   std::shared_ptr<Flow> flow,
   std::shared_ptr<AccessAction> access_action,
-  std::shared_ptr<AccessLocation> access_location
+  std::shared_ptr<AccessLocation> access_location,
+  int object_size
 ) const
 {
   std::vector< std::shared_ptr<OriginTargetCodeCanvas> >full_variants;
@@ -53,7 +54,7 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> NonLinearOOBA::generate(
   auto generate_preconditions_check_distance = std::bind(&Flow::generate_preconditions_check_distance, flow.get(), std::placeholders::_1);
 
   std::vector< std::shared_ptr<OriginTargetCodeCanvas> > origin_target_canvases = origin_target_relation->generate(
-    variant, origin, 8, target, 8);
+    variant, origin, object_size, target, object_size);
 
   for ( auto &origin_target_canvas : origin_target_canvases )
   {
@@ -62,6 +63,8 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> NonLinearOOBA::generate(
 
     if ( distance == "N/A" ) continue;
     auto origin_target_canvas_copy = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas);
+    auto origin_target_canvas_copy_2 = std::make_shared<OriginTargetCodeCanvas>(*origin_target_canvas);
+    
     std::vector<std::string> access_target_code = access_location->generate_at_index(
       access_action,
       origin_target_canvas_copy->get_origin_name(),
@@ -69,10 +72,23 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> NonLinearOOBA::generate(
       origin_target_canvas_copy->get_target_size(),
       generate_preconditions_check_distance
     );
+    origin_target_canvas_copy->add_during_lifetime("// index into the target to prevent optimizations");
+    origin_target_canvas_copy->add_during_lifetime("for (ssize_t i = 0; i < _hide_value(" + std::to_string(origin_target_canvas_copy->get_target_size()) + "); i++) { char tmp = " + origin_target_canvas_copy->get_target_name() + "[i]; _use(&tmp);  }");
+    origin_target_canvas_copy_2->add_during_lifetime(" _use(" + origin_target_canvas_copy->get_target_name() + "); _use_value(*" + origin_target_canvas_copy->get_target_name() + ");");
     origin_target_canvas_copy->add_during_lifetime(access_target_code);
+    origin_target_canvas_copy->add_during_lifetime("");
     origin_target_canvas_copy->add_during_lifetime("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
+    origin_target_canvas_copy->add_variant_description_line("To avoid optimizations, index into the target, upper bound hidden");
     full_variants.push_back( origin_target_canvas_copy );
 
+    origin_target_canvas_copy_2->add_during_lifetime("// index into the target to prevent optimizations");
+    origin_target_canvas_copy_2->add_during_lifetime("for (ssize_t i = 0; i < " + std::to_string(origin_target_canvas_copy->get_target_size()) + "; i++) { char tmp = " + origin_target_canvas_copy->get_target_name() + "[i]; _use(&tmp); _use_value(" + origin_target_canvas_copy->get_target_name() + "[i]); }");
+    origin_target_canvas_copy_2->add_during_lifetime(" _use(" + origin_target_canvas_copy->get_target_name() + "); _use_value(*" + origin_target_canvas_copy->get_target_name() + ");");
+    origin_target_canvas_copy_2->add_during_lifetime(access_target_code);
+    origin_target_canvas_copy_2->add_during_lifetime("");
+    origin_target_canvas_copy_2->add_during_lifetime("_exit(TEST_CASE_SUCCESSFUL_VALUE);");
+    origin_target_canvas_copy_2->add_variant_description_line("To avoid optimizations, index into the target, upper bound not hidden");
+    full_variants.push_back( origin_target_canvas_copy_2 );
   }
 
   return full_variants;
@@ -85,7 +101,8 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> NonLinearOOBA::generate_val
   std::shared_ptr<OriginTargetRelation> origin_target_relation,
   std::shared_ptr<Flow> flow,
   std::shared_ptr<AccessAction> access_action,
-  std::shared_ptr<AccessLocation> access_location
+  std::shared_ptr<AccessLocation> access_location,
+  int object_size
 ) const
 {
   std::vector< std::shared_ptr<OriginTargetCodeCanvas> >full_variants;
@@ -102,7 +119,7 @@ std::vector<std::shared_ptr<OriginTargetCodeCanvas>> NonLinearOOBA::generate_val
 
 
   std::vector< std::shared_ptr<OriginTargetCodeCanvas> > origin_target_canvases = origin_target_relation->generate(
-    variant, origin, 8, target, 8);
+    variant, origin, object_size, target, object_size);
 
   for ( auto &origin_target_canvas : origin_target_canvases )
   {

@@ -52,13 +52,13 @@ std::vector< std::shared_ptr<OriginTargetCodeCanvas> > IntraObject::generate(
   distance = "(ssize_t)(GET_ADDR_BITS(" + target_access + ") - GET_ADDR_BITS(" + origin_access + "))";
   distance_negated = "-(ssize_t)(GET_ADDR_BITS(" + origin_access + ") - GET_ADDR_BITS(" + target_access + "))";
 
-  std::shared_ptr<OriginTargetCodeCanvas> variant = std::make_shared<OriginTargetCodeCanvas>( region_canvas, 8, origin_size, target_access, origin_access, distance, distance_negated );
+  std::shared_ptr<OriginTargetCodeCanvas> variant = std::make_shared<OriginTargetCodeCanvas>( region_canvas, target_size, origin_size, target_access, origin_access, distance, distance_negated );
   variant->set_lifetime_pos( region_canvas->get_lifetime_pos() );
   variant->add_variant_description_line("target declared after origin");
   variants.push_back(variant);
 
   region_canvas = origin->generate(canvas_ptr, "s", "target", target_size, "origin", origin_size, true);
-  variant = std::make_shared<OriginTargetCodeCanvas>( region_canvas, 8, origin_size, target_access, origin_access, distance, distance_negated );
+  variant = std::make_shared<OriginTargetCodeCanvas>( region_canvas, target_size, origin_size, target_access, origin_access, distance, distance_negated );
   variant->set_lifetime_pos( region_canvas->get_lifetime_pos() );
   variant->add_variant_description_line("target declared before origin");
   variants.push_back(variant);

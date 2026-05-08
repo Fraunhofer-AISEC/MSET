@@ -30,8 +30,9 @@ AccessLocation::SplitAccess StdlibLocation::generate_split_aux_vars(
       {"read_value", "volatile char", std::to_string(size)},
     };
 
-    split_access.access_lines.push_back( "memcpy( (void *)read_value, (void *)" + access_var_name + ", " + std::to_string(size) + ");" );
+    split_access.access_lines.push_back( "memcpy( (void *)read_value, (void *)" + access_var_name + ", _hide_value(" + std::to_string(size) + "));" );
     split_access.access_lines.emplace_back("_use( read_value );" );
+    split_access.access_lines.emplace_back("_use_value( *read_value );" );
     split_access.result = "&" + access_var_name + "[" + std::to_string(size) + "]";
   }
   else
@@ -41,7 +42,8 @@ AccessLocation::SplitAccess StdlibLocation::generate_split_aux_vars(
       {"size", "volatile size_t", "", std::to_string(size)},
     };
     split_access.access_lines.push_back( "memset( (void *)" + access_var_name + ", 0xFF, size);" );
-    split_access.access_lines.emplace_back("_use(" + access_var_name + ");" );
+    split_access.access_lines.emplace_back("_use( " + access_var_name + " );" );
+    split_access.access_lines.emplace_back("_use_value( *" + access_var_name + " );" );
     split_access.result = "&" + access_var_name + "[var_size]";
   }
   split_access.description = "auxiliary variables";
@@ -60,8 +62,9 @@ AccessLocation::SplitAccess StdlibLocation::generate_split_const_vars(
       {"read_value", "volatile char", std::to_string(size)},
     };
 
-    split_access.access_lines.push_back( "memcpy( (void *)read_value, (void *)" + access_var_name + ", " + std::to_string(size) + ");" );
+    split_access.access_lines.push_back( "memcpy( (void *)read_value, (void *)" + access_var_name + ", _hide_value(" + std::to_string(size) + "));" );
     split_access.access_lines.emplace_back("_use( read_value );" );
+    // split_access.access_lines.emplace_back("_use_value(*read_value);" );
     split_access.result = "&" + access_var_name + "[" + std::to_string(size) + "]";
   }
   else
@@ -69,6 +72,7 @@ AccessLocation::SplitAccess StdlibLocation::generate_split_const_vars(
     // WRITE
     split_access.access_lines.push_back( "memset( (void *)" + access_var_name + ", 0xFF, " + std::to_string(size) + ");" );
     split_access.access_lines.emplace_back("_use(" + access_var_name + ");" );
+    // split_access.access_lines.emplace_back("_use_value(*" + access_var_name + ");" );
     split_access.result = "&" + access_var_name + "[8]";
   }
   split_access.description = "constants";
@@ -99,16 +103,17 @@ AccessLocation::SplitAccess StdlibLocation::generate_bulk_split_using_index(
 
     if (generate_preconditions_check_distance)
     {
-      split_access.access_lines = { "if ( !(" + generate_preconditions_check_distance(distance) + ") ) _exit(PRECONDITIONS_FAILED_VALUE);" };
+      insert_distance_check_to_end_if_not_constant(split_access.access_lines, distance, generate_preconditions_check_distance);
     }
     split_access.access_lines.insert( split_access.access_lines.end(), {
       "while( i < " + distance + " )",
       "{",
       "  volatile char read_value[1024];",
       "  size_t step_distance = (" + distance + " > (1024 + i)) ? 1024 : " + distance + " - i;",
-      "  memcpy((void *)read_value, (void *)&" + from + "[i], step_distance);",
+      "  memcpy((void *)read_value, (void *)&" + from + "[i], _hide_value(step_distance));",
       "  i += step_distance;",
-      "  _use(&read_value);",
+      "  _use(read_value);",
+      "  _use_value(*read_value);",
       "}",
     } );
     split_access.result = "&" + from + "[i]";
@@ -122,7 +127,7 @@ AccessLocation::SplitAccess StdlibLocation::generate_bulk_split_using_index(
     };
     if (generate_preconditions_check_distance)
     {
-      split_access.access_lines = { "if ( !(" + generate_preconditions_check_distance(distance) + ") ) _exit(PRECONDITIONS_FAILED_VALUE);" };
+      insert_distance_check_to_end_if_not_constant(split_access.access_lines, distance, generate_preconditions_check_distance);
     }
     if (generate_preconditions_check_in_range)
     {
@@ -131,14 +136,17 @@ AccessLocation::SplitAccess StdlibLocation::generate_bulk_split_using_index(
     }
     split_access.access_lines.insert( split_access.access_lines.end(), {
       "i = 0;",
+      // "while( GET_ADDR_BITS(&" + to + "[i]) != GET_ADDR_BITS(_use(&" + to + "[i])) ) i++; // never executed, prevents optimizations",
       "while( GET_ADDR_BITS(&" + from + "[i]) < GET_ADDR_BITS(" + to + ") )",
       "{",
       "  step_distance = (GET_ADDR_BITS(" + to + ") > (1024 + GET_ADDR_BITS(&" + from + "[i]))) ? 1024 : GET_ADDR_BITS(" + to + ") - GET_ADDR_BITS(&" + from + "[i]);",
       "  memset((void *)&" + from + "[i], 0xFF, step_distance);",
       "  i += step_distance;",
       "  _use(&" + from + "[i]);",
+      "  _use_value(" + from + "[i]);",
       "}",
-      "_use(" + from + ");"
+      "_use(" + from + ");",
+      "_use_value(*" + from + ");"
     } );
     split_access.result = "&" + from + "[i]";
   }
@@ -168,7 +176,7 @@ AccessLocation::SplitAccess StdlibLocation::generate_bulk_split_using_aux_ptr(
     split_access.access_lines = {};
     if (generate_preconditions_check_distance)
     {
-      split_access.access_lines.push_back( "if ( !(" + generate_preconditions_check_distance(distance) + ") ) _exit(PRECONDITIONS_FAILED_VALUE);" );
+      insert_distance_check_to_end_if_not_constant(split_access.access_lines, distance, generate_preconditions_check_distance);
     }
     split_access.access_lines.insert(split_access.access_lines.end(), {
       "aux_ptr = " + from + ";",
@@ -176,10 +184,11 @@ AccessLocation::SplitAccess StdlibLocation::generate_bulk_split_using_aux_ptr(
       "{",
       "  volatile char read_value[1024];",
       "  size_t step_distance = (" + distance + " > (1024 + i)) ? 1024 : " + distance + " - i;",
-      "  memcpy((void *)read_value, (void *)aux_ptr, step_distance);",
+      "  memcpy((void *)read_value, (void *)aux_ptr, _hide_value(step_distance));",
       "  aux_ptr += step_distance;",
       "  i += step_distance;",
-      "  _use(&read_value);",
+      "  _use(read_value);",
+      "  _use_value(*read_value);",
       "}",
     });
     split_access.result = "aux_ptr";
@@ -200,7 +209,7 @@ AccessLocation::SplitAccess StdlibLocation::generate_bulk_split_using_aux_ptr(
 
     if (generate_preconditions_check_distance)
     {
-      split_access.access_lines.push_back( "if ( !(" + generate_preconditions_check_distance(distance) + ") ) _exit(PRECONDITIONS_FAILED_VALUE);" );
+      insert_distance_check_to_end_if_not_constant(split_access.access_lines, distance, generate_preconditions_check_distance);
     }
 
     split_access.access_lines.insert( split_access.access_lines.end(), {
@@ -211,8 +220,10 @@ AccessLocation::SplitAccess StdlibLocation::generate_bulk_split_using_aux_ptr(
       "  memset((void *)aux_ptr, 0xFF, step_distance);",
       "  aux_ptr += step_distance;",
       "  _use(aux_ptr);",
+      "  _use_value(*aux_ptr);",
       "}",
       "_use(" + from + ");"
+      "_use_value(*" + from + ");"
     } );
     split_access.result = "aux_ptr";
   }
@@ -242,8 +253,9 @@ std::vector<std::string> StdlibLocation::generate_at_index(
       lines.push_back( "if ( !(" + generate_preconditions_check_distance(index) + ") ) _exit(PRECONDITIONS_FAILED_VALUE);" );
     }
     lines.insert( lines.end(), {
-      "memcpy(read_value, (void *)&" + access_var_name + "[" + index + "], " + std::to_string(size) + ");",
+      "memcpy(read_value, (void *)&" + access_var_name + "[" + index + "], _hide_value(" + std::to_string(size) + "));",
       "_use(read_value);"
+      "_use_value(*read_value);"
     } );
   }
   else
@@ -259,7 +271,8 @@ std::vector<std::string> StdlibLocation::generate_at_index(
       }
       lines.insert( lines.end(), {
         "memset((void *)&" + access_var_name + "[" + index + "], 0xFF, " + std::to_string(size) + ");",
-        "_use(" + access_var_name + ");"
+        "_use(" + access_var_name + ");",
+        "_use_value(*" + access_var_name + ");"
       });
     }
   }
