@@ -309,6 +309,16 @@ These are explained as follows:
 
   - Sanitizers that rely on randomization give different detection rates for each run.
 
+## Version 1.2
+
+v1.2 introduces several improvements and new features:
+
+- Now using `exit` instead of `_exit` for double-free and misuse-of-free test cases.
+
+- Added `snmalloc` results to the table and provided a corresponding configuration.
+
+- Clarified the results by renaming `FAILED` to `DETECTED` and `SUCCESSFUL` to `UNDETECTED`.
+
 ## License
 
 MSET is distributed under the Apache License, Version 2.0; refer to LICENSE for
