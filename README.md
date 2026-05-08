@@ -175,7 +175,7 @@ its value specifies the command with the required flags. The special tokens
 MSET when running the test case.
 A dedicated section is used for allocating the auxiliary variables that are required by the test cases,
 to avoid having them unintentionally overwritten.
-Our default linker script fragment `sanitizers/after_text.ld` is passed via `-Wl,-T,../../sanitizers/after_text.ld` and
+Our default linker script fragment `sanitizers/after_text.ld` is passed via `-Wl,-T,../sanitizers/after_text.ld` and
 should work for most sanitizers.
 In our set of tested sanitizers, only RedFat requires a different linker script fragment `before_bss.ld` because placing
 a section after text does not work for it.
@@ -184,7 +184,7 @@ accessed for reading and writing.
 
 ```xml
 <setup>
-  <compile_cmd>clang -fsanitize=address -Wl,-T,../../sanitizers/after_text.ld $SOURCE_FILE -o $GENERATED_BINARY</compile_cmd>
+  <compile_cmd>clang -fsanitize=address -Wl,-T,../sanitizers/after_text.ld $SOURCE_FILE -o $GENERATED_BINARY</compile_cmd>
 </setup>
 ```
 
