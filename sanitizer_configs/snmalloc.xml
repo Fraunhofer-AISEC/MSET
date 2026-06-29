@@ -17,4 +17,5 @@
         <value>4</value>
         <value>132</value>
     </bug_detected_exit_values>
+    <max_object_size>SIZE_MAX/8</max_object_size>
 </sanitizer>

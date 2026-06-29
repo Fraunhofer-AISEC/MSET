@@ -6,10 +6,12 @@
     <setup_baseline>
         <compile_cmd>clang -Wl,-T,../sanitizers/after_text.ld -g $SOURCE_FILE -o $GENERATED_BINARY</compile_cmd>
     </setup_baseline>
-    <run>../sanitizers/drmemory/bin/drmemory -light -crash_at_error -exit_code_if_errors 44 -- $GENERATED_BINARY</run>
+    <!-- make sure /tmp/drmemory before running this -->
+    <run>../sanitizers/drmemory/bin/drmemory -logdir /tmp/drmemory -light -crash_at_error -exit_code_if_errors 44 -- $GENERATED_BINARY</run>
     <run_baseline>$GENERATED_BINARY</run_baseline>
     <bug_detected_exit_values>
         <value>6</value>
         <value>44</value>
     </bug_detected_exit_values>
+    <max_object_size>SIZE_MAX/8</max_object_size>
 </sanitizer>
