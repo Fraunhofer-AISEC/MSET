@@ -17,4 +17,5 @@
   <precondition_not_met_exit_value>43</precondition_not_met_exit_value>
   <timeout_exit_value>41</timeout_exit_value>
   <timeout_seconds>60</timeout_seconds>
+  <max_object_size>SIZE_MAX/8</max_object_size>
 </sanitizer>

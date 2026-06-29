@@ -15,4 +15,5 @@
     <bug_detected_exit_values>
         <value>6</value>
     </bug_detected_exit_values>
+    <max_object_size>SIZE_MAX/8</max_object_size>
 </sanitizer>
